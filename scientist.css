@@ -1061,3 +1061,303 @@ body[data-theme="tiktok"] .text-muted{
     justify-content:flex-start!important;
   }
 }
+
+.theme-dot-ute{background:#005f98;}
+
+
+/* ---------- UTE: HCMUTE student portal inspired ---------- */
+body[data-theme="ute"]{
+  --theme-font:Arial,"Segoe UI",sans-serif;
+  --theme-canvas:#f3f4f7;
+  --theme-card:#ffffff;
+  --theme-card-alt:#f7f7f7;
+  --theme-accent:#00639b;
+  --theme-primary-hover:#005583;
+  --theme-text:#18324b;
+  --theme-muted:#8293a3;
+  --theme-border:#d8dde3;
+  --theme-sidebar:#00639b;
+  --theme-accent-2:#0b77b4;
+  --theme-radius:18px;
+  --theme-radius-lg:22px;
+  --theme-shadow:0 2px 8px rgba(0,0,0,.08);
+  --theme-table-head:#eef3f7;
+  --theme-input-bg:#ffffff;
+  --theme-heading-weight:700;
+}
+
+body[data-theme="ute"]::before{
+  content:"ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HỒ CHÍ MINH";
+  position:fixed;
+  top:0;
+  left:16.6667%;
+  right:0;
+  height:88px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 24px;
+  background:#00639b;
+  color:#d9dde1;
+  font-size:2rem;
+  font-weight:800;
+  letter-spacing:.03em;
+  z-index:1020;
+  text-align:center;
+}
+
+body[data-theme="ute"] .sidebar{
+  background:#00639b!important;
+  color:#fff;
+  border-right:1px solid rgba(255,255,255,.25);
+  padding-top:14px;
+}
+
+body[data-theme="ute"] .sidebar::before{
+  content:"HCMUTE";
+  display:block;
+  width:132px;
+  height:132px;
+  margin:0 auto 16px;
+  border-radius:50%;
+  border:5px solid #fff;
+  background:
+    radial-gradient(circle at 50% 38%,#fff 0 22%,transparent 23%),
+    linear-gradient(180deg,#fff 0 28%,#e4212e 29% 45%,#fff 46% 62%,#e4212e 63% 79%,#fff 80%);
+  color:#00639b;
+  font-weight:900;
+  font-size:1.05rem;
+  line-height:132px;
+  text-align:center;
+  box-shadow:0 0 0 3px rgba(255,255,255,.2);
+}
+
+body[data-theme="ute"] .sidebar > .d-flex > a:first-child{
+  background:#7f7f7f;
+  border-radius:22px;
+  padding:12px 10px;
+  margin-bottom:22px!important;
+}
+body[data-theme="ute"] .sidebar > .d-flex > a:first-child h3{
+  color:#e9f3f8!important;
+  font-size:1rem;
+  font-weight:600;
+  margin:0;
+}
+
+body[data-theme="ute"] .theme-picker>.btn{
+  background:rgba(255,255,255,.12);
+  border-color:rgba(255,255,255,.35);
+  color:#fff;
+  border-radius:10px;
+}
+
+body[data-theme="ute"] .theme-picker .dropdown-menu{
+  background:#fff;
+  color:#18324b;
+}
+
+body[data-theme="ute"] .sidebar .nav{
+  margin-top:8px;
+}
+body[data-theme="ute"] .sidebar .nav::before{
+  content:"CHỨC NĂNG";
+  display:block;
+  color:#fff;
+  font-size:1.35rem;
+  font-weight:800;
+  margin:10px 8px 14px;
+}
+body[data-theme="ute"] .sidebar .nav-item{
+  margin-bottom:7px;
+}
+body[data-theme="ute"] .sidebar .nav-link{
+  color:#fff!important;
+  border-radius:0;
+  padding:.66rem .75rem;
+  font-weight:600;
+  font-size:.95rem;
+  position:relative;
+}
+body[data-theme="ute"] .sidebar .nav-link::before{
+  content:"•";
+  margin-right:9px;
+  font-size:1.1rem;
+}
+body[data-theme="ute"] .sidebar .nav-link:hover,
+body[data-theme="ute"] .sidebar .nav-link.active{
+  background:rgba(255,255,255,.12);
+  box-shadow:inset 4px 0 #fff;
+}
+
+body[data-theme="ute"] main{
+  padding-top:104px!important;
+  background:#f3f4f7;
+}
+
+body[data-theme="ute"] .welcome-section{
+  min-height:100px;
+}
+body[data-theme="ute"] .welcome-section .container{
+  display:none;
+}
+body[data-theme="ute"] .welcome-section .fixed-hr{
+  display:none;
+}
+
+body[data-theme="ute"] .full-screen-section:not(.welcome-section)>.container{
+  background:#fff;
+  border:1px solid #d6dbe1;
+  border-radius:22px;
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+  padding:28px 30px 34px;
+  margin-top:20px;
+  margin-bottom:34px;
+}
+
+body[data-theme="ute"] .full-screen-section:not(.welcome-section)>.container > h1,
+body[data-theme="ute"] .content-header h1{
+  display:inline-block;
+  background:#00639b;
+  color:#fff!important;
+  padding:10px 22px;
+  margin:-10px 0 22px;
+  font-size:1.45rem;
+  border-radius:0;
+  position:relative;
+  text-transform:uppercase;
+}
+body[data-theme="ute"] .full-screen-section:not(.welcome-section)>.container > h1::after,
+body[data-theme="ute"] .content-header h1::after{
+  content:"";
+  position:absolute;
+  right:-26px;
+  top:0;
+  width:0;
+  height:0;
+  border-top:25px solid transparent;
+  border-bottom:25px solid transparent;
+  border-left:26px solid #7e8b96;
+}
+
+body[data-theme="ute"] #general .row:first-child .col h1{
+  display:inline-block;
+  background:#00639b;
+  color:#fff!important;
+  padding:10px 22px;
+  font-size:1.45rem;
+  text-transform:uppercase;
+}
+
+body[data-theme="ute"] .btn-primary{
+  background:#00639b;
+  border-color:#00639b;
+  border-radius:14px;
+  min-height:46px;
+  font-weight:700;
+}
+body[data-theme="ute"] .btn-primary:hover{
+  background:#005583;
+  border-color:#005583;
+}
+
+body[data-theme="ute"] .btn-outline-primary{
+  color:#00639b;
+  border-color:#7aaed0;
+  border-radius:14px;
+}
+body[data-theme="ute"] .btn-outline-primary:hover{
+  background:#00639b;
+  border-color:#00639b;
+  color:#fff;
+}
+
+body[data-theme="ute"] .form-control,
+body[data-theme="ute"] .form-select{
+  min-height:54px;
+  border-radius:22px;
+  border-color:#cbd3da;
+  color:#17324a;
+}
+body[data-theme="ute"] .input-group-text{
+  background:#f6f8fa;
+  border-color:#cbd3da;
+  color:#435c70;
+  font-weight:600;
+}
+
+body[data-theme="ute"] .nav-tabs{
+  border-bottom:1px solid #cad4dd;
+}
+body[data-theme="ute"] .nav-tabs .nav-link{
+  color:#00639b;
+  border-radius:10px 10px 0 0;
+  font-weight:700;
+}
+body[data-theme="ute"] .nav-tabs .nav-link.active{
+  color:#17324a;
+  border-color:#cad4dd #cad4dd #fff;
+  background:#fff;
+}
+
+body[data-theme="ute"] .table-wrapper,
+body[data-theme="ute"] .addition-table-wrapper{
+  border:0;
+  border-radius:0;
+}
+body[data-theme="ute"] .table thead th{
+  background:#eef3f7!important;
+  color:#17324a;
+  border-bottom:1px solid #cbd3da;
+  font-weight:800;
+}
+body[data-theme="ute"] .table tbody td{
+  background:#fff;
+  color:#17324a;
+  border-bottom:1px solid #e4e8ec;
+}
+
+body[data-theme="ute"] .data-bulk-actions,
+body[data-theme="ute"] .credential-bulk-actions{
+  background:#f7f9fb;
+  border-top:1px solid #d8dde3!important;
+}
+
+body[data-theme="ute"] .modal-content{
+  border-radius:22px;
+  overflow:hidden;
+  border:0;
+}
+body[data-theme="ute"] .modal-header,
+body[data-theme="ute"] .original-modal-header{
+  background:#f8fafb;
+  border-bottom:1px solid #d8dde3;
+}
+body[data-theme="ute"] .modal-title{
+  color:#17324a!important;
+  font-weight:800;
+}
+
+body[data-theme="ute"] .fixed-hr{
+  border-top:1px solid #aab5be;
+  opacity:.65;
+}
+
+@media (max-width:991.98px){
+  body[data-theme="ute"]::before{
+    left:25%;
+    font-size:1.25rem;
+  }
+}
+@media (max-width:767.98px){
+  body[data-theme="ute"]::before{
+    display:none;
+  }
+  body[data-theme="ute"] main{
+    padding-top:20px!important;
+  }
+  body[data-theme="ute"] .full-screen-section:not(.welcome-section)>.container{
+    border-radius:14px;
+    padding:18px;
+  }
+}
