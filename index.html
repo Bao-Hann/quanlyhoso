@@ -1,20 +1,21 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scientist Home</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="{% static 'css/scientist.css' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="./scientist.css">
 </head>
 <body>
+<div id="toastHost" class="position-fixed top-0 end-0 p-3" style="z-index:2000"></div>
+
 <div class="container-fluid">
   <div class="row">
-    <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar position-fixed vh-100">
+    <nav class="col-md-3 col-lg-2 d-md-block sidebar position-fixed vh-100">
       <div class="d-flex flex-column p-3">
-        <div><a class="text-dark text-center text-decoration-none" href="#"><h3>Hồ sơ cá nhân</h3></a></div>
+        <a class="text-dark text-center text-decoration-none mb-3" href="#top"><h3>Hồ sơ cá nhân</h3></a>
         <ul class="nav flex-column">
           <li class="nav-item"><a class="nav-link text-dark" href="#general">Thông tin cơ bản</a></li>
           <li class="nav-item"><a class="nav-link text-dark" href="#additional">Thông tin bổ sung</a></li>
@@ -24,118 +25,326 @@
           <li class="nav-item"><a class="nav-link text-dark" href="#publishedPaper">Công bố khoa học</a></li>
           <li class="nav-item"><a class="nav-link text-dark" href="#award">Giải thưởng</a></li>
           <hr>
-          <li class="nav-item"><a class="nav-link text-dark" href="{% url 'export_cv' %}">Export your CV</a></li>
+          <li class="nav-item"><a class="nav-link text-dark" href="#" id="exportCvBtn">Export your CV</a></li>
           <hr>
           <li class="nav-item"><a class="nav-link text-dark" href="#support">Hỗ trợ</a></li>
-          <li><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="nav-link text-dark border-0 bg-transparent w-100 text-start" type="submit">Logout</button></form></li>
+          <li class="nav-item"><a class="nav-link text-dark" href="#" id="logoutBtn">Logout</a></li>
         </ul>
       </div>
     </nav>
 
-    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 offset-md-3 offset-lg-2">
-      {% if messages %}<div class="position-fixed top-0 end-0 p-3" style="z-index:2000">{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }} shadow">{{ message }}</div>{% endfor %}</div>{% endif %}
-
-      <section class="full-screen-section welcome-section"><div class="container"><h1>Welcome, {{ profile.full_name|default:user.username }}</h1></div><hr class="fixed-hr"></section>
+    <main id="top" class="col-md-9 ms-sm-auto col-lg-10 px-md-4 offset-md-3 offset-lg-2">
+      <section class="full-screen-section welcome-section">
+        <div class="container"><h1>Welcome, <span id="welcomeName">Han Han</span></h1></div>
+        <hr class="fixed-hr">
+      </section>
 
       <section id="general" class="full-screen-section">
         <div class="container">
-          <form id="editGeneral" method="POST" action="{% url 'update_general' %}">{% csrf_token %}
+          <form id="editGeneral">
             <div class="row">
               <div class="col"><h1>Thông tin cơ bản</h1></div>
               <div class="col-sm-4 justify-content-center d-flex align-items-center">
                 <button type="button" class="btn btn-warning" id="editGeneralBtn">Edit <i class="bi bi-pencil-square"></i></button>
-                <button id="saveGeneralBtn" class="btn btn-primary ms-2" style="display:none">Save</button>
+                <button type="submit" id="saveGeneralBtn" class="btn btn-primary ms-2" style="display:none">Save</button>
               </div>
             </div>
+
             <div class="form-group mt-3">
               <div class="row mb-3">
-                <div class="col"><div class="input-group"><span class="input-group-text">Họ và tên:</span><input type="text" name="person_name" class="form-control general-field" value="{{ profile.full_name }}" placeholder="Name" disabled></div></div>
-                <div class="col"><div class="input-group"><span class="input-group-text">Giới tính:</span><div class="input-group-text"><input class="form-check-input general-field" type="radio" name="person_gender" id="femaleGender" value="0" {% if profile.gender == 0 %}checked{% endif %} disabled><label class="form-check-label ms-1" for="femaleGender">Nữ</label></div><div class="input-group-text"><input class="form-check-input general-field" type="radio" name="person_gender" id="maleGender" value="1" {% if profile.gender == 1 %}checked{% endif %} disabled><label class="form-check-label ms-1" for="maleGender">Nam</label></div></div></div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text">Họ và tên:</span>
+                    <input type="text" name="person_name" class="form-control general-field" value="Han Han" disabled>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="input-group">
+                    <span class="input-group-text">Giới tính:</span>
+                    <div class="input-group-text"><input class="form-check-input general-field" type="radio" name="person_gender" id="femaleGender" value="0" checked disabled><label class="form-check-label ms-1" for="femaleGender">Nữ</label></div>
+                    <div class="input-group-text"><input class="form-check-input general-field" type="radio" name="person_gender" id="maleGender" value="1" disabled><label class="form-check-label ms-1" for="maleGender">Nam</label></div>
+                  </div>
+                </div>
               </div>
+
               <div class="row mb-3">
-                <div class="col"><div class="input-group"><span class="input-group-text">Ngày, tháng, năm sinh:</span><input type="date" name="person_dob" class="form-control general-field" value="{{ profile.dob|date:'Y-m-d' }}" disabled></div></div>
-                <div class="col"><div class="input-group"><span class="input-group-text">Nơi sinh:</span><input type="text" name="person_pob" class="form-control general-field" value="{{ profile.pob }}" placeholder="Place of birth" disabled></div></div>
+                <div class="col"><div class="input-group"><span class="input-group-text">Ngày, tháng, năm sinh:</span><input type="date" name="person_dob" class="form-control general-field" disabled></div></div>
+                <div class="col"><div class="input-group"><span class="input-group-text">Nơi sinh:</span><input type="text" name="person_pob" class="form-control general-field" disabled></div></div>
               </div>
+
               <div class="row mb-3">
-                <div class="col"><div class="input-group"><span class="input-group-text">Quê quán:</span><input type="text" name="person_hometown" class="form-control general-field" value="{{ profile.hometown }}" placeholder="Hometown" disabled></div></div>
-                <div class="col"><div class="input-group"><span class="input-group-text">Dân tộc:</span><input type="text" name="person_ethnicity" class="form-control general-field" value="{{ profile.ethnicity }}" placeholder="Ethnicity" disabled></div></div>
+                <div class="col"><div class="input-group"><span class="input-group-text">Quê quán:</span><input type="text" name="person_hometown" class="form-control general-field" disabled></div></div>
+                <div class="col"><div class="input-group"><span class="input-group-text">Dân tộc:</span><input type="text" name="person_ethnicity" class="form-control general-field" disabled></div></div>
               </div>
-              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Chức vụ (Hiện tại hoặc trước khi nghỉ hưu):</span><input type="text" name="person_position" class="form-control general-field" value="{{ profile.position }}" disabled></div></div>
-              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Đơn vị công tác (Hiện tại hoặc trước khi nghỉ hưu):</span><input type="text" name="person_work_unit" class="form-control general-field" value="{{ profile.work_unit }}" disabled></div></div>
-              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Chỗ ở riêng hoặc địa chỉ liên lạc:</span><input type="text" name="person_address" class="form-control general-field" value="{{ profile.address }}" disabled autocomplete="off"></div></div>
-              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Điện thoại liên hệ:</span><span class="input-group-text">CQ:</span><input type="text" name="person_office_phone" class="form-control general-field" value="{{ profile.office_phone }}" disabled><span class="input-group-text">NR:</span><input type="text" name="person_home_phone" class="form-control general-field" value="{{ profile.home_phone }}" disabled><span class="input-group-text">DĐ:</span><input type="text" name="person_mobile_phone" class="form-control general-field" value="{{ profile.mobile_phone }}" disabled></div></div>
-              <div class="row mb-3"><div class="col"><div class="input-group"><span class="input-group-text">Fax:</span><input type="text" name="person_fax" class="form-control general-field" value="{{ profile.fax }}" disabled></div></div><div class="col"><div class="input-group"><span class="input-group-text">Email:</span><input type="email" name="person_email" class="form-control general-field" value="{{ profile.email }}" disabled></div></div></div>
-              <div class="row mb-3"><div class="input-group"><span class="input-group-text">CCCD:</span><input type="text" name="person_citizen_id" class="form-control general-field" value="{{ profile.citizen_id }}" disabled><span class="input-group-text">Ngày cấp:</span><input type="date" name="person_date_issue" class="form-control general-field" value="{{ profile.date_issue|date:'Y-m-d' }}" disabled><span class="input-group-text">Nơi cấp:</span><input type="text" name="person_place_issue" class="form-control general-field" value="{{ profile.place_issue }}" disabled></div></div>
+
+              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Chức vụ (Hiện tại hoặc trước khi nghỉ hưu):</span><input type="text" name="person_position" class="form-control general-field" disabled></div></div>
+              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Đơn vị công tác (Hiện tại hoặc trước khi nghỉ hưu):</span><input type="text" name="person_work_unit" class="form-control general-field" disabled></div></div>
+              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Chỗ ở riêng hoặc địa chỉ liên lạc:</span><input type="text" name="person_address" class="form-control general-field" disabled></div></div>
+
+              <div class="row mb-3">
+                <div class="input-group">
+                  <span class="input-group-text">Điện thoại liên hệ:</span>
+                  <span class="input-group-text">CQ:</span><input type="text" name="person_office_phone" class="form-control general-field" disabled>
+                  <span class="input-group-text">NR:</span><input type="text" name="person_home_phone" class="form-control general-field" disabled>
+                  <span class="input-group-text">DĐ:</span><input type="text" name="person_mobile_phone" class="form-control general-field" disabled>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col"><div class="input-group"><span class="input-group-text">Fax:</span><input type="text" name="person_fax" class="form-control general-field" disabled></div></div>
+                <div class="col"><div class="input-group"><span class="input-group-text">Email:</span><input type="email" name="person_email" class="form-control general-field" value="baohan7765@gmail.com" disabled></div></div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="input-group">
+                  <span class="input-group-text">CCCD:</span><input type="text" name="person_citizen_id" class="form-control general-field" disabled>
+                  <span class="input-group-text">Ngày cấp:</span><input type="date" name="person_date_issue" class="form-control general-field" disabled>
+                  <span class="input-group-text">Nơi cấp:</span><input type="text" name="person_place_issue" class="form-control general-field" disabled>
+                </div>
+              </div>
             </div>
           </form>
-        </div><hr class="fixed-hr">
+        </div>
+        <hr class="fixed-hr">
       </section>
 
       <section id="additional" class="full-screen-section">
         <div class="container">
           <h1 class="mb-3 pb-3">Thông tin bổ sung</h1>
-          <form method="post" action="{% url 'update_preferences' %}" class="mb-3 p-3 box border border-info rounded">{% csrf_token %}
+
+          <div class="mb-3 p-3 box border border-info rounded">
             <h4 class="box-title">Tùy chỉnh mong muốn của bạn</h4>
             <div class="row mb-3">
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý tìm việc thỉnh giảng</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch" type="checkbox" name="accept_teaching" {% if profile.accept_teaching %}checked{% endif %}></div></div></div></div>
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý tìm đồng đội nghiên cứu chung</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch" type="checkbox" name="accept_researching" {% if profile.accept_researching %}checked{% endif %}></div></div></div></div>
+              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý tìm việc thỉnh giảng</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_teaching"></div></div></div></div>
+              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý tìm đồng đội nghiên cứu chung</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_researching"></div></div></div></div>
             </div>
             <div class="row mb-3">
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý tham gia hội đồng</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch" type="checkbox" name="accept_committee" {% if profile.accept_committee %}checked{% endif %}></div></div></div></div>
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý làm người hướng dẫn</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch" type="checkbox" name="accept_instructor" {% if profile.accept_instructor %}checked{% endif %}></div></div></div></div>
+              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý tham gia hội đồng</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_committee"></div></div></div></div>
+              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý làm người hướng dẫn</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_instructor"></div></div></div></div>
             </div>
-            <button class="btn btn-outline-primary btn-sm">Lưu tùy chỉnh</button>
-          </form>
+          </div>
+
           <div class="content-body">
-            <ul class="nav nav-tabs d-flex justify-content-between w-100" id="additionTab">
-              <div class="d-flex"><li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#teaching">Môn học có thể giảng dạy</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#researching">Hướng nghiên cứu</button></li></div>
+            <ul class="nav nav-tabs d-flex justify-content-between w-100">
+              <div class="d-flex">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#teaching">Môn học có thể giảng dạy</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#researching">Hướng nghiên cứu</button></li>
+              </div>
               <button class="btn btn-primary ms-auto me-5 mb-1" data-bs-toggle="modal" data-bs-target="#addAddition"><i class="bi bi-plus-circle"></i></button>
             </ul>
             <div class="tab-content">
-              <div class="tab-pane addition-table-wrapper fade show active" id="teaching"><table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>Ngành/Chuyên ngành</th><th>Tên môn học</th><th>Mô tả</th><th>&nbsp;</th></tr></thead><tbody>{% for x in teaching_subjects %}<tr><td>{{ x.major }}</td><td>{{ x.subject }}</td><td>{{ x.description }}</td><td>{% include 'profiles/delete_button.html' with kind='teaching' pk=x.pk %}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted">Chưa có dữ liệu</td></tr>{% endfor %}</tbody></table></div>
-              <div class="tab-pane addition-table-wrapper fade" id="researching"><table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>Ngành/Chuyên ngành</th><th>Hướng nghiên cứu</th><th>Mô tả</th><th>&nbsp;</th></tr></thead><tbody>{% for x in research_directions %}<tr><td>{{ x.major }}</td><td>{{ x.direction }}</td><td>{{ x.description }}</td><td>{% include 'profiles/delete_button.html' with kind='research' pk=x.pk %}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted">Chưa có dữ liệu</td></tr>{% endfor %}</tbody></table></div>
+              <div class="tab-pane addition-table-wrapper fade show active" id="teaching">
+                <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>Ngành/Chuyên ngành</th><th>Tên môn học</th><th>Mô tả</th></tr></thead><tbody id="teachingBody"><tr class="empty-row"><td colspan="3" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+              </div>
+              <div class="tab-pane addition-table-wrapper fade" id="researching">
+                <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>Ngành/Chuyên ngành</th><th>Hướng nghiên cứu</th><th>Mô tả</th></tr></thead><tbody id="researchBody"><tr class="empty-row"><td colspan="3" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+              </div>
             </div>
           </div>
-        </div><hr class="fixed-hr">
+        </div>
+        <hr class="fixed-hr">
       </section>
 
       <section id="education" class="full-screen-section">
-        <div class="container"><div class="content-header"><div class="row align-text-center"><div class="col-sm-8"><h1>Quá trình đào tạo</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><div class="btn-group"><button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-circle"></i> Add</button><div class="dropdown-menu"><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addCredential" data-kind="degree">Học vị</a><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addCredential" data-kind="title">Học hàm</a><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addLanguage">Ngoại ngữ</a></div></div></div></div></div>
-          <div class="content-body"><ul class="nav nav-tabs"><li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#degree">Học hàm - Học vị</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#language">Ngoại ngữ</button></li></ul>
-            <div class="tab-content table-wrapper"><div class="tab-pane fade show active" id="degree"><table class="table table-hover"><thead class="align-middle table-light"><tr class="text-center"><th>Học hàm/Học vị</th><th>Ngành/Chuyên ngành</th><th>Năm</th><th>Chi tiết</th><th>&nbsp;</th></tr></thead><tbody>{% for x in credentials %}<tr><td>{{ x.level }}</td><td>{{ x.major }}</td><td>{{ x.year|default:'' }}</td><td>{{ x.institution }}{% if x.country %}, {{ x.country }}{% endif %}{% if x.thesis %}<br><small>{{ x.thesis }}</small>{% endif %}</td><td>{% include 'profiles/delete_button.html' with kind='credential' pk=x.pk %}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr>{% endfor %}</tbody></table></div>
-              <div class="tab-pane fade" id="language"><table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>Ngoại ngữ</th><th>Mức độ thành thạo</th><th>Chứng chỉ</th><th>&nbsp;</th></tr></thead><tbody>{% for x in languages %}<tr><td>{{ x.name }}</td><td>{{ x.proficiency }}</td><td>{{ x.certificate }}</td><td>{% include 'profiles/delete_button.html' with kind='language' pk=x.pk %}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted">Chưa có dữ liệu</td></tr>{% endfor %}</tbody></table></div></div>
+        <div class="container">
+          <div class="content-header">
+            <div class="row align-text-center">
+              <div class="col-sm-8"><h1>Quá trình đào tạo</h1></div>
+              <div class="col-sm-4 justify-content-center d-flex align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-circle"></i> Add</button>
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item credential-open" href="#" data-bs-toggle="modal" data-bs-target="#addCredential" data-kind="degree">Học vị</a>
+                    <a class="dropdown-item credential-open" href="#" data-bs-toggle="modal" data-bs-target="#addCredential" data-kind="title">Học hàm</a>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addLanguage">Ngoại ngữ</a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div><hr class="fixed-hr">
+
+          <ul class="nav nav-tabs">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#degree">Học hàm - Học vị</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#language">Ngoại ngữ</button></li>
+          </ul>
+          <div class="tab-content table-wrapper">
+            <div class="tab-pane fade show active" id="degree">
+              <table class="table table-hover"><thead class="align-middle table-light"><tr class="text-center"><th>Học hàm/Học vị</th><th>Ngành/Chuyên ngành</th><th>Năm</th><th>Chi tiết</th></tr></thead><tbody id="credentialBody"><tr class="empty-row"><td colspan="4" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+            </div>
+            <div class="tab-pane fade" id="language">
+              <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>Ngoại ngữ</th><th>Mức độ thành thạo</th><th>Chứng chỉ</th></tr></thead><tbody id="languageBody"><tr class="empty-row"><td colspan="3" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+        <hr class="fixed-hr">
       </section>
 
-      <section id="work_exp" class="full-screen-section"><div class="container"><div class="content-header"><div class="row"><div class="col-sm-8"><h1>Quá trình công tác</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWork"><i class="bi bi-plus-circle"></i> Add</button></div></div></div><div class="content-body table-wrapper"><table class="table table-hover"><thead class="text-center align-middle table-light"><tr><th>Từ</th><th>Đến</th><th>Đơn vị công tác</th><th>Công việc đảm nhiệm</th><th>Mô tả công việc</th><th>&nbsp;</th></tr></thead><tbody>{% for x in work_experiences %}<tr><td>{{ x.start_date|date:'d/m/Y' }}</td><td>{% if x.current %}Hiện tại{% else %}{{ x.end_date|date:'d/m/Y' }}{% endif %}</td><td>{{ x.institution }}</td><td>{{ x.position }}</td><td>{{ x.description }}</td><td>{% include 'profiles/delete_button.html' with kind='work' pk=x.pk %}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr>{% endfor %}</tbody></table></div></div><hr class="fixed-hr"></section>
+      <section id="work_exp" class="full-screen-section">
+        <div class="container">
+          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Quá trình công tác</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWork"><i class="bi bi-plus-circle"></i> Add</button></div></div></div>
+          <div class="content-body table-wrapper">
+            <table class="table table-hover"><thead class="text-center align-middle table-light"><tr><th>Từ</th><th>Đến</th><th>Đơn vị công tác</th><th>Công việc đảm nhiệm</th><th>Mô tả công việc</th></tr></thead><tbody id="workBody"><tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+          </div>
+        </div>
+        <hr class="fixed-hr">
+      </section>
 
-      <section id="participate" class="full-screen-section"><div class="container"><div class="content-header"><div class="row"><div class="col-sm-8"><h1>Đề tài tham gia</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject"><i class="bi bi-plus-circle"></i> Add</button></div></div></div><div class="content-body table-wrapper"><table class="table table-hover"><thead class="align-middle table-light"><tr class="text-center"><th>TT</th><th>Tên đề tài nghiên cứu</th><th>Năm bắt đầu</th><th>Năm nghiệm thu</th><th>Đề tài cấp (NN, Bộ, ngành, trường)</th><th>Trách nhiệm</th><th>Kinh phí</th><th>&nbsp;</th></tr></thead><tbody>{% for x in projects %}<tr><td>{{ forloop.counter }}</td><td>{{ x.title }}</td><td>{{ x.start_year|default:'' }}</td><td>{{ x.end_year|default:'' }}</td><td>{{ x.level }}</td><td>{{ x.position }}</td><td>{% if x.budget %}{{ x.budget }} {{ x.budget_currency }}{% endif %}</td><td>{% include 'profiles/delete_button.html' with kind='project' pk=x.pk %}</td></tr>{% empty %}<tr><td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td></tr>{% endfor %}</tbody></table></div></div><hr class="fixed-hr"></section>
+      <section id="participate" class="full-screen-section">
+        <div class="container">
+          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Đề tài tham gia</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject"><i class="bi bi-plus-circle"></i> Add</button></div></div></div>
+          <div class="content-body table-wrapper">
+            <table class="table table-hover"><thead class="align-middle table-light"><tr class="text-center"><th>TT</th><th>Tên đề tài nghiên cứu</th><th>Năm bắt đầu</th><th>Năm nghiệm thu</th><th>Đề tài cấp</th><th>Trách nhiệm</th><th>Kinh phí</th></tr></thead><tbody id="projectBody"><tr class="empty-row"><td colspan="7" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+          </div>
+        </div>
+        <hr class="fixed-hr">
+      </section>
 
-      <section id="publishedPaper" class="full-screen-section"><div class="container"><div class="content-header"><div class="row"><div class="col-sm-8"><h1>Công bố khoa học</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><div class="btn-group"><button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-circle"></i> Add</button><div class="dropdown-menu"><a class="dropdown-item pub-type" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="article">Bài báo khoa học</a><a class="dropdown-item pub-type" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="seminar">Seminar - Hội thảo</a><a class="dropdown-item pub-type" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="textbook">Sách giáo trình</a></div></div></div></div></div><div class="content-body table-wrapper"><table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>TT</th><th>Loại</th><th>Tên công trình</th><th>Năm</th><th>Tạp chí/Nơi công bố</th><th>DOI</th><th>&nbsp;</th></tr></thead><tbody>{% for x in publications %}<tr><td>{{ forloop.counter }}</td><td>{{ x.get_type_display }}</td><td>{{ x.title }}</td><td>{{ x.year|default:'' }}</td><td>{{ x.journal|default:x.location }}</td><td>{{ x.doi }}</td><td>{% include 'profiles/delete_button.html' with kind='publication' pk=x.pk %}</td></tr>{% empty %}<tr><td colspan="7" class="text-center text-muted">Chưa có dữ liệu</td></tr>{% endfor %}</tbody></table></div></div><hr class="fixed-hr"></section>
+      <section id="publishedPaper" class="full-screen-section">
+        <div class="container">
+          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Công bố khoa học</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><div class="btn-group"><button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-circle"></i> Add</button><div class="dropdown-menu"><a class="dropdown-item pub-open" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="article">Bài báo khoa học</a><a class="dropdown-item pub-open" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="seminar">Seminar - Hội thảo</a><a class="dropdown-item pub-open" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="textbook">Sách giáo trình</a></div></div></div></div></div>
+          <div class="content-body table-wrapper">
+            <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>TT</th><th>Loại</th><th>Tên công trình</th><th>Năm</th><th>Tạp chí/Nơi công bố</th><th>DOI</th></tr></thead><tbody id="publicationBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+          </div>
+        </div>
+        <hr class="fixed-hr">
+      </section>
 
-      <section id="award" class="full-screen-section"><div class="container"><div class="content-header"><div class="row"><div class="col-sm-8"><h1>Giải thưởng</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAward"><i class="bi bi-plus-circle"></i> Add</button></div></div></div><div class="content-body table-wrapper"><table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>TT</th><th>Loại</th><th>Tên</th><th>Nơi cấp/Áp dụng</th><th>Năm</th><th>Mô tả</th><th>&nbsp;</th></tr></thead><tbody>{% for x in awards %}<tr><td>{{ forloop.counter }}</td><td>{{ x.get_category_display }}</td><td>{{ x.name }}</td><td>{{ x.organization }}</td><td>{{ x.year|default:'' }}</td><td>{{ x.description }}</td><td>{% include 'profiles/delete_button.html' with kind='award' pk=x.pk %}</td></tr>{% empty %}<tr><td colspan="7" class="text-center text-muted">Chưa có dữ liệu</td></tr>{% endfor %}</tbody></table></div></div><hr class="fixed-hr"></section>
+      <section id="award" class="full-screen-section">
+        <div class="container">
+          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Giải thưởng</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAward"><i class="bi bi-plus-circle"></i> Add</button></div></div></div>
+          <div class="content-body table-wrapper">
+            <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>TT</th><th>Loại</th><th>Tên giải thưởng/Công nghệ</th><th>Nơi cấp/Áp dụng</th><th>Năm</th><th>Mô tả</th></tr></thead><tbody id="awardBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+          </div>
+        </div>
+        <hr class="fixed-hr">
+      </section>
 
-      <section id="support" class="full-screen-section"><div class="container"><div class="content-header"><div class="row"><div class="col-sm-8"><h1>Hỗ trợ</h1></div></div></div><div class="content-body"><h5 class="p-3">Chúng tôi sẽ hỗ trợ chuyển dữ liệu từ file lý lịch khoa học của bạn lên hệ thống!</h5><form method="POST" action="{% url 'support_upload' %}" enctype="multipart/form-data" class="p-5">{% csrf_token %}<p>Hãy gửi file Lý lịch khoa học của bạn ở đây! (PDF hoặc DOCX)</p><div class="input-group"><input type="file" accept=".pdf,.docx" name="support_file" class="form-control" required><button type="submit" class="btn btn-info">Upload</button></div></form></div></div><hr class="fixed-hr"></section>
+      <section id="support" class="full-screen-section">
+        <div class="container">
+          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Hỗ trợ</h1></div></div></div>
+          <div class="content-body">
+            <h5 class="p-3">Chúng tôi sẽ hỗ trợ chuyển dữ liệu từ file lý lịch khoa học của bạn lên hệ thống!</h5>
+            <form id="supportForm" class="p-5">
+              <p>Hãy gửi file Lý lịch khoa học của bạn ở đây! (PDF hoặc DOCX)</p>
+              <div class="input-group"><input type="file" accept=".pdf,.docx" id="supportFile" class="form-control" required><button type="submit" class="btn btn-info">Upload</button></div>
+            </form>
+          </div>
+        </div>
+        <hr class="fixed-hr">
+      </section>
     </main>
   </div>
 </div>
 
-<!-- MODALS -->
-<div class="modal fade" id="addAddition" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content fixed-modal"><div class="modal-header"><h5 class="modal-title">Thêm thông tin bổ sung</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><ul class="nav nav-tabs"><li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#addTeachPane">Môn học</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#addResearchPane">Hướng nghiên cứu</button></li></ul><div class="tab-content pt-3"><div class="tab-pane fade show active" id="addTeachPane"><form method="post" action="{% url 'add_teaching' %}">{% csrf_token %}<input class="form-control mb-3" name="major" placeholder="Ngành/Chuyên ngành"><input class="form-control mb-3" name="subject" placeholder="Tên môn học" required><textarea class="form-control mb-3" name="description" placeholder="Mô tả"></textarea><button class="btn btn-primary">Add</button></form></div><div class="tab-pane fade" id="addResearchPane"><form method="post" action="{% url 'add_research_direction' %}">{% csrf_token %}<input class="form-control mb-3" name="major" placeholder="Ngành/Chuyên ngành"><input class="form-control mb-3" name="direction" placeholder="Hướng nghiên cứu" required><textarea class="form-control mb-3" name="description" placeholder="Mô tả"></textarea><button class="btn btn-primary">Add</button></form></div></div></div></div></div></div>
+<div class="modal fade" id="addAddition" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="additionForm">
+      <div class="modal-header"><h5 class="modal-title">Thêm thông tin bổ sung</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <select class="form-select mb-3" name="type"><option value="teaching">Môn học có thể giảng dạy</option><option value="research">Hướng nghiên cứu</option></select>
+        <input class="form-control mb-3" name="major" placeholder="Ngành/Chuyên ngành">
+        <input class="form-control mb-3" name="title" placeholder="Tên môn học/Hướng nghiên cứu" required>
+        <textarea class="form-control" name="description" placeholder="Mô tả"></textarea>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
 
-<div class="modal fade" id="addCredential" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content fixed-modal"><form method="post" action="{% url 'add_credential' %}">{% csrf_token %}<div class="modal-header"><h5 class="modal-title">Thêm học vị</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" name="kind" id="credentialKind" value="degree"><div class="row g-3"><div class="col-md-6"><label class="form-label">Học hàm/Học vị</label><input class="form-control" name="level" required></div><div class="col-md-6"><label class="form-label">Ngành/Chuyên ngành</label><input class="form-control" name="major"></div><div class="col-md-8"><label class="form-label">Nơi đào tạo</label><input class="form-control" name="institution"></div><div class="col-md-4"><label class="form-label">Năm</label><input class="form-control" type="number" name="year"></div><div class="col-md-6"><label class="form-label">Hệ đào tạo</label><input class="form-control" name="training_system"></div><div class="col-md-6"><label class="form-label">Nước đào tạo</label><input class="form-control" name="country"></div><div class="col-12"><label class="form-label">Tên luận án/Chi tiết</label><textarea class="form-control" name="thesis"></textarea></div></div></div><div class="modal-footer"><button class="btn btn-primary">Add</button></div></form></div></div></div>
+<div class="modal fade" id="addCredential" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="credentialForm">
+      <div class="modal-header"><h5 class="modal-title">Thêm học vị</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" name="kind" id="credentialKind" value="degree">
+        <input class="form-control mb-3" name="level" placeholder="Học hàm/Học vị" required>
+        <input class="form-control mb-3" name="major" placeholder="Ngành/Chuyên ngành">
+        <input class="form-control mb-3" name="institution" placeholder="Cơ sở đào tạo">
+        <input class="form-control mb-3" type="number" name="year" placeholder="Năm">
+        <input class="form-control mb-3" name="country" placeholder="Quốc gia">
+        <textarea class="form-control" name="detail" placeholder="Chi tiết/Luận án"></textarea>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
 
-<div class="modal fade" id="addLanguage" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><form method="post" action="{% url 'add_language' %}">{% csrf_token %}<div class="modal-header"><h5 class="modal-title">Thêm ngoại ngữ</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input class="form-control mb-3" name="name" placeholder="Ngoại ngữ" required><input class="form-control mb-3" name="proficiency" placeholder="Mức độ thành thạo"><input class="form-control" name="certificate" placeholder="Chứng chỉ"></div><div class="modal-footer"><button class="btn btn-primary">Add</button></div></form></div></div></div>
+<div class="modal fade" id="addLanguage" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="languageForm">
+      <div class="modal-header"><h5 class="modal-title">Thêm ngoại ngữ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><input class="form-control mb-3" name="name" placeholder="Ngoại ngữ" required><input class="form-control mb-3" name="proficiency" placeholder="Mức độ thành thạo"><input class="form-control" name="certificate" placeholder="Chứng chỉ"></div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
 
-<div class="modal fade" id="addWork" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content fixed-modal"><form method="post" action="{% url 'add_work' %}">{% csrf_token %}<div class="modal-header"><h5 class="modal-title">Thêm quá trình công tác</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Từ</label><input class="form-control" type="date" name="start_date" required></div><div class="col-md-6"><label class="form-label">Đến</label><input class="form-control" type="date" name="end_date" id="workEndDate"><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="current" id="workCurrent"><label class="form-check-label">Hiện tại</label></div></div><div class="col-12"><label class="form-label">Đơn vị công tác</label><input class="form-control" name="institution" required></div><div class="col-12"><label class="form-label">Công việc đảm nhiệm</label><input class="form-control" name="position"></div><div class="col-12"><label class="form-label">Mô tả công việc</label><textarea class="form-control" name="description"></textarea></div></div></div><div class="modal-footer"><button class="btn btn-primary">Add</button></div></form></div></div></div>
+<div class="modal fade" id="addWork" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="workForm">
+      <div class="modal-header"><h5 class="modal-title">Thêm quá trình công tác</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <label class="form-label">Từ</label><input class="form-control mb-3" type="date" name="start" required>
+        <label class="form-label">Đến</label><input class="form-control mb-2" type="date" name="end" id="workEndDate">
+        <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="workCurrent" name="current"><label class="form-check-label" for="workCurrent">Hiện tại</label></div>
+        <input class="form-control mb-3" name="institution" placeholder="Đơn vị công tác" required>
+        <input class="form-control mb-3" name="position" placeholder="Công việc đảm nhiệm">
+        <textarea class="form-control" name="description" placeholder="Mô tả công việc"></textarea>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
 
-<div class="modal fade" id="addProject" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content fixed-modal"><form method="post" action="{% url 'add_project' %}">{% csrf_token %}<div class="modal-header"><h5 class="modal-title">Thêm dự án đang tham gia</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input class="form-control mb-3" name="title" placeholder="Tên đề tài nghiên cứu" required><div class="row g-3"><div class="col-md-6"><input class="form-control" type="number" name="start_year" placeholder="Năm bắt đầu"></div><div class="col-md-6"><input class="form-control" type="number" name="end_year" placeholder="Năm nghiệm thu"></div><div class="col-md-6"><input class="form-control" name="level" placeholder="Đề tài cấp"></div><div class="col-md-6"><input class="form-control" name="ranking" placeholder="Xếp loại"></div><div class="col-12"><input class="form-control" name="position" placeholder="Trách nhiệm tham gia"></div><div class="col-md-8"><input class="form-control" name="budget" placeholder="Kinh phí"></div><div class="col-md-4"><select class="form-select" name="currency"><option>VND</option><option>USD</option></select></div></div></div><div class="modal-footer"><button class="btn btn-primary">Add</button></div></form></div></div></div>
+<div class="modal fade" id="addProject" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="projectForm">
+      <div class="modal-header"><h5 class="modal-title">Thêm đề tài đang tham gia</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input class="form-control mb-3" name="title" placeholder="Tên đề tài nghiên cứu" required>
+        <div class="row"><div class="col"><input class="form-control mb-3" type="number" name="start_year" placeholder="Năm bắt đầu"></div><div class="col"><input class="form-control mb-3" type="number" name="end_year" placeholder="Năm nghiệm thu"></div></div>
+        <input class="form-control mb-3" name="level" placeholder="Đề tài cấp">
+        <input class="form-control mb-3" name="position" placeholder="Trách nhiệm">
+        <div class="input-group"><input class="form-control" name="budget" placeholder="Kinh phí"><select class="form-select" name="currency" style="max-width:110px"><option>VND</option><option>USD</option></select></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
 
-<div class="modal fade" id="addPublication" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content fixed-modal"><form method="post" action="{% url 'add_publication' %}">{% csrf_token %}<div class="modal-header"><h5 class="modal-title">Thêm công bố khoa học</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" name="type" id="publicationType" value="article"><div class="input-group mb-3"><input class="form-control" type="text" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo" disabled><button class="btn btn-outline-success" type="button" disabled><i class="bi bi-search"></i></button></div><div class="alert alert-light border small">Bản đầu tiên giữ đúng giao diện ô tìm kiếm của trang gốc. Kết nối dịch vụ tra cứu DOI sẽ được bổ sung ở bước tiếp theo; hiện có thể nhập tay bên dưới.</div><input class="form-control mb-3" name="title" placeholder="Tên công trình" required><div class="row g-3"><div class="col-md-6"><input class="form-control" name="journal" placeholder="Tên tạp chí"></div><div class="col-md-3"><input class="form-control" type="number" name="year" placeholder="Năm"></div><div class="col-md-3"><input class="form-control" type="number" name="month" placeholder="Tháng"></div><div class="col-md-6"><input class="form-control" name="doi" placeholder="DOI"></div><div class="col-md-6"><input class="form-control" type="url" name="url" placeholder="Link website"></div><div class="col-12"><input class="form-control" name="location" placeholder="Nơi công bố/xuất bản"></div><div class="col-12"><textarea class="form-control" name="description" placeholder="Mô tả"></textarea></div></div></div><div class="modal-footer"><button class="btn btn-primary">Add</button></div></form></div></div></div>
+<div class="modal fade" id="addPublication" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="publicationForm">
+      <div class="modal-header"><h5 class="modal-title">Thêm công bố khoa học</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" name="type" id="publicationType" value="article">
+        <div class="input-group mb-3"><input class="form-control" name="search" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo"><button type="button" class="btn btn-outline-success" id="paperSearchBtn"><i class="bi bi-search"></i></button></div>
+        <input class="form-control mb-3" name="title" placeholder="Tên công trình" required>
+        <input class="form-control mb-3" name="location" placeholder="Tạp chí/Nơi công bố">
+        <div class="row"><div class="col"><input class="form-control mb-3" type="number" name="year" placeholder="Năm"></div><div class="col"><input class="form-control mb-3" name="doi" placeholder="DOI"></div></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
 
-<div class="modal fade" id="addAward" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content fixed-modal"><form method="post" action="{% url 'add_award' %}">{% csrf_token %}<div class="modal-header"><h5 class="modal-title">Thêm giải thưởng</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><select class="form-select mb-3" name="category" id="awardCategory"><option value="science_award">Giải thưởng Khoa học và Công nghệ</option><option value="tech_transfer">Chuyển giao công nghệ</option></select><input class="form-control mb-3" name="name" id="awardName" placeholder="Tên giải thưởng" required><input class="form-control mb-3" name="organization" id="awardOrg" placeholder="Nơi cấp"><input class="form-control mb-3" type="number" name="year" id="awardYear" placeholder="Năm cấp"><textarea class="form-control" name="description" placeholder="Mô tả"></textarea></div><div class="modal-footer"><button class="btn btn-primary">Add</button></div></form></div></div></div>
+<div class="modal fade" id="addAward" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form id="awardForm">
+      <div class="modal-header"><h5 class="modal-title">Thêm giải thưởng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <select class="form-select mb-3" name="category" id="awardCategory"><option value="science_award">Giải thưởng Khoa học và Công nghệ</option><option value="tech_transfer">Chuyển giao công nghệ</option></select>
+        <input class="form-control mb-3" name="name" id="awardName" placeholder="Tên giải thưởng" required>
+        <input class="form-control mb-3" name="organization" id="awardOrg" placeholder="Nơi cấp">
+        <input class="form-control mb-3" type="number" name="year" id="awardYear" placeholder="Năm cấp">
+        <textarea class="form-control" name="description" placeholder="Mô tả"></textarea>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{% static 'js/scientist.js' %}"></script>
-</body></html>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="./scientist.js"></script>
+</body>
+</html>
