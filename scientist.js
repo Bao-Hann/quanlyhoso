@@ -152,6 +152,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const degreeYear = document.getElementById('degreeYear');
   const degreeNotGraduated = document.getElementById('degreeNotGraduated');
   const degreeThesisLabel = document.getElementById('degreeThesisLabel');
+  const credentialEditKey = document.getElementById('credentialEditKey');
+  const credentialSelectAll = document.getElementById('credentialSelectAll');
+  const credentialSelectAllBtn = document.getElementById('credentialSelectAllBtn');
+  const credentialClearSelectionBtn = document.getElementById('credentialClearSelectionBtn');
+  const credentialDeleteSelectedBtn = document.getElementById('credentialDeleteSelectedBtn');
+
   if (degreeYear) degreeYear.max = String(currentYear);
 
   const updateDegreeThesisLabel = () => {
@@ -173,15 +179,109 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const sortRowsByNumericColumn = (body, columnIndex, unfinishedOnTop=false) => {
+  const sortRowsByNumericColumn = (body, columnIndex) => {
     if (!body) return;
     const rows = [...body.querySelectorAll('tr:not(.empty-row)')];
-    rows.sort((a,b) => {
-      const av = a.dataset.sortYear ? Number(a.dataset.sortYear) : Number((a.children[columnIndex]?.textContent || '').match(/\d{4}/)?.[0] || 0);
-      const bv = b.dataset.sortYear ? Number(b.dataset.sortYear) : Number((b.children[columnIndex]?.textContent || '').match(/\d{4}/)?.[0] || 0);
-      return bv - av;
-    });
+    rows.sort((a,b) => Number(b.dataset.sortYear || 0) - Number(a.dataset.sortYear || 0));
     rows.forEach(row => body.appendChild(row));
+  };
+
+  const ensureCredentialEmptyState = () => {
+    const body = document.getElementById('credentialBody');
+    if (!body) return;
+    const rows = body.querySelectorAll('tr:not(.empty-row)');
+    if (!rows.length) {
+      body.innerHTML = '<tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr>';
+    }
+  };
+
+  const updateCredentialSelectionUi = () => {
+    const boxes = [...document.querySelectorAll('.credential-row-check')];
+    const checked = boxes.filter(box => box.checked);
+    if (credentialDeleteSelectedBtn) credentialDeleteSelectedBtn.disabled = checked.length === 0;
+    if (credentialSelectAll) {
+      credentialSelectAll.checked = boxes.length > 0 && checked.length === boxes.length;
+      credentialSelectAll.indeterminate = checked.length > 0 && checked.length < boxes.length;
+    }
+  };
+
+  const getCredentialRows = () => [...document.querySelectorAll('#credentialBody tr:not(.empty-row)')];
+
+  const wireCredentialRow = row => {
+    row.querySelector('.credential-row-check')?.addEventListener('change', updateCredentialSelectionUi);
+
+    row.querySelector('.credential-delete-btn')?.addEventListener('click', () => {
+      if (!confirm('Xóa thông tin đào tạo này?')) return;
+      row.remove();
+      ensureCredentialEmptyState();
+      updateCredentialSelectionUi();
+      toast('Đã xóa thông tin đào tạo.', 'info');
+    });
+
+    row.querySelector('.credential-edit-btn')?.addEventListener('click', () => {
+      const kind = row.dataset.kind || 'degree';
+      const modal = document.getElementById('addCredential');
+      if (!modal) return;
+
+      credentialEditKey.value = row.dataset.key || '';
+      if (credentialKind) credentialKind.value = kind;
+      document.querySelector('#addCredential .modal-title').textContent = kind === 'title' ? 'Chỉnh sửa học hàm' : 'Chỉnh sửa học vị';
+      degreeFields?.classList.toggle('d-none', kind === 'title');
+      titleFields?.classList.toggle('d-none', kind !== 'title');
+
+      if (kind === 'title') {
+        document.getElementById('titleLevel').value = row.dataset.level || '';
+        document.querySelector('[name="title_major"]').value = row.dataset.major || '';
+        document.querySelector('[name="title_year"]').value = row.dataset.year || '';
+      } else {
+        const studyLevelValue = row.dataset.studyLevel || '';
+        if (studyLevel) {
+          studyLevel.value = studyLevelValue;
+          studyLevel.dispatchEvent(new Event('change'));
+        }
+        if (degreeLevel) degreeLevel.value = row.dataset.level || '';
+        document.querySelector('[name="degree_major"]').value = row.dataset.major || '';
+        document.querySelector('[name="degree_institution"]').value = row.dataset.institution || '';
+        document.querySelector('[name="degree_thesis"]').value = row.dataset.thesis || '';
+        const unfinished = row.dataset.unfinished === '1';
+        if (degreeNotGraduated) degreeNotGraduated.checked = unfinished;
+        if (degreeYear) {
+          degreeYear.disabled = unfinished;
+          degreeYear.value = unfinished ? '' : (row.dataset.year || '');
+        }
+        updateDegreeThesisLabel();
+      }
+
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+  };
+
+  const createCredentialRow = data => {
+    const tr = document.createElement('tr');
+    tr.dataset.key = data.key;
+    tr.dataset.kind = data.kind;
+    tr.dataset.level = data.level;
+    tr.dataset.major = data.major;
+    tr.dataset.year = data.rawYear || '';
+    tr.dataset.sortYear = String(data.sortYear || 0);
+    tr.dataset.studyLevel = data.studyLevel || '';
+    tr.dataset.institution = data.institution || '';
+    tr.dataset.thesis = data.thesis || '';
+    tr.dataset.unfinished = data.unfinished ? '1' : '0';
+
+    tr.innerHTML =
+      '<td class="text-center align-middle"><input type="checkbox" class="form-check-input credential-row-check" aria-label="Chọn dòng"></td>'+
+      '<td>'+escapeHtml(data.level)+'</td>'+
+      '<td>'+escapeHtml(data.major)+'</td>'+
+      '<td>'+escapeHtml(data.displayYear)+'</td>'+
+      '<td><div class="credential-detail-text">'+escapeHtml(data.detail)+'</div>'+
+      '<div class="credential-row-actions mt-2 d-flex flex-wrap gap-1">'+
+      '<button type="button" class="btn btn-sm btn-outline-primary credential-edit-btn"><i class="bi bi-pencil me-1"></i>Sửa</button>'+
+      '<button type="button" class="btn btn-sm btn-outline-danger credential-delete-btn"><i class="bi bi-trash me-1"></i>Xóa</button>'+
+      '</div></td>';
+
+    wireCredentialRow(tr);
+    return tr;
   };
 
   const credentialForm = document.getElementById('credentialForm');
@@ -191,41 +291,60 @@ document.addEventListener('DOMContentLoaded', () => {
     const kind = fd.get('kind');
     const body = document.getElementById('credentialBody');
     removeEmpty(body);
-    let level='', major='', year='', detail='', sortYear=0;
+
+    let level='', major='', displayYear='', rawYear='', detail='', sortYear=0;
+    let studyLevelValue='', institution='', thesis='', unfinished=false;
 
     if (kind === 'title') {
       level = fd.get('title_level') || '';
       major = fd.get('title_major') || '';
-      year = fd.get('title_year') || '';
-      if (year && Number(year) > currentYear) {
+      rawYear = fd.get('title_year') || '';
+      if (rawYear && Number(rawYear) > currentYear) {
         toast('Năm phong không được vượt quá năm hiện tại.', 'warning');
         return;
       }
-      sortYear = Number(year || 0);
+      displayYear = rawYear;
+      sortYear = Number(rawYear || 0);
       detail = 'Học hàm';
     } else {
       level = fd.get('degree_level') || '';
       major = fd.get('degree_major') || '';
-      const notGraduated = fd.get('degree_not_graduated') === 'on';
-      const rawYear = fd.get('degree_year') || '';
-      if (!notGraduated && rawYear && Number(rawYear) > currentYear) {
+      studyLevelValue = fd.get('study_level') || '';
+      institution = fd.get('degree_institution') || '';
+      thesis = fd.get('degree_thesis') || '';
+      unfinished = fd.get('degree_not_graduated') === 'on';
+      rawYear = fd.get('degree_year') || '';
+
+      if (!unfinished && rawYear && Number(rawYear) > currentYear) {
         toast('Năm tốt nghiệp không được vượt quá năm hiện tại. Nếu chưa tốt nghiệp, hãy chọn “Chưa tốt nghiệp”.', 'warning');
         return;
       }
-      year = notGraduated ? 'Chưa tốt nghiệp' : rawYear;
-      sortYear = notGraduated ? currentYear + 1 : Number(rawYear || 0);
-      const thesis = fd.get('degree_thesis') || '';
-      const institution = fd.get('degree_institution') || '';
+
+      displayYear = unfinished ? 'Chưa tốt nghiệp' : rawYear;
+      sortYear = unfinished ? currentYear + 1 : Number(rawYear || 0);
       detail = [thesis, institution].filter(Boolean).join(' — ');
     }
 
-    const tr = document.createElement('tr');
-    tr.dataset.sortYear = String(sortYear);
-    tr.innerHTML = '<td>'+escapeHtml(level)+'</td><td>'+escapeHtml(major)+'</td><td>'+escapeHtml(year)+'</td><td>'+escapeHtml(detail)+'</td>';
-    body.appendChild(tr);
-    sortRowsByNumericColumn(body, 2, true);
+    const editKey = fd.get('credential_edit_key') || '';
+    const data = {
+      key: editKey || ('credential-' + Date.now() + '-' + Math.random().toString(36).slice(2,7)),
+      kind, level, major, rawYear, displayYear, detail, sortYear,
+      studyLevel:studyLevelValue, institution, thesis, unfinished
+    };
+
+    const newRow = createCredentialRow(data);
+    if (editKey) {
+      const oldRow = getCredentialRows().find(row => row.dataset.key === editKey);
+      if (oldRow) oldRow.replaceWith(newRow); else body.appendChild(newRow);
+    } else {
+      body.appendChild(newRow);
+    }
+
+    sortRowsByNumericColumn(body, 3);
+    updateCredentialSelectionUi();
 
     credentialForm.reset();
+    if (credentialEditKey) credentialEditKey.value='';
     if (degreeLevel) {
       degreeLevel.innerHTML='<option value="">Chọn học vị</option>';
       degreeLevel.disabled=true;
@@ -233,7 +352,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (degreeYear) degreeYear.disabled=false;
     updateDegreeThesisLabel();
     closeModal(credentialForm);
-    toast('Đã thêm thông tin đào tạo.');
+    toast(editKey ? 'Đã cập nhật thông tin đào tạo.' : 'Đã thêm thông tin đào tạo.');
+  });
+
+  credentialSelectAll?.addEventListener('change', () => {
+    document.querySelectorAll('.credential-row-check').forEach(box => box.checked = credentialSelectAll.checked);
+    updateCredentialSelectionUi();
+  });
+
+  credentialSelectAllBtn?.addEventListener('click', () => {
+    document.querySelectorAll('.credential-row-check').forEach(box => box.checked = true);
+    updateCredentialSelectionUi();
+  });
+
+  credentialClearSelectionBtn?.addEventListener('click', () => {
+    document.querySelectorAll('.credential-row-check').forEach(box => box.checked = false);
+    updateCredentialSelectionUi();
+  });
+
+  credentialDeleteSelectedBtn?.addEventListener('click', () => {
+    const selected = [...document.querySelectorAll('.credential-row-check:checked')];
+    if (!selected.length) return;
+    if (!confirm('Xóa ' + selected.length + ' mục đào tạo đã chọn?')) return;
+    selected.forEach(box => box.closest('tr')?.remove());
+    ensureCredentialEmptyState();
+    updateCredentialSelectionUi();
+    toast('Đã xóa các mục đào tạo đã chọn.', 'info');
   });
 
   const languageForm = document.getElementById('languageForm');
