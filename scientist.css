@@ -1896,3 +1896,627 @@ body[data-theme="dashboard"] .dropdown-item:active{
   body[data-theme="dashboard"] .oneform-dashboard-overview{padding:1.5rem 1rem;}
   body[data-theme="dashboard"] .full-screen-section:not(.welcome-section){padding:0 1rem!important;}
 }
+
+
+/* =========================================================
+   VISUAL REFERENCE PASS — YouTube / Shopee / ChatGPT / GitHub
+   ========================================================= */
+
+/* Shared: no decorative bullets/icons in themed sidebars */
+body[data-theme="youtube"] .sidebar .nav-link::before,
+body[data-theme="shopee"] .sidebar .nav-link::before,
+body[data-theme="chatgpt"] .sidebar .nav-link::before,
+body[data-theme="github"] .sidebar .nav-link::before{
+  content:none!important;
+  display:none!important;
+}
+body[data-theme="youtube"] .session-avatar,
+body[data-theme="shopee"] .session-avatar,
+body[data-theme="chatgpt"] .session-avatar,
+body[data-theme="github"] .session-avatar{
+  display:none!important;
+}
+
+/* ---------- YouTube — dark sidebar / dark studio-like workspace ---------- */
+body[data-theme="youtube"]{
+  --theme-font:Roboto,Arial,sans-serif;
+  --theme-canvas:#0f0f0f;
+  --theme-card:#0f0f0f;
+  --theme-card-alt:#272727;
+  --theme-accent:#ff0000;
+  --theme-primary-hover:#cc0000;
+  --theme-text:#f1f1f1;
+  --theme-muted:#aaa;
+  --theme-border:#3f3f3f;
+  --theme-sidebar:#0f0f0f;
+  --theme-accent-2:#272727;
+  --theme-radius:10px;
+  --theme-radius-lg:12px;
+  --theme-shadow:none;
+  --theme-table-head:#212121;
+  --theme-input-bg:#121212;
+  --theme-heading-weight:600;
+  background:#0f0f0f!important;
+}
+body[data-theme="youtube"] .sidebar{
+  width:240px!important;
+  background:#0f0f0f!important;
+  border-right:1px solid #303030!important;
+  padding:12px 10px!important;
+}
+body[data-theme="youtube"] main{
+  width:calc(100% - 240px)!important;
+  max-width:none!important;
+  margin-left:240px!important;
+  padding-left:20px!important;
+  padding-right:20px!important;
+  background:#0f0f0f!important;
+  color:#f1f1f1!important;
+}
+body[data-theme="youtube"] .sidebar > .d-flex > a:first-child{
+  text-align:left!important;
+  padding:8px 10px!important;
+  margin-bottom:6px!important;
+}
+body[data-theme="youtube"] .sidebar > .d-flex > a:first-child h3{
+  color:#f1f1f1!important;
+  font-size:1.25rem!important;
+  font-weight:700!important;
+  margin:0!important;
+}
+body[data-theme="youtube"] .session-card{
+  background:transparent!important;
+  border:0!important;
+  padding:8px 12px 14px!important;
+}
+body[data-theme="youtube"] .session-info strong{color:#f1f1f1!important;}
+body[data-theme="youtube"] .session-info small{color:#aaa!important;}
+body[data-theme="youtube"] .theme-picker>.btn{
+  background:#272727!important;
+  color:#f1f1f1!important;
+  border:0!important;
+  border-radius:10px!important;
+  justify-content:flex-start!important;
+  padding:.7rem .9rem!important;
+}
+body[data-theme="youtube"] .theme-picker .dropdown-menu{
+  background:#212121!important;
+  border-color:#3f3f3f!important;
+}
+body[data-theme="youtube"] .theme-picker .dropdown-item{
+  color:#f1f1f1!important;
+}
+body[data-theme="youtube"] .theme-picker .dropdown-item:hover,
+body[data-theme="youtube"] .theme-picker .dropdown-item.active{
+  background:#3f3f3f!important;
+}
+body[data-theme="youtube"] .sidebar .nav{
+  gap:4px;
+}
+body[data-theme="youtube"] .sidebar .nav-link{
+  color:#f1f1f1!important;
+  border-radius:10px!important;
+  padding:.72rem .9rem!important;
+  margin:0!important;
+  font-size:.96rem!important;
+  font-weight:500!important;
+}
+body[data-theme="youtube"] .sidebar .nav-link:hover,
+body[data-theme="youtube"] .sidebar .nav-link.active{
+  background:#272727!important;
+  color:#fff!important;
+}
+body[data-theme="youtube"] .sidebar hr{
+  border-color:#3f3f3f!important;
+  opacity:1!important;
+}
+body[data-theme="youtube"] .full-screen-section:not(.welcome-section)>.container{
+  max-width:1180px!important;
+  background:#181818!important;
+  border:1px solid #303030!important;
+  border-radius:12px!important;
+  padding:24px!important;
+  margin-top:20px!important;
+  margin-bottom:28px!important;
+}
+body[data-theme="youtube"] .welcome-section .container h1,
+body[data-theme="youtube"] .content-header h1,
+body[data-theme="youtube"] .full-screen-section h1{
+  color:#f1f1f1!important;
+}
+body[data-theme="youtube"] .table-wrapper,
+body[data-theme="youtube"] .addition-table-wrapper{
+  border:1px solid #303030!important;
+  background:#181818!important;
+}
+body[data-theme="youtube"] .table thead th{
+  background:#212121!important;
+  color:#f1f1f1!important;
+}
+body[data-theme="youtube"] .table tbody td{
+  background:#181818!important;
+  color:#f1f1f1!important;
+}
+body[data-theme="youtube"] .table-hover>tbody>tr:hover>*{
+  background:#272727!important;
+  color:#fff!important;
+}
+body[data-theme="youtube"] .form-control,
+body[data-theme="youtube"] .form-select{
+  background:#121212!important;
+  border:1px solid #3f3f3f!important;
+  color:#f1f1f1!important;
+  border-radius:10px!important;
+}
+body[data-theme="youtube"] .input-group-text{
+  background:#212121!important;
+  color:#f1f1f1!important;
+  border-color:#3f3f3f!important;
+}
+body[data-theme="youtube"] .modal-content{
+  background:#212121!important;
+  color:#f1f1f1!important;
+  border-color:#3f3f3f!important;
+}
+body[data-theme="youtube"] .modal-header,
+body[data-theme="youtube"] .modal-footer{
+  border-color:#3f3f3f!important;
+}
+body[data-theme="youtube"] .btn-close{filter:invert(1)!important;}
+
+/* ---------- Shopee — catalog/filter language from the reference ---------- */
+body[data-theme="shopee"]{
+  --theme-font:Arial,"Helvetica Neue",sans-serif;
+  --theme-canvas:#f5f5f5;
+  --theme-card:#ffffff;
+  --theme-card-alt:#fafafa;
+  --theme-accent:#ee4d2d;
+  --theme-primary-hover:#d73211;
+  --theme-text:#222;
+  --theme-muted:#777;
+  --theme-border:#e5e5e5;
+  --theme-sidebar:#f5f5f5;
+  --theme-accent-2:#fff1ed;
+  --theme-radius:2px;
+  --theme-radius-lg:3px;
+  --theme-shadow:none;
+  --theme-table-head:#fafafa;
+  --theme-input-bg:#fff;
+}
+body[data-theme="shopee"]::before{
+  height:0!important;
+}
+body[data-theme="shopee"] .sidebar{
+  width:310px!important;
+  background:#f5f5f5!important;
+  border-right:1px solid #ddd!important;
+  box-shadow:none!important;
+  padding:14px 18px!important;
+}
+body[data-theme="shopee"] main{
+  width:calc(100% - 310px)!important;
+  max-width:none!important;
+  margin-left:310px!important;
+  padding-left:20px!important;
+  padding-right:20px!important;
+  background:#fff!important;
+}
+body[data-theme="shopee"] .sidebar > .d-flex > a:first-child{
+  text-align:left!important;
+  margin-bottom:10px!important;
+}
+body[data-theme="shopee"] .sidebar > .d-flex > a:first-child h3{
+  color:#222!important;
+  font-size:1.35rem!important;
+  font-weight:700!important;
+}
+body[data-theme="shopee"] .session-card{
+  background:#fff!important;
+  border:1px solid #e5e5e5!important;
+  border-radius:0!important;
+}
+body[data-theme="shopee"] .theme-picker>.btn{
+  background:#fff!important;
+  border:1px solid #d8d8d8!important;
+  color:#222!important;
+  border-radius:2px!important;
+}
+body[data-theme="shopee"] .sidebar .nav{
+  margin-top:12px!important;
+}
+body[data-theme="shopee"] .sidebar .nav::before{
+  content:"TẤT CẢ DANH MỤC";
+  display:block;
+  color:#222;
+  font-size:1.18rem;
+  font-weight:700;
+  padding:0 10px 12px;
+  margin-bottom:10px;
+  border-bottom:1px solid #ddd;
+}
+body[data-theme="shopee"] .sidebar .nav-link{
+  color:#222!important;
+  border:0!important;
+  border-radius:0!important;
+  padding:.65rem .9rem!important;
+  font-size:.98rem!important;
+  font-weight:400!important;
+}
+body[data-theme="shopee"] .sidebar .nav-link:hover{
+  background:#fff!important;
+  color:#ee4d2d!important;
+}
+body[data-theme="shopee"] .sidebar .nav-link.active{
+  background:transparent!important;
+  color:#ee4d2d!important;
+  font-weight:700!important;
+  border-left:0!important;
+}
+body[data-theme="shopee"] .sidebar .nav-link.active::after{
+  content:" ›";
+  color:#ee4d2d;
+  margin-left:4px;
+}
+body[data-theme="shopee"] .full-screen-section:not(.welcome-section)>.container{
+  background:#fff!important;
+  border:1px solid #e5e5e5!important;
+  border-radius:2px!important;
+  box-shadow:none!important;
+  padding:24px!important;
+}
+body[data-theme="shopee"] .content-header h1,
+body[data-theme="shopee"] .full-screen-section h1{
+  color:#222!important;
+  font-weight:600!important;
+}
+body[data-theme="shopee"] .btn-primary{
+  background:#ee4d2d!important;
+  border-color:#ee4d2d!important;
+  border-radius:2px!important;
+}
+body[data-theme="shopee"] .table-wrapper,
+body[data-theme="shopee"] .addition-table-wrapper{
+  border:1px solid #e5e5e5!important;
+  border-radius:2px!important;
+}
+body[data-theme="shopee"] .table thead th{
+  background:#fafafa!important;
+  color:#222!important;
+}
+body[data-theme="shopee"] .form-control,
+body[data-theme="shopee"] .form-select{
+  border-radius:2px!important;
+}
+
+/* ---------- ChatGPT — dark sidebar and conversation-like workspace ---------- */
+body[data-theme="chatgpt"]{
+  --theme-font:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --theme-canvas:#212121;
+  --theme-card:#212121;
+  --theme-card-alt:#2f2f2f;
+  --theme-accent:#ffffff;
+  --theme-primary-hover:#e6e6e6;
+  --theme-text:#ececec;
+  --theme-muted:#b4b4b4;
+  --theme-border:#3a3a3a;
+  --theme-sidebar:#000000;
+  --theme-accent-2:#1f1f1f;
+  --theme-radius:8px;
+  --theme-radius-lg:12px;
+  --theme-shadow:none;
+  --theme-table-head:#2f2f2f;
+  --theme-input-bg:#2f2f2f;
+  --theme-heading-weight:600;
+  background:#212121!important;
+}
+body[data-theme="chatgpt"] .sidebar{
+  width:260px!important;
+  background:#000!important;
+  border-right:0!important;
+  padding:10px 8px!important;
+}
+body[data-theme="chatgpt"] main{
+  width:calc(100% - 260px)!important;
+  max-width:none!important;
+  margin-left:260px!important;
+  padding-left:18px!important;
+  padding-right:18px!important;
+  background:#212121!important;
+  color:#ececec!important;
+}
+body[data-theme="chatgpt"] .sidebar > .d-flex > a:first-child{
+  text-align:left!important;
+  padding:10px 12px!important;
+  margin-bottom:4px!important;
+}
+body[data-theme="chatgpt"] .sidebar > .d-flex > a:first-child h3{
+  color:#f5f5f5!important;
+  font-size:1.28rem!important;
+  font-weight:600!important;
+  margin:0!important;
+}
+body[data-theme="chatgpt"] .session-card{
+  background:transparent!important;
+  border:0!important;
+  padding:8px 12px 14px!important;
+}
+body[data-theme="chatgpt"] .session-info strong{color:#f5f5f5!important;}
+body[data-theme="chatgpt"] .session-info small{color:#9b9b9b!important;}
+body[data-theme="chatgpt"] .theme-picker>.btn{
+  background:#1f1f1f!important;
+  color:#f5f5f5!important;
+  border:0!important;
+  border-radius:10px!important;
+  padding:.65rem .8rem!important;
+  justify-content:flex-start!important;
+}
+body[data-theme="chatgpt"] .theme-picker .dropdown-menu{
+  background:#2f2f2f!important;
+  border-color:#444!important;
+}
+body[data-theme="chatgpt"] .theme-picker .dropdown-item{
+  color:#ececec!important;
+}
+body[data-theme="chatgpt"] .theme-picker .dropdown-item:hover,
+body[data-theme="chatgpt"] .theme-picker .dropdown-item.active{
+  background:#424242!important;
+}
+body[data-theme="chatgpt"] .sidebar .nav::before{
+  content:"HỒ SƠ";
+  display:block;
+  padding:18px 12px 7px;
+  color:#8e8e8e;
+  font-size:.78rem;
+  font-weight:600;
+  letter-spacing:.04em;
+}
+body[data-theme="chatgpt"] .sidebar .nav-link{
+  color:#d6d6d6!important;
+  border-radius:9px!important;
+  padding:.66rem .8rem!important;
+  margin:1px 0!important;
+  font-size:.95rem!important;
+  font-weight:400!important;
+}
+body[data-theme="chatgpt"] .sidebar .nav-link:hover,
+body[data-theme="chatgpt"] .sidebar .nav-link.active{
+  background:#1f1f1f!important;
+  color:#fff!important;
+}
+body[data-theme="chatgpt"] .sidebar hr{
+  border-color:#333!important;
+}
+body[data-theme="chatgpt"] .full-screen-section:not(.welcome-section)>.container{
+  max-width:980px!important;
+  background:#212121!important;
+  color:#ececec!important;
+  padding:24px!important;
+}
+body[data-theme="chatgpt"] .content-header h1,
+body[data-theme="chatgpt"] .full-screen-section h1{
+  color:#ececec!important;
+}
+body[data-theme="chatgpt"] .table-wrapper,
+body[data-theme="chatgpt"] .addition-table-wrapper{
+  border:1px solid #3a3a3a!important;
+  background:#212121!important;
+}
+body[data-theme="chatgpt"] .table thead th{
+  background:#2f2f2f!important;
+  color:#ececec!important;
+}
+body[data-theme="chatgpt"] .table tbody td{
+  background:#212121!important;
+  color:#ececec!important;
+}
+body[data-theme="chatgpt"] .form-control,
+body[data-theme="chatgpt"] .form-select{
+  background:#2f2f2f!important;
+  color:#ececec!important;
+  border:1px solid #444!important;
+  border-radius:10px!important;
+}
+body[data-theme="chatgpt"] .input-group-text{
+  background:#2f2f2f!important;
+  color:#ececec!important;
+  border-color:#444!important;
+}
+body[data-theme="chatgpt"] .btn-primary{
+  background:#fff!important;
+  color:#111!important;
+  border-color:#fff!important;
+  border-radius:999px!important;
+}
+body[data-theme="chatgpt"] .btn-primary:hover{
+  background:#e6e6e6!important;
+  border-color:#e6e6e6!important;
+}
+body[data-theme="chatgpt"] .modal-content{
+  background:#2f2f2f!important;
+  color:#ececec!important;
+  border-color:#444!important;
+}
+body[data-theme="chatgpt"] .modal-header,
+body[data-theme="chatgpt"] .modal-footer{
+  border-color:#444!important;
+}
+body[data-theme="chatgpt"] .btn-close{filter:invert(1)!important;}
+
+/* ---------- GitHub — dark Primer / repository-dashboard language ---------- */
+body[data-theme="github"]{
+  --theme-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Noto Sans,Helvetica,Arial,sans-serif;
+  --theme-canvas:#0d1117;
+  --theme-card:#0d1117;
+  --theme-card-alt:#161b22;
+  --theme-accent:#2f81f7;
+  --theme-primary-hover:#388bfd;
+  --theme-text:#e6edf3;
+  --theme-muted:#8b949e;
+  --theme-border:#30363d;
+  --theme-sidebar:#010409;
+  --theme-accent-2:#161b22;
+  --theme-radius:6px;
+  --theme-radius-lg:6px;
+  --theme-shadow:none;
+  --theme-table-head:#161b22;
+  --theme-input-bg:#0d1117;
+  --theme-heading-weight:600;
+  background:#0d1117!important;
+}
+body[data-theme="github"] .sidebar{
+  width:280px!important;
+  background:#010409!important;
+  border-right:1px solid #30363d!important;
+  padding:12px 10px!important;
+}
+body[data-theme="github"] main{
+  width:calc(100% - 280px)!important;
+  max-width:none!important;
+  margin-left:280px!important;
+  padding-left:24px!important;
+  padding-right:24px!important;
+  background:#0d1117!important;
+  color:#e6edf3!important;
+}
+body[data-theme="github"] .sidebar > .d-flex > a:first-child{
+  text-align:left!important;
+  padding:8px 10px!important;
+  margin-bottom:4px!important;
+}
+body[data-theme="github"] .sidebar > .d-flex > a:first-child h3{
+  color:#f0f6fc!important;
+  font-size:1.2rem!important;
+  font-weight:600!important;
+}
+body[data-theme="github"] .session-card{
+  background:#0d1117!important;
+  border:1px solid #30363d!important;
+  border-radius:6px!important;
+}
+body[data-theme="github"] .session-info strong{color:#f0f6fc!important;}
+body[data-theme="github"] .session-info small{color:#8b949e!important;}
+body[data-theme="github"] .theme-picker>.btn{
+  background:#21262d!important;
+  color:#f0f6fc!important;
+  border:1px solid #30363d!important;
+  border-radius:6px!important;
+}
+body[data-theme="github"] .theme-picker .dropdown-menu{
+  background:#161b22!important;
+  border-color:#30363d!important;
+}
+body[data-theme="github"] .theme-picker .dropdown-item{color:#e6edf3!important;}
+body[data-theme="github"] .theme-picker .dropdown-item:hover,
+body[data-theme="github"] .theme-picker .dropdown-item.active{
+  background:#21262d!important;
+}
+body[data-theme="github"] .sidebar .nav::before{
+  content:"HỒ SƠ KHOA HỌC";
+  display:block;
+  padding:16px 10px 7px;
+  color:#8b949e;
+  font-size:.76rem;
+  font-weight:600;
+}
+body[data-theme="github"] .sidebar .nav-link{
+  color:#e6edf3!important;
+  border-radius:6px!important;
+  padding:.55rem .7rem!important;
+  margin:1px 0!important;
+  font-size:.9rem!important;
+  font-weight:400!important;
+}
+body[data-theme="github"] .sidebar .nav-link:hover{
+  background:#161b22!important;
+}
+body[data-theme="github"] .sidebar .nav-link.active{
+  background:#161b22!important;
+  color:#f0f6fc!important;
+  box-shadow:inset 2px 0 #f78166!important;
+}
+body[data-theme="github"] .sidebar hr{border-color:#30363d!important;}
+body[data-theme="github"] .full-screen-section:not(.welcome-section)>.container{
+  max-width:1160px!important;
+  background:#0d1117!important;
+  border:1px solid #30363d!important;
+  border-radius:6px!important;
+  padding:24px!important;
+  box-shadow:none!important;
+}
+body[data-theme="github"] .content-header h1,
+body[data-theme="github"] .full-screen-section h1{
+  color:#f0f6fc!important;
+}
+body[data-theme="github"] .table-wrapper,
+body[data-theme="github"] .addition-table-wrapper{
+  border:1px solid #30363d!important;
+  border-radius:6px!important;
+}
+body[data-theme="github"] .table thead th{
+  background:#161b22!important;
+  color:#f0f6fc!important;
+}
+body[data-theme="github"] .table tbody td{
+  background:#0d1117!important;
+  color:#e6edf3!important;
+}
+body[data-theme="github"] .form-control,
+body[data-theme="github"] .form-select{
+  background:#0d1117!important;
+  color:#e6edf3!important;
+  border:1px solid #30363d!important;
+  border-radius:6px!important;
+}
+body[data-theme="github"] .form-control:focus,
+body[data-theme="github"] .form-select:focus{
+  border-color:#2f81f7!important;
+  box-shadow:0 0 0 3px rgba(47,129,247,.22)!important;
+}
+body[data-theme="github"] .input-group-text{
+  background:#161b22!important;
+  color:#e6edf3!important;
+  border-color:#30363d!important;
+}
+body[data-theme="github"] .btn-primary{
+  background:#238636!important;
+  border-color:rgba(240,246,252,.1)!important;
+  color:#fff!important;
+  border-radius:6px!important;
+}
+body[data-theme="github"] .btn-primary:hover{
+  background:#2ea043!important;
+}
+body[data-theme="github"] .btn-outline-primary{
+  color:#2f81f7!important;
+  border-color:#30363d!important;
+  background:#21262d!important;
+}
+body[data-theme="github"] .modal-content{
+  background:#0d1117!important;
+  color:#e6edf3!important;
+  border-color:#30363d!important;
+}
+body[data-theme="github"] .modal-header,
+body[data-theme="github"] .modal-footer{border-color:#30363d!important;}
+body[data-theme="github"] .btn-close{filter:invert(1)!important;}
+body[data-theme="github"] a:not(.btn):not(.nav-link):not(.dropdown-item){
+  color:#2f81f7!important;
+}
+
+@media(max-width:767.98px){
+  body[data-theme="youtube"] .sidebar,
+  body[data-theme="shopee"] .sidebar,
+  body[data-theme="chatgpt"] .sidebar,
+  body[data-theme="github"] .sidebar{
+    width:100%!important;
+    position:relative!important;
+    height:auto!important;
+  }
+  body[data-theme="youtube"] main,
+  body[data-theme="shopee"] main,
+  body[data-theme="chatgpt"] main,
+  body[data-theme="github"] main{
+    width:100%!important;
+    margin-left:0!important;
+  }
+}
