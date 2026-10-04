@@ -1,0 +1,74 @@
+const assert=require('node:assert/strict'), fs=require('node:fs'), path=require('node:path'), vm=require('node:vm');
+const {parseHTML}=require('linkedom');
+const {DOMParser,XMLSerializer}=require('@xmldom/xmldom');
+const JSZip=require('jszip');
+const {indexedDB}=require('fake-indexeddb');
+const root=path.resolve(__dirname,'..');
+// Add the standard browser conveniences absent in xmldom's Node DOM.
+const proto=Object.getPrototypeOf(new DOMParser().parseFromString('<a/>','application/xml').documentElement);
+if (!('children' in proto)) Object.defineProperty(proto,'children',{get(){return [...this.childNodes].filter(x=>x.nodeType===1);}});
+proto.remove=function(){this.parentNode?.removeChild(this);};
+const store=new Map();
+const localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};
+const tick=()=>new Promise(r=>setTimeout(r,100));
+function app(account='test-a',gas=false) {
+ const {window}=parseHTML(fs.readFileSync(path.join(root,'index.html'),'utf8'));
+ const document=window.document;
+ const query=document.querySelector.bind(document); document.querySelector=selector=>{try{return query(selector);}catch(err){err.message+=" selector="+selector;throw err;}};
+ document.querySelectorAll('input').forEach(el=>{el.checked=el.hasAttribute('checked');el.disabled=el.hasAttribute('disabled');});
+ document.querySelectorAll('form').forEach(form=>{
+  form.reportValidity=()=>true;
+  form.reset=()=>form.querySelectorAll('input,textarea').forEach(el=>{if(el.type==='checkbox')el.checked=false;else el.value='';});
+  form.elements=new Proxy({}, {get:(_,key)=>form.querySelector('[name="'+key+'"]')});
+ });
+ const bootstrap={Modal:{getOrCreateInstance:()=>({show(){},hide(){}}),getInstance:()=>({hide(){}})},Toast:class {show(){}},Dropdown:{getOrCreateInstance:()=>({hide(){}})}};
+ window.OneFormAuth={getSession:()=>({email:account+'@example.invalid',username:account})};
+ window.GAS_USER=undefined; window.google=undefined;
+ const props=new Map();
+ if(gas) {
+  window.GAS_USER={userId:account,email:account+'@example.invalid'};
+  const runner={withSuccessHandler(fn){this.ok=fn;return this;},withFailureHandler(fn){this.fail=fn;return this;},loadGeneral(){const ok=this.ok;setTimeout(()=>ok({data:props.get(account)||{}}),0);},saveGeneral(data){props.set(account,data);const ok=this.ok;setTimeout(()=>ok({ok:true}),0);}};
+  window.google={script:{run:runner}};
+ }
+ const context={window,document,google:window.google,localStorage,bootstrap,console,URL,Blob,TextDecoder,indexedDB,JSZip,DOMParser,XMLSerializer,setTimeout,clearTimeout,Date,HTMLInputElement:window.HTMLInputElement,HTMLTextAreaElement:window.HTMLTextAreaElement,IntersectionObserver:class {observe(){}},confirm:()=>true,location:{href:'https://example.invalid'},FormData:class {constructor(form){this.data=new Map();form.querySelectorAll('[name]').forEach(el=>{if(el.type!=='checkbox'||el.checked)this.data.set(el.name,el.type==='checkbox'?'on':el.value);});}get(k){return this.data.get(k)||null;}}};
+ const c=vm.createContext(context);
+ vm.runInContext(fs.readFileSync(path.join(root,'ministry-export.js'),'utf8'),c);
+ vm.runInContext(fs.readFileSync(path.join(root,'scientist.js'),'utf8'),c);
+ document.dispatchEvent(new window.Event('DOMContentLoaded'));
+ const get=s=>document.querySelector(s),set=(s,v)=>get(s).value=v;
+ const event=(id,type)=>get('#'+id).dispatchEvent(new window.Event(type,{bubbles:true,cancelable:true}));
+ return {window,document,get,set,event,c,props,exporter:window.MinistryExport};
+}
+(async()=>{
+ const a=app();
+ assert.equal(a.get('[name="person_name"]').value,'');assert.equal(a.get('[name="person_email"]').value,'');
+ a.event('editGeneralBtn','click');a.set('[name="person_name"]','Nguyễn Văn Kiểm Thử');a.set('[name="person_email"]','test@example.invalid');
+ a.event('editGeneral','submit');
+ assert.equal(JSON.parse(store.get('scientist-general-v2:test-a@example.invalid')).person_name,'Nguyễn Văn Kiểm Thử');
+ assert.equal(a.get('[name="person_name"]').disabled,true);
+ assert.equal(app().get('[name="person_name"]').value,'Nguyễn Văn Kiểm Thử');
+ assert.equal(app('test-b').get('[name="person_name"]').value,'');
+ const g=app('gas-a',true);await tick();g.event('editGeneralBtn','click');g.set('[name="person_name"]','Người dùng Apps Script');g.event('editGeneral','submit');await tick();assert.equal(g.props.get('gas-a').person_name,'Người dùng Apps Script');
+ const workCount=()=>a.document.querySelectorAll('#workBody tr:not(.empty-row)').length;
+ a.set('#workForm [name="start"]','2026-10-04');a.set('#workForm [name="end"]','2026-10-03');a.set('#workForm [name="institution"]','Đơn vị kiểm thử');a.event('workForm','submit');assert.equal(workCount(),0);
+ a.set('#workForm [name="end"]','2026-10-04');a.event('workForm','submit');assert.equal(workCount(),0);
+ a.set('#workForm [name="end"]','2026-10-05');a.event('workForm','submit');assert.equal(workCount(),1);
+ const projectCount=()=>a.document.querySelectorAll('#projectBody tr:not(.empty-row)').length;
+ a.set('#projectForm [name="title"]','Đề tài kiểm thử');a.set('#projectForm [name="start_year"]','2026-10-04');a.set('#projectForm [name="end_year"]','2026-10-03');a.event('projectForm','submit');assert.equal(projectCount(),0);
+ a.set('#projectForm [name="end_year"]','2026-10-04');a.event('projectForm','submit');assert.equal(projectCount(),1);
+ const input=a.get('#supportFile');
+ let file=new Blob(['not pdf'],{type:'application/pdf'});file.name='gia.pdf';input.files=[file];a.event('supportForm','submit');await tick();assert.match(a.get('#toastHost').textContent,/Chỉ nhận tệp PDF hợp lệ/);
+ file=new Blob(['%PDF-1.4\n% fixture'],{type:'application/pdf'});file.name='kiem-thu.pdf';input.files=[file];a.event('supportForm','submit');await tick();assert.match(a.get('#supportFileStatus').textContent,/kiem-thu.pdf/);
+ const again=app();await tick();assert.match(again.get('#supportFileStatus').textContent,/kiem-thu.pdf/);
+ const other=app('test-b');await tick();assert.doesNotMatch(other.get('#supportFileStatus').textContent,/kiem-thu.pdf/);
+ const row=a.document.createElement('tr');Object.assign(row.dataset,{kind:'degree',level:'Tiến sĩ (PhD)',major:'Công nghệ thông tin',institution:'Trường kiểm thử',year:'2024',thesis:'Luận án kiểm thử'});a.get('#credentialBody').appendChild(row);
+ const publication=a.document.createElement('tr');Object.assign(publication.dataset,{title:'Nghiên cứu kiểm thử',year:'2025',journal:'Tạp chí kiểm thử'});a.get('#articleBody').appendChild(publication);
+ const out=path.resolve(root,'../qa-word');fs.mkdirSync(out,{recursive:true});
+ const blob=await a.exporter.create();fs.writeFileSync(path.join(out,'populated.docx'),Buffer.from(await blob.arrayBuffer()));
+ const empty=app('empty-account');const blank=await empty.exporter.create();fs.writeFileSync(path.join(out,'empty.docx'),Buffer.from(await blank.arrayBuffer()));
+ const generated=await JSZip.loadAsync(Buffer.from(await blob.arrayBuffer())),original=await JSZip.loadAsync(fs.readFileSync(path.join(root,'LY_LICH_KHOA_HOC_MAU_CUA_BO.docx')));
+ for(const name of Object.keys(original.files).filter(x=>!original.files[x].dir&&x!=='word/document.xml'))assert.deepEqual(await generated.file(name).async('nodebuffer'),await original.file(name).async('nodebuffer'),'Preserved DOCX part '+name);
+ const xml=await generated.file('word/document.xml').async('string');assert.match(xml,/Nguyễn Văn Kiểm Thử/);assert.match(xml,/Nghiên cứu kiểm thử/);assert.doesNotMatch(xml,/managed-edit|Chưa có dữ liệu|Han Han/);
+ const preview=await a.exporter.preview();assert.match(preview,/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM/);
+ console.log('PASS: personal save/reload/account isolation, GAS save, date bounds, PDF validation/persistence/isolation, exact DOCX template parts and data.');
+})().catch(err=>{console.error(err);process.exitCode=1;});

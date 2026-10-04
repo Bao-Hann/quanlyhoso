@@ -46,19 +46,14 @@ Cấu hình:
 
 Sau đó bấm **Deploy** và cấp quyền.
 
-Lần đầu mỗi người dùng truy cập, Google có thể yêu cầu cấp các quyền mà ứng dụng cần để lưu dữ liệu vào Google Drive/Google Sheets của chính họ.
+Ứng dụng không yêu cầu quyền Google Drive hoặc Google Sheets.
 
 ## Dữ liệu được lưu ở đâu?
 
-Trong Google Drive của người đang sử dụng ứng dụng, hệ thống tự tạo:
-
-`Scientist Profile Data/`
-
-Bên trong có:
-
-- `profile.json`: bản dữ liệu hồ sơ đầy đủ.
-- thư mục `Evidence/`: file PDF minh chứng.
-- Google Sheet `Scientist Profile Database`: bản tóm tắt dữ liệu dạng bảng.
+- Thông tin cá nhân lưu trong UserProperties của từng tài khoản Google. Cần triển khai với **User accessing the web app** để tách biệt tài khoản.
+- File hỗ trợ chỉ nhận PDF, tối đa 20 MB, lưu bằng IndexedDB theo tài khoản trong trình duyệt hiện tại. File không được gửi lên máy chủ, Drive hoặc quản trị viên; đổi trình duyệt hoặc xóa dữ liệu trình duyệt sẽ không còn file đã lưu.
+- Đã bỏ phần đồng bộ Google Sheets/Drive. Dữ liệu cũ trên Drive không bị xóa.
+- Word xuất thành `.docx` từ mẫu Bộ trong repo, giữ định dạng, bảng, đầu trang và chân trang của mẫu.
 
 ## Tìm bài báo
 
@@ -68,7 +63,7 @@ Phần tìm bài báo được chuyển sang chạy ở phía Apps Script bằng
 
 Bản này **không cần Firebase** để bắt người dùng đăng nhập Google.
 
-Google Apps Script Web App xử lý quyền Google ở tầng triển khai. Khi Web App chạy dưới quyền **User accessing the web app**, các thao tác Drive/Sheets chạy dưới tài khoản người đang truy cập.
+Google Apps Script Web App xử lý quyền Google ở tầng triển khai. Khi Web App chạy dưới quyền **User accessing the web app**, thông tin cá nhân được lưu riêng theo tài khoản người đang truy cập.
 
 Nút "Đăng nhập bằng tài khoản Google" trên trang Login sẽ dẫn vào ứng dụng. Google sẽ hiện màn hình đăng nhập/cấp quyền khi cần.
 
@@ -83,3 +78,7 @@ Mỗi lần sửa code:
 5. Deploy lại.
 
 Không cần đổi URL Web App sau mỗi lần cập nhật deployment.
+
+## Cập nhật bản sửa hồ sơ
+
+Thay nội dung `Code.gs`, `Index.html`, `Login.html`, `Script.html` và `appsscript.json` bằng bản trong thư mục này. Giữ `Styles.html`. Lưu dự án, sau đó cập nhật deployment bằng **New version** theo hướng dẫn trên. `Script.html` đã nhúng JSZip và mẫu Word, không cần thêm file JavaScript.

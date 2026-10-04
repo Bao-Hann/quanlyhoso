@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node tests/profile-regression.cjs"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "0.9.12",
+    "fake-indexeddb": "6.2.5",
+    "linkedom": "0.18.13",
+    "jszip": "3.10.1"
+  }
+}

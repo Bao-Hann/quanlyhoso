@@ -76,6 +76,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const toast = (message, kind='success') => {
+    const host = document.getElementById('toastHost');
+    if (!host) return;
+    const cls = kind === 'danger' ? 'danger' : kind === 'warning' ? 'warning' : kind === 'info' ? 'info' : 'success';
+    host.innerHTML = '<div class="alert alert-' + cls + ' shadow">' + message + '</div>';
+    setTimeout(() => host.innerHTML = '', 3200);
+  };
+
+
   const editBtn = document.getElementById('editGeneralBtn');
   const saveBtn = document.getElementById('saveGeneralBtn');
   const fields = document.querySelectorAll('.general-field');
@@ -88,6 +97,99 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const generalForm = document.getElementById('editGeneral');
+  const identity = window.GAS_USER || window.OneFormAuth?.getSession?.() || {};
+  const accountId = identity.userId || identity.email || identity.username || 'local-user';
+  const generalKey = 'scientist-general-v2:' + accountId;
+  const readGeneral = () => Object.fromEntries([...fields]
+    .filter(el => el.name && (el.type !== 'radio' || el.checked))
+    .map(el => [el.name, el.type === 'checkbox' ? el.checked : el.value]));
+  const applyGeneral = data => {
+    fields.forEach(el => {
+      if (!Object.prototype.hasOwnProperty.call(data || {}, el.name)) return;
+      if (el.type === 'radio') el.checked = String(data[el.name]) === el.value;
+      else if (el.type === 'checkbox') el.checked = Boolean(data[el.name]);
+      else el.value = data[el.name] ?? '';
+    });
+    const welcome = document.getElementById('welcomeName');
+    if (welcome) welcome.textContent = data?.person_name || identity.name || identity.username || '';
+  };
+  let generalReady = !window.google?.script?.run;
+  if (window.google?.script?.run) {
+    if (editBtn) editBtn.disabled = true;
+    google.script.run.withSuccessHandler(result => {
+      applyGeneral(result.data || {}); generalReady = true;
+      if (editBtn) editBtn.disabled = false;
+    }).withFailureHandler(err => {
+      toast('Không tải được hồ sơ: ' + err.message, 'danger');
+    }).loadGeneral();
+  } else {
+    try { applyGeneral(JSON.parse(localStorage.getItem(generalKey) || '{}')); }
+    catch (err) { toast('Không đọc được hồ sơ đã lưu.', 'warning'); }
+  }
+  generalForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    if (!generalReady || !generalForm.reportValidity()) return;
+    const data = readGeneral(); saveBtn.disabled = true;
+    const done = () => {
+      applyGeneral(data); fields.forEach(el => el.disabled = true);
+      editBtn.style.display = ''; saveBtn.style.display = 'none'; saveBtn.disabled = false;
+      toast('Đã lưu thông tin cá nhân.');
+    };
+    const failed = err => { saveBtn.disabled = false; toast('Không lưu được: ' + err.message, 'danger'); };
+    if (window.google?.script?.run) google.script.run.withSuccessHandler(done).withFailureHandler(failed).saveGeneral(data);
+    else { try { localStorage.setItem(generalKey, JSON.stringify(data)); done(); } catch (err) { failed(err); } }
+  });
+
+  // Store the scientific CV in this browser, separately for each account.
+  const supportForm = document.getElementById('supportForm');
+  const supportStatus = document.getElementById('supportFileStatus');
+  let supportUrl;
+  const openPdfDb = () => new Promise((resolve, reject) => {
+    const request = indexedDB.open('scientist-support-v1', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('cv');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  const showPdf = record => {
+    if (!supportStatus) return;
+    supportStatus.replaceChildren();
+    if (supportUrl) URL.revokeObjectURL(supportUrl);
+    if (!record) return;
+    supportUrl = URL.createObjectURL(record.file);
+    const link = document.createElement('a'); link.href = supportUrl;
+    link.download = record.name; link.textContent = 'Mở PDF đã lưu: ' + record.name;
+    supportStatus.appendChild(link);
+  };
+  const readPdf = async () => {
+    const db = await openPdfDb();
+    await new Promise((resolve,reject) => {
+      const tx=db.transaction('cv','readonly'), request=tx.objectStore('cv').get(accountId);
+      request.onsuccess=()=>showPdf(request.result);
+      tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
+    }).finally(()=>db.close());
+  };
+  if (supportForm) readPdf().catch(() => { if(supportStatus) supportStatus.textContent='Không đọc được PDF đã lưu trong trình duyệt.'; });
+  supportForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const file=document.getElementById('supportFile')?.files?.[0];
+    if (!file) return;
+    const button=supportForm.querySelector('[type="submit"]'); button.disabled=true;
+    try {
+      const signature=new TextDecoder().decode(await file.slice(0,5).arrayBuffer());
+      if (!/\.pdf$/i.test(file.name) || signature !== '%PDF-' || (file.type && file.type !== 'application/pdf')) throw new Error('Chỉ nhận tệp PDF hợp lệ.');
+      if (file.size > 20*1024*1024) throw new Error('PDF không được lớn hơn 20 MB.');
+      const db=await openPdfDb();
+      const record={file,name:file.name,updatedAt:new Date().toISOString()};
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction('cv','readwrite'); tx.objectStore('cv').put(record,accountId);
+        tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error); tx.onabort=()=>reject(tx.error||new Error('Trình duyệt không cho lưu tệp.'));
+      }).finally(()=>db.close());
+      showPdf(record); supportForm.reset(); toast('Đã lưu PDF trong ứng dụng trên trình duyệt này.');
+    } catch(err) { toast(err.message,'danger'); }
+    finally { button.disabled=false; }
+  });
+
   const workCurrent = document.getElementById('workCurrent');
   const workEndDate = document.getElementById('workEndDate');
   if (workCurrent && workEndDate) {
@@ -96,6 +198,23 @@ document.addEventListener('DOMContentLoaded', () => {
       if (workCurrent.checked) workEndDate.value = '';
     });
   }
+
+  const updateWorkDates = () => {
+    const start = document.querySelector('#workForm [name="start"]');
+    if (!start || !workEndDate) return;
+    workEndDate.required = !workCurrent.checked;
+    if (start.value) {
+      const next = new Date(start.value + 'T00:00:00Z'); next.setUTCDate(next.getUTCDate()+1);
+      workEndDate.min = next.toISOString().slice(0,10);
+    } else workEndDate.removeAttribute('min');
+  };
+  document.querySelector('#workForm [name="start"]')?.addEventListener('input', updateWorkDates);
+  workCurrent?.addEventListener('change', updateWorkDates);
+  document.getElementById('addWork')?.addEventListener('shown.bs.modal', updateWorkDates);
+  document.querySelector('#projectForm [name="start_year"]')?.addEventListener('input', event => {
+    const end = document.querySelector('#projectForm [name="end_year"]');
+    if (end) end.min = event.target.value;
+  });
 
   // Học vị / Học hàm
   const credentialKind = document.getElementById('credentialKind');
@@ -161,13 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Demo lưu cục bộ trên GitHub Pages để có thể thử giao diện.
-  const toast = (message, kind='success') => {
-    const host = document.getElementById('toastHost');
-    if (!host) return;
-    const cls = kind === 'danger' ? 'danger' : kind === 'warning' ? 'warning' : kind === 'info' ? 'info' : 'success';
-    host.innerHTML = '<div class="alert alert-' + cls + ' shadow">' + message + '</div>';
-    setTimeout(() => host.innerHTML = '', 3200);
-  };
 
   const closeModal = form => {
     const modalEl = form.closest('.modal');
@@ -577,7 +689,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const workForm = document.getElementById('workForm');
   if (workForm) workForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd=new FormData(workForm), body=document.getElementById('workBody'); removeEmpty(body);
+    const fd=new FormData(workForm);
+    if (!fd.get('current') && (!fd.get('end') || fd.get('end') <= fd.get('start'))) {
+      toast('Ngày kết thúc phải sau ngày bắt đầu; nếu đang làm việc hãy chọn Hiện tại.', 'warning'); return;
+    }
+    const body=document.getElementById('workBody'); removeEmpty(body);
     const editKey=fd.get('edit_key')||'', key=editKey||('work-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
     const row=document.createElement('tr');
     row.dataset.key=key; row.dataset.start=fd.get('start')||''; row.dataset.end=fd.get('end')||''; row.dataset.current=fd.get('current')==='on'?'1':'0';
@@ -602,11 +718,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const projectForm = document.getElementById('projectForm');
   if (projectForm) projectForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd=new FormData(projectForm), body=document.getElementById('projectBody'); removeEmpty(body);
+    const fd=new FormData(projectForm);
+    if (fd.get('end_year') && fd.get('end_year') < fd.get('start_year')) {
+      toast('Ngày nghiệm thu không được trước ngày bắt đầu.', 'warning'); return;
+    }
+    const body=document.getElementById('projectBody'); removeEmpty(body);
     const editKey=fd.get('edit_key')||'', key=editKey||('project-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
     const row=document.createElement('tr');
     Object.assign(row.dataset,{key,title:fd.get('title')||'',startYear:fd.get('start_year')||'',endYear:fd.get('end_year')||'',level:fd.get('level')||'',position:fd.get('position')||'',budget:fd.get('budget')||'',budgetUnit:fd.get('budget_unit')||''});
-    row.dataset.sortYear=row.dataset.startYear||'0';
+    row.dataset.sortYear=(row.dataset.startYear||'').replaceAll('-','')||'0';
     row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td><td></td>'+
       '<td>'+escapeHtml(row.dataset.title)+'</td><td>'+escapeHtml(row.dataset.startYear)+'</td><td>'+escapeHtml(row.dataset.endYear)+'</td><td>'+escapeHtml(row.dataset.level)+'</td><td>'+escapeHtml(row.dataset.position)+'</td><td>'+escapeHtml(row.dataset.budget)+'</td><td>'+escapeHtml(row.dataset.budgetUnit)+'</td>'+
       '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
@@ -1163,103 +1283,24 @@ document.addEventListener('DOMContentLoaded', () => {
     event.target.title = on ? 'Caps Lock đang bật' : '';
   });
 
-  // Xem trước / xuất Word theo nhiều mẫu.
   const exportPreview = document.getElementById('exportPreview');
-  const getCellRows = selector => [...document.querySelectorAll(selector+' tr:not(.empty-row)')].map(row => [...row.children].map(td => td.innerText.trim()));
-  const getGeneralValue = name => document.querySelector('[name="'+name+'"]')?.value || '';
-
-  const buildExportPreview = () => {
+  const buildExportPreview = async () => {
     if (!exportPreview) return;
-    const template = document.querySelector('input[name="export_template"]:checked')?.value || 'standard';
-    const education = getCellRows('#credentialBody');
-    const work = getCellRows('#workBody');
-    const projects = getCellRows('#projectBody');
-    const articles = getCellRows('#articleBody');
-    const textbooks = getCellRows('#textbookBody');
-
-    let html = '<h3 class="text-center">LÝ LỊCH KHOA HỌC</h3>'+
-      '<h5>I. LÝ LỊCH SƠ LƯỢC</h5>'+
-      '<p><b>Họ và tên:</b> '+escapeHtml(getGeneralValue('person_name'))+'</p>'+
-      '<p><b>Ngày sinh:</b> '+escapeHtml(getGeneralValue('person_dob'))+' &nbsp; <b>Nơi sinh:</b> '+escapeHtml(getGeneralValue('person_pob'))+'</p>'+
-      '<p><b>Quê quán:</b> '+escapeHtml(getGeneralValue('person_hometown'))+' &nbsp; <b>Dân tộc:</b> '+escapeHtml(getGeneralValue('person_ethnicity'))+'</p>'+
-      '<p><b>Chức vụ:</b> '+escapeHtml(getGeneralValue('person_position'))+'</p>'+
-      '<p><b>Đơn vị công tác:</b> '+escapeHtml(getGeneralValue('person_work_unit'))+'</p>';
-
-    const table = (title, rows) => {
-      if (!rows.length) return '<h5>'+title+'</h5><p class="text-muted">Chưa có dữ liệu.</p>';
-      return '<h5>'+title+'</h5><table><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+escapeHtml(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
-    };
-
-    html += table('II. QUÁ TRÌNH ĐÀO TẠO', education);
-    html += table('III. QUÁ TRÌNH CÔNG TÁC', work);
-    html += table('IV. QUÁ TRÌNH NGHIÊN CỨU KHOA HỌC - Đề tài', projects);
-    html += table('Công bố khoa học', articles.map(r=>r.slice(0,6)));
-
-    if (template === 'textbook' || template === 'full') html += table('Sách giáo trình', textbooks);
-    if (template === 'award' || template === 'full') html += table('V. GIẢI THƯỞNG', getCellRows('#awardBody'));
-
-    exportPreview.innerHTML = html;
+    try { exportPreview.innerHTML = await window.MinistryExport.preview(); }
+    catch (err) { exportPreview.textContent = 'Không mở được mẫu Word: ' + err.message; }
   };
-
   document.getElementById('refreshExportPreview')?.addEventListener('click', buildExportPreview);
-  document.querySelectorAll('input[name="export_template"]').forEach(r => r.addEventListener('change', buildExportPreview));
   document.getElementById('exportCvModal')?.addEventListener('shown.bs.modal', buildExportPreview);
-
-  document.getElementById('downloadExportDoc')?.addEventListener('click', () => {
-    buildExportPreview();
-    const html = '<html><head><meta charset="utf-8"><style>body{font-family:Times New Roman;font-size:13pt}table{border-collapse:collapse;width:100%}td{border:1px solid #000;padding:5px}</style></head><body>'+exportPreview.innerHTML+'</body></html>';
-    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url;
-    a.download='ly-lich-khoa-hoc.doc';
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
-    toast('Đã tạo file Word theo mẫu đã chọn.');
-  });
-
-  // Cấu hình đồng bộ Google Sheet / Drive qua Apps Script Web App.
-  const endpointInput = document.getElementById('googleSyncEndpoint');
-  const folderInput = document.getElementById('googleDriveFolderId');
-  const syncStatus = document.getElementById('googleSyncStatus');
-  if (endpointInput) endpointInput.value = localStorage.getItem('google-sync-endpoint') || '';
-  if (folderInput) folderInput.value = localStorage.getItem('google-drive-folder') || '';
-
-  document.getElementById('saveGoogleSyncConfig')?.addEventListener('click', () => {
-    localStorage.setItem('google-sync-endpoint', endpointInput?.value.trim() || '');
-    localStorage.setItem('google-drive-folder', folderInput?.value.trim() || '');
-    if (syncStatus) syncStatus.textContent='Đã lưu cấu hình trên trình duyệt.';
-    toast('Đã lưu cấu hình đồng bộ.');
-  });
-
-  document.getElementById('syncProfileBtn')?.addEventListener('click', async () => {
-    const endpoint = endpointInput?.value.trim();
-    if (!endpoint) {
-      toast('Cần nhập URL Web App Google Apps Script trước khi đồng bộ.', 'warning');
-      return;
-    }
-    const payload = {
-      folderId: folderInput?.value.trim() || '',
-      general: Object.fromEntries([...document.querySelectorAll('#editGeneral [name]')].map(el=>[el.name, el.type==='radio' ? (el.checked?el.value:undefined) : el.value]).filter(([,v])=>v!==undefined)),
-      education:getCellRows('#credentialBody'),
-      work:getCellRows('#workBody'),
-      projects:getCellRows('#projectBody'),
-      articles:getCellRows('#articleBody').map(r=>r.slice(0,6)),
-      seminar:getCellRows('#seminarBody'),
-      textbooks:getCellRows('#textbookBody'),
-      awards:getCellRows('#awardBody')
-    };
+  document.getElementById('downloadExportDoc')?.addEventListener('click', async event => {
+    const button = event.currentTarget; button.disabled = true;
     try {
-      if (syncStatus) syncStatus.textContent='Đang đồng bộ...';
-      const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
-      if (!res.ok) throw new Error('HTTP '+res.status);
-      if (syncStatus) syncStatus.textContent='Đồng bộ thành công.';
-      toast('Đã đồng bộ dữ liệu.');
-    } catch(err) {
-      console.error(err);
-      if (syncStatus) syncStatus.textContent='Không đồng bộ được. Kiểm tra URL Web App và quyền truy cập.';
-      toast('Đồng bộ thất bại. Kiểm tra cấu hình Google Apps Script.', 'danger');
-    }
+      const blob = await window.MinistryExport.create();
+      const url = URL.createObjectURL(blob), link = document.createElement('a');
+      link.href = url; link.download = 'ly-lich-khoa-hoc.docx'; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      toast('Đã xuất lý lịch khoa học theo mẫu Bộ.');
+    } catch (err) { toast('Không xuất được Word: ' + err.message, 'danger'); }
+    finally { button.disabled = false; }
   });
 
   const savedArticleSearch = document.getElementById('savedArticleSearch');
@@ -1274,7 +1315,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const links = [...document.querySelectorAll('.sidebar a[href^="#"]')];
-  const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const sections = links.filter(a => a.getAttribute('href').length > 1).map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;

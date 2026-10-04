@@ -12,7 +12,7 @@ Django rebuild of the scientific-profile page referenced in the project. The UI 
 - Đề tài tham gia
 - Công bố khoa học
 - Giải thưởng / chuyển giao công nghệ
-- Upload PDF/DOCX support file
+- Upload PDF support file (stored in the current browser per account)
 - Export a `.docx` scientific CV
 
 ## Run

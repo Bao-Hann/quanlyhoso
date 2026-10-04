@@ -6,9 +6,6 @@
  */
 
 const APP_TITLE = 'Scientist Profile';
-const PROFILE_FOLDER_NAME = 'Scientist Profile Data';
-const PROFILE_FILE_NAME = 'profile.json';
-const EVIDENCE_FOLDER_NAME = 'Evidence';
 
 function doGet(e) {
   const page = String((e && e.parameter && e.parameter.page) || 'login').toLowerCase();
@@ -43,169 +40,35 @@ function getWebAppUrl() {
 function getCurrentUser() {
   const email = Session.getActiveUser().getEmail() || '';
   const temporaryKey = Session.getTemporaryActiveUserKey() || '';
+  const props = PropertiesService.getUserProperties();
+  let userId = props.getProperty('APP_USER_ID');
+  if (!userId) { userId = Utilities.getUuid(); props.setProperty('APP_USER_ID', userId); }
   const name = email ? email.split('@')[0] : 'Người dùng Google';
   return {
+    userId: userId,
     email: email,
     name: name,
     temporaryKey: temporaryKey
   };
 }
 
-/**
- * Lưu toàn bộ hồ sơ vào Google Drive của chính người dùng.
- * Dữ liệu được lưu dạng JSON để không bị giới hạn kích thước ô Google Sheet.
- */
-function saveProfile(payload) {
+// Hồ sơ cá nhân được lưu theo người dùng trong ứng dụng, không đồng bộ Drive/Sheets.
+function saveGeneral(data) {
   assertSignedIn_();
-  const folder = getOrCreateDataFolder_();
-  const json = JSON.stringify({
-    version: 1,
-    updatedAt: new Date().toISOString(),
-    user: getCurrentUser(),
-    data: payload || {}
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Hồ sơ không hợp lệ.');
+  const clean = {};
+  Object.keys(data).forEach(key => {
+    if (/^person_[a-z_]+$/.test(key)) clean[key] = String(data[key] == null ? '' : data[key]);
   });
-
-  const files = folder.getFilesByName(PROFILE_FILE_NAME);
-  let file;
-  if (files.hasNext()) {
-    file = files.next();
-    file.setContent(json);
-  } else {
-    file = folder.createFile(PROFILE_FILE_NAME, json, MimeType.PLAIN_TEXT);
-  }
-
-  syncSummarySheet_(payload || {}, folder);
-
-  return {
-    ok: true,
-    updatedAt: new Date().toISOString(),
-    fileId: file.getId(),
-    fileUrl: file.getUrl()
-  };
+  const json = JSON.stringify(clean);
+  if (Utilities.newBlob(json).getBytes().length > 8500) throw new Error('Thông tin cá nhân quá dài.');
+  PropertiesService.getUserProperties().setProperty('GENERAL_PROFILE_V2', json);
+  return {ok:true};
 }
-
-function loadProfile() {
+function loadGeneral() {
   assertSignedIn_();
-  const folder = getOrCreateDataFolder_();
-  const files = folder.getFilesByName(PROFILE_FILE_NAME);
-
-  if (!files.hasNext()) {
-    return { ok: true, exists: false, data: null };
-  }
-
-  const file = files.next();
-  try {
-    const parsed = JSON.parse(file.getBlob().getDataAsString('UTF-8'));
-    return {
-      ok: true,
-      exists: true,
-      updatedAt: parsed.updatedAt || '',
-      data: parsed.data || {}
-    };
-  } catch (err) {
-    throw new Error('Dữ liệu hồ sơ bị lỗi định dạng: ' + err.message);
-  }
-}
-
-/**
- * Tạo/cập nhật Google Sheet tóm tắt để người dùng có thể xem dữ liệu dạng bảng.
- */
-function syncSummarySheet_(payload, folder) {
-  const props = PropertiesService.getUserProperties();
-  let sheetId = props.getProperty('PROFILE_SHEET_ID');
-  let ss;
-
-  try {
-    if (sheetId) ss = SpreadsheetApp.openById(sheetId);
-  } catch (err) {
-    sheetId = '';
-  }
-
-  if (!sheetId) {
-    ss = SpreadsheetApp.create('Scientist Profile Database');
-    sheetId = ss.getId();
-    props.setProperty('PROFILE_SHEET_ID', sheetId);
-
-    try {
-      const file = DriveApp.getFileById(sheetId);
-      folder.addFile(file);
-      DriveApp.getRootFolder().removeFile(file);
-    } catch (err) {
-      // Không làm hỏng thao tác lưu nếu Drive không cho di chuyển.
-    }
-  }
-
-  const sheet = ss.getSheets()[0];
-  sheet.setName('Profile');
-  sheet.clearContents();
-
-  const rows = [['Nhóm', 'Trường', 'Giá trị']];
-
-  const pushObject = (group, obj) => {
-    if (!obj || typeof obj !== 'object') return;
-    Object.keys(obj).forEach(key => {
-      const value = obj[key];
-      if (value == null) return;
-      if (typeof value === 'object') {
-        rows.push([group, key, JSON.stringify(value)]);
-      } else {
-        rows.push([group, key, String(value)]);
-      }
-    });
-  };
-
-  pushObject('Thông tin cơ bản', payload.general || {});
-  pushObject('Cài đặt', { theme: payload.theme || '' });
-
-  const sections = payload.tables || {};
-  Object.keys(sections).forEach(sectionName => {
-    const list = sections[sectionName];
-    if (!Array.isArray(list)) return;
-    list.forEach((row, index) => {
-      rows.push([sectionName, 'Dòng ' + (index + 1), JSON.stringify(row)]);
-    });
-  });
-
-  if (rows.length) {
-    sheet.getRange(1, 1, rows.length, 3).setValues(rows);
-    sheet.setFrozenRows(1);
-    sheet.autoResizeColumns(1, 3);
-  }
-}
-
-/**
- * Nhận PDF dạng base64 và lưu vào Google Drive của người đang dùng web app.
- */
-function uploadEvidence(file) {
-  assertSignedIn_();
-
-  if (!file || !file.base64 || !file.name) {
-    throw new Error('Thiếu dữ liệu file.');
-  }
-
-  const mimeType = file.mimeType || 'application/pdf';
-  if (mimeType !== 'application/pdf') {
-    throw new Error('Chỉ hỗ trợ PDF.');
-  }
-
-  const bytes = Utilities.base64Decode(file.base64);
-  const blob = Utilities.newBlob(bytes, mimeType, sanitizeFileName_(file.name));
-  const folder = getOrCreateEvidenceFolder_();
-  const created = folder.createFile(blob);
-
-  return {
-    ok: true,
-    id: created.getId(),
-    name: created.getName(),
-    url: created.getUrl()
-  };
-}
-
-function deleteEvidence(fileId) {
-  assertSignedIn_();
-  if (!fileId) return { ok: false };
-  DriveApp.getFileById(fileId).setTrashed(true);
-  return { ok: true };
+  const raw = PropertiesService.getUserProperties().getProperty('GENERAL_PROFILE_V2');
+  return {ok:true, data:raw ? JSON.parse(raw) : {}};
 }
 
 /**
@@ -303,34 +166,6 @@ function normalizeDoi_(raw) {
     .replace(/^doi:\s*/i, '')
     .trim();
   return /^10\.\d{4,9}\/.+$/i.test(cleaned) ? cleaned : '';
-}
-
-function getOrCreateDataFolder_() {
-  const props = PropertiesService.getUserProperties();
-  let id = props.getProperty('PROFILE_FOLDER_ID');
-
-  if (id) {
-    try {
-      return DriveApp.getFolderById(id);
-    } catch (err) {
-      props.deleteProperty('PROFILE_FOLDER_ID');
-    }
-  }
-
-  const folders = DriveApp.getFoldersByName(PROFILE_FOLDER_NAME);
-  const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(PROFILE_FOLDER_NAME);
-  props.setProperty('PROFILE_FOLDER_ID', folder.getId());
-  return folder;
-}
-
-function getOrCreateEvidenceFolder_() {
-  const dataFolder = getOrCreateDataFolder_();
-  const folders = dataFolder.getFoldersByName(EVIDENCE_FOLDER_NAME);
-  return folders.hasNext() ? folders.next() : dataFolder.createFolder(EVIDENCE_FOLDER_NAME);
-}
-
-function sanitizeFileName_(name) {
-  return String(name || 'evidence.pdf').replace(/[\\/:*?"<>|]+/g, '_');
 }
 
 function assertSignedIn_() {
