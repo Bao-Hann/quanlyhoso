@@ -221,32 +221,47 @@ document.addEventListener('DOMContentLoaded', () => {
   if (publicationForm) publicationForm.addEventListener('submit', e => {
     e.preventDefault();
     const fd = new FormData(publicationForm);
-    const labels = {conference:'Hội thảo', special_report:'Báo cáo chuyên đề'};
-    const body = document.getElementById('publicationBody');
+    const body = document.getElementById('articleBody');
     removeEmpty(body);
     const stt = body.querySelectorAll('tr').length + 1;
     const month = fd.get('published_month') || '';
     const year = month ? month.split('-')[0] : '';
     body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+stt+'</td><td>'+(labels[fd.get('type')] || '')+'</td><td>'+fd.get('title')+'</td><td>'+year+
-      '</td><td>'+fd.get('location')+'</td><td>'+fd.get('description')+'</td></tr>');
+      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+year+
+      '</td><td>'+fd.get('location')+'</td><td>'+fd.get('doi_or_url')+'</td><td>'+fd.get('description')+'</td></tr>');
     publicationForm.reset();
     closeModal(publicationForm);
-    toast('Đã thêm công bố khoa học.');
+    toast('Đã thêm bài báo khoa học.');
+  });
+
+  const seminarForm = document.getElementById('seminarForm');
+  if (seminarForm) seminarForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(seminarForm);
+    const body = document.getElementById('seminarBody');
+    removeEmpty(body);
+    const stt = body.querySelectorAll('tr').length + 1;
+    const month = fd.get('published_month') || '';
+    body.insertAdjacentHTML('beforeend',
+      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+month+
+      '</td><td>'+fd.get('location')+'</td><td>'+fd.get('role')+'</td><td>'+fd.get('description')+'</td></tr>');
+    seminarForm.reset();
+    closeModal(seminarForm);
+    toast('Đã thêm Seminar - Hội thảo.');
   });
 
   const textbookForm = document.getElementById('textbookForm');
   if (textbookForm) textbookForm.addEventListener('submit', e => {
     e.preventDefault();
     const fd = new FormData(textbookForm);
-    const body = document.getElementById('publicationBody');
+    const body = document.getElementById('textbookBody');
     removeEmpty(body);
     const stt = body.querySelectorAll('tr').length + 1;
     const month = fd.get('published_month') || '';
     const year = month ? month.split('-')[0] : '';
     body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+stt+'</td><td>Sách giáo trình</td><td>'+fd.get('title')+'</td><td>'+year+
-      '</td><td>'+fd.get('publisher')+'</td><td>'+fd.get('description')+'</td></tr>');
+      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+year+
+      '</td><td>'+fd.get('publisher')+'</td><td>'+fd.get('role')+'</td><td>'+fd.get('description')+'</td></tr>');
     textbookForm.reset();
     closeModal(textbookForm);
     toast('Đã thêm sách giáo trình.');
