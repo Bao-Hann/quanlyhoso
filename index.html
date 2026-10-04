@@ -384,21 +384,43 @@
 </div>
 
 <div class="modal fade" id="addPublication" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content publication-search-modal">
+    <div class="modal-header">
+      <h5 class="modal-title">Thêm công bố khoa học</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+
+    <div class="modal-body publication-search-body">
+      <div class="input-group publication-search">
+        <input class="form-control" id="publicationSearch" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo">
+        <button class="btn btn-outline-success" type="button" id="paperSearchBtn"><i class="bi bi-search"></i></button>
+      </div>
+
+      <div id="publicationSearchResults" class="publication-search-results">
+        <div id="publicationSearchHint" class="text-muted text-center d-none"></div>
+      </div>
+    </div>
+
+    <div class="modal-footer justify-content-start">
+      <button type="button" class="btn btn-link p-0 publication-manual-link" id="openManualPublication">
+        Bạn có thể tạo bài báo bằng cách nhập liệu ở đây
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<div class="modal fade" id="addPublicationManual" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
     <form id="publicationForm">
       <div class="modal-header">
-        <h5 class="modal-title">Thêm công bố khoa học</h5>
+        <div>
+          <h5 class="modal-title mb-1">Thêm công bố khoa học</h5>
+          <div class="small text-muted">Nhập thông tin công bố thủ công</div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <div class="input-group mb-4 publication-search">
-          <input class="form-control" name="search" id="publicationSearch" placeholder="Tìm kiếm công bố bằng Mã DOI, Link website hoặc Tên công trình">
-          <button class="btn btn-outline-success" type="button" id="paperSearchBtn"><i class="bi bi-search"></i></button>
-        </div>
-        <div id="publicationSearchHint" class="small text-muted mb-3">
-          Có thể tìm trước rồi bổ sung/chỉnh sửa thông tin thủ công bên dưới.
-        </div>
 
+      <div class="modal-body">
         <div class="input-group mb-3">
           <span class="input-group-text">Hình thức công bố</span>
           <select class="form-select" name="type" id="publicationType" required>
@@ -435,7 +457,13 @@
 
         <textarea class="form-control" name="description" rows="5" placeholder="Thông tin khác"></textarea>
       </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary me-auto" id="backToPublicationSearch">
+          <i class="bi bi-arrow-left me-1"></i>Quay lại tìm kiếm
+        </button>
+        <button class="btn btn-primary">Add</button>
+      </div>
     </form>
   </div></div>
 </div>
