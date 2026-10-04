@@ -148,40 +148,57 @@
     const jc=pr && children(pr,'jc')[0]?.getAttributeNS(W,'val')||'left';
     const size=Number(descendants(p,'sz')[0]?.getAttributeNS(W,'val')||26)/2;
     const stops=pr?descendants(pr,'tab').filter(t=>t.getAttributeNS(W,'val')!=='clear'):[];
-    const groups=[''];let tabCount=0;
+    const groups=[''];const plain=[''];let tabCount=0;
     children(p,'r').forEach(run=>{
       const rp=children(run,'rPr')[0];
       const bold=rp && children(rp,'b').some(x=>x.getAttributeNS(W,'val')!=='0' && x.getAttributeNS(W,'val')!=='false');
       const italic=rp && children(rp,'i').length;
+      const underline=rp && children(rp,'u').some(x=>x.getAttributeNS(W,'val')!=='none');
+      const runSize=Number(rp && children(rp,'sz')[0]?.getAttributeNS(W,'val')||size*2)/2;
       [...run.children].forEach(node=>{
-        if(node.localName==='tab'){groups.push('');tabCount++;}
+        if(node.localName==='tab'){groups.push('');plain.push('');tabCount++;}
         else if(node.localName==='br')groups[groups.length-1]+='<br>';
-        else if(node.localName==='t') groups[groups.length-1]+='<span style="font-weight:'+(bold?'700':'400')+';font-style:'+(italic?'italic':'normal')+'">'+escape(node.textContent)+'</span>';
+        else if(node.localName==='t'){plain[plain.length-1]+=node.textContent;groups[groups.length-1]+='<span style="font-weight:'+(bold?'700':'400')+';font-style:'+(italic?'italic':'normal')+';font-size:'+runSize+'pt;text-decoration:'+(underline?'underline':'none')+'">'+escape(node.textContent)+'</span>';}
       });
     });
     let text=groups.join('');
     if(tabCount && stops.length){
-      let previous=0;
+      let previous=0;let stopIndex=0;
+      let context=null;try{context=document.createElement('canvas').getContext('2d');}catch(_){}
+      if(context)context.font=size+'pt "Times New Roman"';
       text=groups.map((group,i)=>{
-        if(i>=stops.length)return group;
-        const position=Number(stops[i].getAttributeNS(W,'pos'));
+        if(i>=tabCount)return group;
+        const measured=context?context.measureText(plain[i]).width:plain[i].length*size*0.62;
+        const occupied=measured*15;
+        while(stopIndex<stops.length && Number(stops[stopIndex].getAttributeNS(W,'pos'))<previous+occupied+30)stopIndex++;
+        const stop=stops[stopIndex++];
+        const position=stop?Number(stop.getAttributeNS(W,'pos')):9356;
         const width=Math.max(0,position-previous)/9356*100;previous=position;
-        const dotted=stops[i].getAttributeNS(W,'leader')==='dot';
+        const dotted=stop?.getAttributeNS(W,'leader')==='dot';
         return '<span style="display:inline-flex;align-items:baseline;vertical-align:bottom;width:'+width+'%;min-width:0">'+
-          '<span style="flex-shrink:0;max-width:100%;overflow-wrap:anywhere">'+group+'</span>'+
+          '<span style="flex-shrink:0;max-width:100%;white-space:nowrap">'+group+'</span>'+
           '<span style="flex:1;min-width:6px;'+(dotted?'border-bottom:1px dotted #555;':'')+'"></span></span>';
       }).join('');
     } else if(tabCount)text=groups.join('&emsp;');
-    return '<p style="text-align:'+jc+';font-size:'+size+'pt;line-height:1.3;margin:0 0 5pt">'+(text||'&nbsp;')+'</p>';
+    const numId=pr && descendants(pr,'numId')[0]?.getAttributeNS(W,'val');
+    const number={'5':'1.','1':'2.','3':'−'}[numId];
+    if(number)text='<span style="display:inline-block;width:24pt;font-weight:'+(numId==='3'?'400':'700')+'">'+number+'</span>'+text;
+    const spacing=pr && children(pr,'spacing')[0];
+    const before=Number(spacing?.getAttributeNS(W,'before')||0)/20;
+    const after=Number(spacing?.getAttributeNS(W,'after')||0)/20;
+    const line=Number(spacing?.getAttributeNS(W,'line')||240);
+    const rule=spacing?.getAttributeNS(W,'lineRule');
+    const lineHeight=rule==='exact'||rule==='atLeast'?(line/20)+'pt':line/240;
+    return '<p style="font-family:Times New Roman,serif;color:#000;text-align:'+jc+';font-size:'+size+'pt;line-height:'+lineHeight+';margin:'+before+'pt 0 '+after+'pt">'+(text||'&nbsp;')+'</p>';
   }
   window.MinistryExport={
     create:async(variant="standard")=>{const {zip}=await build(variant);return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});},
-    preview:async(variant="standard")=>{const {zip,body}=await build(variant);const logo=await zip.file('word/media/image1.png').async('base64');return '<div style="font-family:Times New Roman;color:#000"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16pt"><img alt="" src="data:image/png;base64,'+logo+'" style="width:115px;height:auto"><span style="font-style:italic;font-size:10pt">BM04/QT03/ĐT</span></div>'+[...body.children].map(el=>{
+    preview:async(variant="standard")=>{const {zip,body}=await build(variant);const logo=await zip.file('word/media/image1.png').async('base64');return '<div class="ministry-document" style="font-family:Times New Roman,serif;color:#000;width:638px;font-size:13pt"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16pt"><img alt="" src="data:image/png;base64,'+logo+'" style="width:115px;height:auto"><span style="font-style:italic;font-size:10pt">BM04/QT03/ĐT</span></div>'+[...body.children].map(el=>{
       if(el.localName==='p')return previewParagraph(el);
       if(el.localName!=='tbl')return '';
       const grid=descendants(el,'gridCol').map(x=>Number(x.getAttributeNS(W,'w'))),sum=grid.reduce((a,b)=>a+b,0);
-      const bordered=descendants(el,'tblBorders').some(b=>[...b.children].some(x=>!['nil','none'].includes(x.getAttributeNS(W,'val'))));
-      return '<table style="width:100%;border-collapse:collapse;margin:5pt 0">'+children(el,'tr').map(row=>'<tr>'+children(row,'tc').map((cell,i)=>'<td style="border:'+(bordered?'1px solid #000':'0')+';padding:3pt;vertical-align:top;width:'+((grid[i]||sum/grid.length)/sum*100)+'%">'+children(cell,'p').map(previewParagraph).join('')+'</td>').join('')+'</tr>').join('')+'</table>';
+      const bordered=[...descendants(el,'tblBorders'),...descendants(el,'tcBorders')].some(b=>[...b.children].some(x=>!['nil','none'].includes(x.getAttributeNS(W,'val'))));
+      return '<table style="width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 13pt">'+children(el,'tr').map(row=>'<tr>'+children(row,'tc').map((cell,i)=>'<td style="border:'+(bordered?'1px solid #000':'0')+';padding:0 5.4pt;vertical-align:top;width:'+((grid[i]||sum/grid.length)/sum*100)+'%">'+children(cell,'p').map(previewParagraph).join('')+'</td>').join('')+'</tr>').join('')+'</table>';
     }).join('')+'</div>';}
   };
 })();

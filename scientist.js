@@ -1291,9 +1291,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const exportPreview = document.getElementById('exportPreview');
+  let exportPreviewGeneration = 0;
   const buildExportPreview = async () => {
+    const generation = ++exportPreviewGeneration;
     if (!exportPreview) return;
-    try { exportPreview.innerHTML = await window.MinistryExport.preview(document.getElementById("exportTemplateSelect")?.value || "standard"); }
+    try { const html = await window.MinistryExport.preview(document.getElementById("exportTemplateSelect")?.value || "standard"); if (generation === exportPreviewGeneration) exportPreview.innerHTML = html; }
     catch (err) { exportPreview.textContent = 'Không mở được mẫu Word: ' + err.message; }
   };
   document.getElementById('exportTemplateSelect')?.addEventListener('change', buildExportPreview);

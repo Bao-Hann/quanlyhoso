@@ -77,6 +77,14 @@ function app(account='test-a',gas=false) {
  const xml=await generated.file('word/document.xml').async('string');assert.match(xml,/Nguyễn Văn Kiểm Thử/);assert.match(xml,/Nghiên cứu kiểm thử/);assert.doesNotMatch(xml,/managed-edit|Chưa có dữ liệu|Han Han/);
  const preview=await a.exporter.preview();assert.match(preview,/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM/);
  assert.match(preview,/font-weight:700/);assert.match(preview,/display:inline-flex/);assert.match(preview,/border-bottom:1px dotted/);assert.match(preview,/BM04\/QT03\/ĐT/);
+ const previewDoc=parseHTML(preview).document;const previewTables=[...previewDoc.querySelectorAll('table')];
+ assert.equal(previewTables.length,5);
+ for(const table of previewTables.slice(1,4))for(const cell of table.querySelectorAll('td'))assert.match(cell.getAttribute('style'),/border:1px solid #000/,'Every ministry table cell needs its border');
+ for(const cell of previewTables[4].querySelectorAll('td'))assert.match(cell.getAttribute('style'),/border:0;/,'Signature must have no frame');
+ const fullPreview=parseHTML(await a.exporter.preview('full')).document;
+ assert.equal([...fullPreview.querySelectorAll('table')].filter(t=>t.querySelector('td[style*="border:1px solid #000"]')).length,5,'Both added sections need grid lines');
+ for(const f of ['scientist.css','google-apps-script/Styles.html'])assert.match(fs.readFileSync(path.join(root,f),'utf8'),/font-family:"Times New Roman",Times,serif!important/);
+
  for(const file of ['index.html','google-apps-script/Index.html']){const html=fs.readFileSync(path.join(root,file),'utf8');assert.equal((html.match(/name="exportTemplateChoice"/g)||[]).length,4,'Four visible export choices in '+file);}
 
  const tableWriter=app('table-test');
