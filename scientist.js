@@ -276,6 +276,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const manualOpenBtn = document.getElementById('openManualPublication');
   const backToSearchBtn = document.getElementById('backToPublicationSearch');
   const paperSearchBtn = document.getElementById('paperSearchBtn');
+  const publicationSearchInput = document.getElementById('publicationSearch');
+  const publicationSearchResults = document.getElementById('publicationSearchResults');
+  const publicationSearchStatus = document.getElementById('publicationSearchStatus');
+  const publicationAddBtn = document.getElementById('articleSearchAddBtn');
+  const publicationPrevPage = document.getElementById('publicationPrevPage');
+  const publicationNextPage = document.getElementById('publicationNextPage');
+  const publicationPageLabel = document.getElementById('publicationPageLabel');
+
+  const publicationSearchState = {
+    query: '',
+    page: 1,
+    rows: 5,
+    total: 0,
+    items: [],
+    selectedIndex: -1,
+    exactDoi: false
+  };
+
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[char]));
 
   const switchPublicationModal = (fromEl, toEl) => {
     if (!fromEl || !toEl) return;
@@ -298,33 +319,250 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (paperSearchBtn) {
-    paperSearchBtn.addEventListener('click', () => {
-      const q = document.getElementById('publicationSearch')?.value.trim();
-      const results = document.getElementById('publicationSearchResults');
-      const hint = document.getElementById('publicationSearchHint');
+  const normalizeDoi = raw => {
+    const value = String(raw || '').trim();
+    if (!value) return '';
+    const cleaned = value
+      .replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
+      .replace(/^doi:\s*/i, '')
+      .trim();
+    return /^10\.\d{4,9}\/.+$/i.test(cleaned) ? cleaned : '';
+  };
 
-      if (!q) {
-        if (hint) {
-          hint.classList.remove('d-none');
-          hint.textContent = 'Nhập DOI, link website hoặc tên bài báo để tìm.';
-        }
-        return;
-      }
+  const getPublicationYear = item => {
+    const candidates = [
+      item?.['published-print'],
+      item?.['published-online'],
+      item?.published,
+      item?.issued,
+      item?.created
+    ];
+    for (const candidate of candidates) {
+      const year = candidate?.['date-parts']?.[0]?.[0];
+      if (year) return year;
+    }
+    return '';
+  };
 
-      if (hint) {
-        hint.classList.remove('d-none');
-        hint.innerHTML =
-          '<div class="p-3 border rounded text-start">' +
-          '<strong>Chưa kết nối nguồn tìm kiếm thật trên GitHub Pages.</strong><br>' +
-          'Từ khóa: <span class="text-break">' + q.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) + '</span><br>' +
-          '<button type="button" class="btn btn-link p-0 mt-2" id="searchToManual">Không thấy bài? Nhập thủ công</button>' +
-          '</div>';
+  const getAuthors = item => {
+    const authors = Array.isArray(item?.author) ? item.author : [];
+    return authors.map(author => {
+      const given = author?.given || '';
+      const family = author?.family || '';
+      return [given, family].filter(Boolean).join(' ');
+    }).filter(Boolean).join(', ');
+  };
 
-        document.getElementById('searchToManual')?.addEventListener('click', () => {
-          switchPublicationModal(publicationSearchModalEl, publicationManualModalEl);
+  const normalizeCrossrefItem = item => ({
+    title: Array.isArray(item?.title) ? (item.title[0] || '') : (item?.title || ''),
+    authors: getAuthors(item),
+    year: getPublicationYear(item),
+    issn: Array.isArray(item?.ISSN) ? item.ISSN.join(', ') : (item?.ISSN || ''),
+    journal: Array.isArray(item?.['container-title']) ? (item['container-title'][0] || '') : (item?.['container-title'] || ''),
+    doi: item?.DOI || '',
+    url: item?.URL || (item?.DOI ? 'https://doi.org/' + item.DOI : ''),
+    publisher: item?.publisher || '',
+    type: item?.type || ''
+  });
+
+  const setPublicationStatus = (message, kind='info') => {
+    if (!publicationSearchStatus) return;
+    if (!message) {
+      publicationSearchStatus.className = 'publication-search-status d-none';
+      publicationSearchStatus.textContent = '';
+      return;
+    }
+    publicationSearchStatus.className = 'publication-search-status ' +
+      (kind === 'error' ? 'text-danger' : kind === 'success' ? 'text-success' : 'text-muted');
+    publicationSearchStatus.textContent = message;
+  };
+
+  const updatePublicationPager = () => {
+    if (publicationPageLabel) publicationPageLabel.textContent = 'Trang ' + publicationSearchState.page;
+    if (publicationPrevPage) publicationPrevPage.disabled = publicationSearchState.page <= 1;
+    if (publicationNextPage) {
+      const shownThrough = publicationSearchState.page * publicationSearchState.rows;
+      publicationNextPage.disabled = publicationSearchState.exactDoi ||
+        publicationSearchState.items.length < publicationSearchState.rows ||
+        (publicationSearchState.total > 0 && shownThrough >= publicationSearchState.total);
+    }
+  };
+
+  const renderPublicationResults = () => {
+    if (!publicationSearchResults) return;
+    const items = publicationSearchState.items;
+    publicationSearchState.selectedIndex = -1;
+    if (publicationAddBtn) publicationAddBtn.disabled = true;
+
+    if (!items.length) {
+      publicationSearchResults.innerHTML =
+        '<div class="publication-search-empty text-muted text-center">Không tìm thấy bài báo phù hợp.</div>';
+      updatePublicationPager();
+      return;
+    }
+
+    publicationSearchResults.innerHTML = items.map((item,index) => {
+      const title = escapeHtml(item.title || 'Không có tiêu đề');
+      const authors = escapeHtml(item.authors || 'Không có thông tin tác giả');
+      const journal = escapeHtml(item.journal || 'Không rõ tạp chí');
+      const year = escapeHtml(item.year || '');
+      const doi = escapeHtml(item.doi || '');
+      const issn = escapeHtml(item.issn || '');
+      return `
+        <button type="button" class="crossref-result-card" data-result-index="${index}">
+          <div class="crossref-result-select"><span></span></div>
+          <div class="crossref-result-content">
+            <div class="crossref-result-title">${title}</div>
+            <div class="crossref-result-meta">${authors}</div>
+            <div class="crossref-result-meta">
+              ${[journal, year].filter(Boolean).join(' · ')}
+            </div>
+            <div class="crossref-result-identifiers">
+              ${doi ? '<span>DOI: '+doi+'</span>' : ''}
+              ${issn ? '<span>ISSN: '+issn+'</span>' : ''}
+            </div>
+          </div>
+        </button>`;
+    }).join('');
+
+    publicationSearchResults.querySelectorAll('.crossref-result-card').forEach(card => {
+      card.addEventListener('click', () => {
+        publicationSearchResults.querySelectorAll('.crossref-result-card').forEach(x => x.classList.remove('selected'));
+        card.classList.add('selected');
+        publicationSearchState.selectedIndex = Number(card.dataset.resultIndex);
+        if (publicationAddBtn) publicationAddBtn.disabled = false;
+      });
+    });
+
+    updatePublicationPager();
+  };
+
+  const searchCrossref = async (page=1) => {
+    const query = publicationSearchInput?.value.trim() || '';
+    if (!query) {
+      setPublicationStatus('Nhập DOI, link website hoặc tên bài báo để tìm.', 'error');
+      return;
+    }
+
+    publicationSearchState.query = query;
+    publicationSearchState.page = Math.max(1, page);
+    publicationSearchState.items = [];
+    publicationSearchState.selectedIndex = -1;
+    publicationSearchState.exactDoi = false;
+    if (publicationAddBtn) publicationAddBtn.disabled = true;
+    if (publicationSearchResults) {
+      publicationSearchResults.innerHTML =
+        '<div class="publication-loading"><div class="spinner-border spinner-border-sm" role="status"></div><span>Đang lấy dữ liệu từ Crossref...</span></div>';
+    }
+    setPublicationStatus('');
+
+    const doi = normalizeDoi(query);
+
+    try {
+      let url;
+      if (doi) {
+        publicationSearchState.exactDoi = true;
+        url = 'https://api.crossref.org/v1/works/' + encodeURIComponent(doi);
+      } else {
+        const offset = (publicationSearchState.page - 1) * publicationSearchState.rows;
+        const params = new URLSearchParams({
+          'query.bibliographic': query,
+          rows: String(publicationSearchState.rows),
+          offset: String(offset)
         });
+        url = 'https://api.crossref.org/v1/works?' + params.toString();
       }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept':'application/json' }
+      });
+      if (!response.ok) {
+        throw new Error('Crossref HTTP ' + response.status);
+      }
+
+      const data = await response.json();
+      if (doi) {
+        const item = data?.message ? normalizeCrossrefItem(data.message) : null;
+        publicationSearchState.items = item ? [item] : [];
+        publicationSearchState.total = item ? 1 : 0;
+      } else {
+        const message = data?.message || {};
+        publicationSearchState.items = (message.items || []).map(normalizeCrossrefItem);
+        publicationSearchState.total = Number(message['total-results'] || 0);
+      }
+
+      renderPublicationResults();
+      setPublicationStatus(
+        publicationSearchState.items.length
+          ? 'Đã lấy dữ liệu từ Crossref.'
+          : 'Không tìm thấy kết quả phù hợp.',
+        publicationSearchState.items.length ? 'success' : 'info'
+      );
+    } catch (error) {
+      console.error('Crossref search failed:', error);
+      publicationSearchState.items = [];
+      publicationSearchState.total = 0;
+      if (publicationSearchResults) {
+        publicationSearchResults.innerHTML =
+          '<div class="publication-search-empty text-center">' +
+          '<div class="text-danger mb-2">Không lấy được dữ liệu từ Crossref.</div>' +
+          '<div class="text-muted small">Bạn vẫn có thể nhập bài báo thủ công bằng liên kết phía dưới.</div>' +
+          '</div>';
+      }
+      setPublicationStatus('');
+      updatePublicationPager();
+    }
+  };
+
+  if (paperSearchBtn) {
+    paperSearchBtn.addEventListener('click', () => searchCrossref(1));
+  }
+
+  if (publicationSearchInput) {
+    publicationSearchInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        searchCrossref(1);
+      }
+    });
+  }
+
+  if (publicationPrevPage) {
+    publicationPrevPage.addEventListener('click', () => {
+      if (publicationSearchState.page > 1) searchCrossref(publicationSearchState.page - 1);
+    });
+  }
+
+  if (publicationNextPage) {
+    publicationNextPage.addEventListener('click', () => {
+      if (!publicationNextPage.disabled) searchCrossref(publicationSearchState.page + 1);
+    });
+  }
+
+  const appendArticleToTable = item => {
+    const body = document.getElementById('articleBody');
+    if (!body || !item) return;
+    removeEmpty(body);
+    const stt = body.querySelectorAll('tr:not(.empty-row)').length + 1;
+    body.insertAdjacentHTML('beforeend',
+      '<tr>' +
+      '<td>'+stt+'</td>' +
+      '<td>'+escapeHtml(item.title)+'</td>' +
+      '<td>'+escapeHtml(item.authors)+'</td>' +
+      '<td>'+escapeHtml(item.year)+'</td>' +
+      '<td>'+escapeHtml(item.issn)+'</td>' +
+      '<td>'+escapeHtml(item.journal)+'</td>' +
+      '</tr>');
+  };
+
+  if (publicationAddBtn) {
+    publicationAddBtn.addEventListener('click', () => {
+      const item = publicationSearchState.items[publicationSearchState.selectedIndex];
+      if (!item) return;
+      appendArticleToTable(item);
+      bootstrap.Modal.getOrCreateInstance(publicationSearchModalEl).hide();
+      toast('Đã thêm bài báo từ Crossref.');
     });
   }
 
