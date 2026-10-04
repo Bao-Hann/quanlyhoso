@@ -33,6 +33,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   applyTheme(readSavedTheme());
 
+  document.querySelectorAll('.theme-option').forEach(option => {
+    option.addEventListener('click', event => {
+      event.preventDefault();
+      applyTheme(option.dataset.themeOption);
+      const menuButton = document.getElementById('themeMenuButton');
+      if (menuButton && window.bootstrap?.Dropdown) {
+        bootstrap.Dropdown.getOrCreateInstance(menuButton).hide();
+      }
+    });
+  });
+
   document.addEventListener('click', event => {
     const option = event.target.closest('.theme-option');
     if (!option) return;
