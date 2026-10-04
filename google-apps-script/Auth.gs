@@ -33,7 +33,7 @@ function registerLocal(email,password) {
   try {
     if(props.getProperty(key)) throw new Error('Tài khoản đã tồn tại. Hãy đăng nhập.');
     const salt=Utilities.getUuid()+Utilities.getUuid();
-    props.setProperty(key,JSON.stringify({salt:salt,hash:passwordHash_(password,salt),email:email}));
+    props.setProperty(key,JSON.stringify({salt:salt,hash:passwordHash_(password,salt),email:email,name:googleUser.name}));
   } finally {lock.releaseLock();}
   return {ok:true};
 }
@@ -54,7 +54,7 @@ function loginLocal(email,password) {
     if(!raw || !sameHash_(computed,record.hash)) throw new Error('Email hoặc mật khẩu không đúng.');
     props.deleteProperty(rateKey);
     const token=Utilities.getUuid()+Utilities.getUuid();
-    const user={userId:'email:'+email,email:email,name:email.split('@')[0],provider:'password'};
+    const user={userId:'email:'+email,email:email,name:record.name || email.split('@')[0],provider:'password'};
     props.setProperty('AUTH_SESSION_'+hashId_(token),JSON.stringify({user:user,expires:now+24*60*60*1000}));
     // Xóa phiên hết hạn, tránh đầy dung lượng lưu trữ.
     const all=props.getProperties();Object.keys(all).filter(k=>k.indexOf('AUTH_SESSION_')===0).forEach(k=>{if(JSON.parse(all[k]).expires<now) props.deleteProperty(k);});

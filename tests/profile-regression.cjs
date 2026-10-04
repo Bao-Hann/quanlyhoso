@@ -42,8 +42,11 @@ function app(account='test-a',gas=false) {
 (async()=>{
  const a=app();
  assert.equal(a.get('[name="person_name"]').value,'');assert.equal(a.get('[name="person_email"]').value,'');
+ assert.equal(a.get('#authUsername').textContent,'test-a');assert.equal(a.get('#authEmail').textContent,'test-a@example.invalid');
+ assert.equal(a.get('#welcomeName').textContent,'test-a');
  a.event('editGeneralBtn','click');a.set('[name="person_name"]','Nguyễn Văn Kiểm Thử');a.set('[name="person_email"]','test@example.invalid');
  a.event('editGeneral','submit');
+ assert.equal(a.get('#welcomeName').textContent,'test-a','Greeting must use signed-in identity rather than editable profile name');
  assert.equal(JSON.parse(store.get('scientist-general-v2:email:test-a@example.invalid')).person_name,'Nguyễn Văn Kiểm Thử');
  assert.equal(a.get('[name="person_name"]').disabled,true);
  assert.equal(app().get('[name="person_name"]').value,'Nguyễn Văn Kiểm Thử');

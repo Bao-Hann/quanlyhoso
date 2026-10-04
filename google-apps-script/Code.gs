@@ -13,7 +13,7 @@ function doGet(e) {
   if (page === 'app' || page === 'home') {
     const user = e && e.parameter && e.parameter.mode === "local" ? {provider:"local"} : getCurrentUser();
     const t = HtmlService.createTemplateFromFile('Index');
-    t.userJson = JSON.stringify(user);
+    t.userJson = JSON.stringify(user).replace(/</g, '\\u003c');
     return t.evaluate()
       .setTitle(APP_TITLE)
       .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
@@ -41,7 +41,31 @@ function getCurrentUser() {
   const email = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
   const effective = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
   if (!email || email !== effective) throw new Error('Hãy triển khai với quyền Người dùng truy cập ứng dụng (User accessing the web app). Không thể lưu hồ sơ dưới quyền chủ dự án.');
-  return {userId: 'email:' + email, provider:'google', email:email, name:email.split('@')[0]};
+  return {userId: 'email:' + email, provider:'google', email:email, name:googleDisplayName_(email)};
+}
+
+
+// Identity comes from Google, never from editable profile fields.
+var googleNames_ = {};
+function googleDisplayName_(email) {
+  if (googleNames_[email]) return googleNames_[email];
+  let name = email.split('@')[0];
+  try {
+    const response = UrlFetchApp.fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: {Authorization: 'Bearer ' + ScriptApp.getOAuthToken()},
+      muteHttpExceptions: true
+    });
+    if (response.getResponseCode() === 200) {
+      const profile = JSON.parse(response.getContentText());
+      if (String(profile.email || '').trim().toLowerCase() === email && profile.name) {
+        name = String(profile.name).trim();
+      }
+    }
+  } catch (_) {
+    // An unavailable profile endpoint must not block access to saved data.
+  }
+  googleNames_[email] = name;
+  return name;
 }
 
 function profileKey_(token) {

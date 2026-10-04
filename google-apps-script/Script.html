@@ -186,16 +186,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   applyTheme(readSavedTheme());
 
-  const syncOneFormDashboardIdentity = () => {
-    const session = window.GAS_USER;
-    const username = session?.username || 'User';
-    const email = session?.email || 'user@example.com';
-    const dashName = document.getElementById('dashboardWelcomeName');
-    const dashEmail = document.getElementById('dashboardAccountEmail');
-    if (dashName) dashName.textContent = username;
-    if (dashEmail) dashEmail.textContent = email;
+  const syncAccountIdentity = user => {
+    const session = user || window.GAS_USER || window.OneFormAuth?.getSession?.() || {};
+    const email = String(session.email || '').trim();
+    const name = String(session.name || session.displayName || session.username || email.split('@')[0] || '').trim();
+    ['authUsername', 'welcomeName', 'dashboardWelcomeName'].forEach(id => {
+      const node = document.getElementById(id);
+      if (node) { node.textContent = name; node.title = name; }
+    });
+    ['authEmail', 'dashboardAccountEmail'].forEach(id => {
+      const node = document.getElementById(id);
+      if (node) { node.textContent = email; node.title = email; }
+    });
   };
-  syncOneFormDashboardIdentity();
+  syncAccountIdentity();
 
   document.querySelectorAll('[data-oneform-logout]').forEach(link => {
     link.addEventListener('click', event => {
@@ -269,13 +273,13 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (el.type === 'checkbox') el.checked = Boolean(data[el.name]);
       else el.value = data[el.name] ?? '';
     });
-    const welcome = document.getElementById('welcomeName');
-    if (welcome) welcome.textContent = data?.person_name || identity.name || identity.username || '';
+    syncAccountIdentity();
   };
   let generalReady = !window.google?.script?.run;
   if (window.google?.script?.run) {
     if (editBtn) editBtn.disabled = true;
     google.script.run.withSuccessHandler(result => {
+      if (result.user) window.GAS_USER = result.user;
       applyGeneral(result.data || {}); generalReady = true;
       if (editBtn) editBtn.disabled = false;
     }).withFailureHandler(err => {

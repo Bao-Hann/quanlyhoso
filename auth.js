@@ -77,11 +77,9 @@
       const name = document.getElementById('authUsername');
       const email = document.getElementById('authEmail');
       const welcome = document.getElementById('welcomeName');
-      if (name) name.textContent = session.username;
+      if (name) name.textContent = session.name || session.displayName || session.username;
       if (email) email.textContent = session.email;
-      if (welcome && (!welcome.textContent.trim() || welcome.textContent.trim() === 'Han Han')) {
-        welcome.textContent = session.username;
-      }
+      if (welcome) welcome.textContent = session.name || session.displayName || session.username;
     }
 
     document.getElementById('logoutBtn')?.addEventListener('click', event => {
