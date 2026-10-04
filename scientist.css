@@ -980,3 +980,23 @@ body[data-theme="tiktok"] .text-muted{
     min-height:420px;
   }
 }
+
+
+/* Education table selection / actions */
+#credentialTable th:first-child,
+#credentialTable td:first-child{
+  width:54px;
+  text-align:center;
+}
+.credential-row-actions{
+  justify-content:flex-start;
+}
+.credential-bulk-actions{
+  background:color-mix(in srgb,var(--theme-accent) 2%,var(--theme-surface));
+}
+.credential-detail-text{
+  min-height:24px;
+}
+#credentialBody tr:has(.credential-row-check:checked){
+  background:color-mix(in srgb,var(--theme-accent) 7%,var(--theme-surface));
+}
