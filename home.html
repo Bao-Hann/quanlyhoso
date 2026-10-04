@@ -183,7 +183,7 @@
         <div class="container">
           <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Quá trình công tác</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWork"><i class="bi bi-plus-circle"></i> Add</button></div></div></div>
           <div class="content-body table-wrapper">
-            <table class="table table-hover"><thead class="text-center align-middle table-light"><tr><th>Từ</th><th>Đến</th><th>Đơn vị công tác</th><th>Công việc đảm nhiệm</th><th>Mô tả công việc</th></tr></thead><tbody id="workBody"><tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+            <table class="table table-hover"><thead class="text-center align-middle table-light"><tr><th>Từ</th><th>Đến</th><th>Đơn vị công tác</th><th>Chức danh</th><th>Mô tả công việc</th></tr></thead><tbody id="workBody"><tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
           </div>
         </div>
         <hr class="fixed-hr">
@@ -193,7 +193,7 @@
         <div class="container">
           <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Đề tài tham gia</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject"><i class="bi bi-plus-circle"></i> Add</button></div></div></div>
           <div class="content-body table-wrapper">
-            <table class="table table-hover"><thead class="align-middle table-light"><tr class="text-center"><th>TT</th><th>Tên đề tài nghiên cứu</th><th>Năm bắt đầu</th><th>Năm nghiệm thu</th><th>Đề tài cấp</th><th>Trách nhiệm</th><th>Kinh phí</th></tr></thead><tbody id="projectBody"><tr class="empty-row"><td colspan="7" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+            <table class="table table-hover"><thead class="align-middle table-light"><tr class="text-center"><th>TT</th><th>Tên đề tài nghiên cứu</th><th>Năm bắt đầu</th><th>Năm nghiệm thu</th><th>Đề tài cấp</th><th>Chức vụ</th><th>Kinh phí</th><th>Đơn vị kinh phí</th></tr></thead><tbody id="projectBody"><tr class="empty-row"><td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
           </div>
         </div>
         <hr class="fixed-hr">
@@ -201,9 +201,12 @@
 
       <section id="publishedPaper" class="full-screen-section">
         <div class="container">
-          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Công bố khoa học</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><div class="btn-group"><button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-circle"></i> Add</button><div class="dropdown-menu"><a class="dropdown-item pub-open" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="article">Bài báo khoa học</a><a class="dropdown-item pub-open" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="seminar">Seminar - Hội thảo</a><a class="dropdown-item pub-open" href="#" data-bs-toggle="modal" data-bs-target="#addPublication" data-type="textbook">Sách giáo trình</a></div></div></div></div></div>
+          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Công bố khoa học</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><div class="btn-group"><button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-circle"></i> Add</button><div class="dropdown-menu">
+    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addPublication">Công bố khoa học</a>
+    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addTextbook">Sách giáo trình</a>
+  </div></div></div></div></div>
           <div class="content-body table-wrapper">
-            <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>TT</th><th>Loại</th><th>Tên công trình</th><th>Năm</th><th>Tạp chí/Nơi công bố</th><th>DOI</th></tr></thead><tbody id="publicationBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+            <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>TT</th><th>Hình thức</th><th>Tên công trình/Giáo trình</th><th>Năm</th><th>Nơi công bố/Nơi xuất bản</th><th>Thông tin</th></tr></thead><tbody id="publicationBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
           </div>
         </div>
         <hr class="fixed-hr">
@@ -252,17 +255,51 @@
 </div>
 
 <div class="modal fade" id="addCredential" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
     <form id="credentialForm">
       <div class="modal-header"><h5 class="modal-title">Thêm học vị</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
         <input type="hidden" name="kind" id="credentialKind" value="degree">
-        <input class="form-control mb-3" name="level" placeholder="Học hàm/Học vị" required>
-        <input class="form-control mb-3" name="major" placeholder="Ngành/Chuyên ngành">
-        <input class="form-control mb-3" name="institution" placeholder="Cơ sở đào tạo">
-        <input class="form-control mb-3" type="number" name="year" placeholder="Năm">
-        <input class="form-control mb-3" name="country" placeholder="Quốc gia">
-        <textarea class="form-control" name="detail" placeholder="Chi tiết/Luận án"></textarea>
+
+        <div id="degreeFields">
+          <div class="input-group mb-3">
+            <span class="input-group-text">Bậc học</span>
+            <select class="form-select" name="study_level" id="studyLevel">
+              <option value="">Chọn bậc học</option>
+              <option value="undergraduate">Đại học</option>
+              <option value="postgraduate">Sau đại học</option>
+            </select>
+          </div>
+          <div class="input-group mb-4">
+            <span class="input-group-text">Học vị</span>
+            <select class="form-select" name="degree_level" id="degreeLevel" disabled>
+              <option value="">Chọn học vị</option>
+            </select>
+          </div>
+          <div class="input-group mb-4">
+            <span class="input-group-text">Ngành/Chuyên ngành:</span>
+            <input class="form-control" name="degree_major">
+          </div>
+          <div class="row">
+            <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Nơi đào tạo:</span><input class="form-control" name="degree_institution"></div></div>
+            <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm tốt nghiệp:</span><input class="form-control" type="number" name="degree_year" min="1900" max="2100"></div></div>
+          </div>
+        </div>
+
+        <div id="titleFields" class="d-none">
+          <div class="input-group mb-4">
+            <span class="input-group-text">Chức danh</span>
+            <select class="form-select" name="title_level" id="titleLevel">
+              <option value="">Chọn chức danh khoa học</option>
+              <option value="Giáo sư">Giáo sư</option>
+              <option value="Phó giáo sư">Phó giáo sư</option>
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Ngành/Chuyên ngành:</span><input class="form-control" name="title_major"></div></div>
+            <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm phong:</span><input class="form-control" type="number" name="title_year" min="1900" max="2100"></div></div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
     </form>
@@ -273,7 +310,20 @@
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
     <form id="languageForm">
       <div class="modal-header"><h5 class="modal-title">Thêm ngoại ngữ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body"><input class="form-control mb-3" name="name" placeholder="Ngoại ngữ" required><input class="form-control mb-3" name="proficiency" placeholder="Mức độ thành thạo"><input class="form-control" name="certificate" placeholder="Chứng chỉ"></div>
+      <div class="modal-body">
+        <input class="form-control mb-3" name="name" placeholder="Ngoại ngữ" required>
+        <input class="form-control mb-3" name="proficiency" placeholder="Mức độ thành thạo">
+        <select class="form-select mb-3" name="certificate" id="languageCertificate">
+          <option value="">Chọn chứng chỉ</option>
+          <option value="IELTS">IELTS</option>
+          <option value="TOEIC">TOEIC</option>
+          <option value="VSTEP">VSTEP</option>
+          <option value="SAT">SAT</option>
+          <option value="TOEFL">TOEFL</option>
+          <option value="Khác">Chứng chỉ khác</option>
+        </select>
+        <input class="form-control d-none" name="certificate_other" id="certificateOther" placeholder="Nhập tên chứng chỉ khác">
+      </div>
       <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
     </form>
   </div></div>
@@ -288,7 +338,7 @@
         <label class="form-label">Đến</label><input class="form-control mb-2" type="date" name="end" id="workEndDate">
         <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="workCurrent" name="current"><label class="form-check-label" for="workCurrent">Hiện tại</label></div>
         <input class="form-control mb-3" name="institution" placeholder="Đơn vị công tác" required>
-        <input class="form-control mb-3" name="position" placeholder="Công việc đảm nhiệm">
+        <input class="form-control mb-3" name="position" placeholder="Chức danh">
         <textarea class="form-control" name="description" placeholder="Mô tả công việc"></textarea>
       </div>
       <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
@@ -297,15 +347,23 @@
 </div>
 
 <div class="modal fade" id="addProject" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
     <form id="projectForm">
       <div class="modal-header"><h5 class="modal-title">Thêm đề tài đang tham gia</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
-        <input class="form-control mb-3" name="title" placeholder="Tên đề tài nghiên cứu" required>
-        <div class="row"><div class="col"><input class="form-control mb-3" type="number" name="start_year" placeholder="Năm bắt đầu"></div><div class="col"><input class="form-control mb-3" type="number" name="end_year" placeholder="Năm nghiệm thu"></div></div>
-        <input class="form-control mb-3" name="level" placeholder="Đề tài cấp">
-        <input class="form-control mb-3" name="position" placeholder="Trách nhiệm">
-        <div class="input-group"><input class="form-control" name="budget" placeholder="Kinh phí"><select class="form-select" name="currency" style="max-width:110px"><option>VND</option><option>USD</option></select></div>
+        <div class="input-group mb-4"><span class="input-group-text">Tên đề tài:</span><input class="form-control" name="title" required></div>
+        <div class="row">
+          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm bắt đầu:</span><input class="form-control" type="number" name="start_year" min="1900" max="2100"></div></div>
+          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm nghiệm thu:</span><input class="form-control" type="number" name="end_year" min="1900" max="2100"></div></div>
+        </div>
+        <div class="row">
+          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Đề tài cấp:</span><input class="form-control" name="level"></div></div>
+          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Chức vụ:</span><input class="form-control" name="position"></div></div>
+        </div>
+        <div class="row">
+          <div class="col-md-7"><div class="input-group mb-3"><span class="input-group-text">Kinh phí:</span><input class="form-control" name="budget" inputmode="decimal"></div></div>
+          <div class="col-md-5"><div class="input-group mb-3"><span class="input-group-text">Đơn vị kinh phí:</span><select class="form-select" name="budget_unit"><option value="triệu VND">triệu VND</option><option value="VND">VND</option><option value="USD">USD</option></select></div></div>
+        </div>
       </div>
       <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
     </form>
@@ -313,15 +371,41 @@
 </div>
 
 <div class="modal fade" id="addPublication" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
     <form id="publicationForm">
       <div class="modal-header"><h5 class="modal-title">Thêm công bố khoa học</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
-        <input type="hidden" name="type" id="publicationType" value="article">
-        <div class="input-group mb-3"><input class="form-control" name="search" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo"><button type="button" class="btn btn-outline-success" id="paperSearchBtn"><i class="bi bi-search"></i></button></div>
-        <input class="form-control mb-3" name="title" placeholder="Tên công trình" required>
-        <input class="form-control mb-3" name="location" placeholder="Tạp chí/Nơi công bố">
-        <div class="row"><div class="col"><input class="form-control mb-3" type="number" name="year" placeholder="Năm"></div><div class="col"><input class="form-control mb-3" name="doi" placeholder="DOI"></div></div>
+        <div class="input-group mb-4">
+          <span class="input-group-text">Hình thức công bố</span>
+          <select class="form-select" name="type" id="publicationType" required>
+            <option value="">Chọn hình thức công bố</option>
+            <option value="conference">Hội thảo</option>
+            <option value="special_report">Báo cáo chuyên đề</option>
+          </select>
+        </div>
+        <div class="input-group mb-4"><span class="input-group-text">Tên nghiên cứu:</span><input class="form-control" name="title" required></div>
+        <div class="row">
+          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Địa điểm:</span><input class="form-control" name="location"></div></div>
+          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm xuất bản</span><input class="form-control" type="month" name="published_month"></div></div>
+        </div>
+        <textarea class="form-control" name="description" rows="6" placeholder="Thông tin khác"></textarea>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
+
+<div class="modal fade" id="addTextbook" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+    <form id="textbookForm">
+      <div class="modal-header"><h5 class="modal-title">Thêm sách giáo trình</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="input-group mb-4"><span class="input-group-text">Tên giáo trình</span><input class="form-control" name="title" required></div>
+        <div class="row">
+          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Nơi xuất bản</span><input class="form-control" name="publisher"></div></div>
+          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm xuất bản</span><input class="form-control" type="month" name="published_month"></div></div>
+        </div>
+        <textarea class="form-control" name="description" rows="6" placeholder="Thông tin khác"></textarea>
       </div>
       <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
     </form>
