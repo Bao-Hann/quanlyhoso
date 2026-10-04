@@ -1,4 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Chủ đề giao diện theo tâm trạng
+  const themeLabels = {
+    default:'Mặc định',
+    chatgpt:'ChatGPT',
+    github:'GitHub',
+    shopee:'Shopee',
+    youtube:'YouTube',
+    tiktok:'TikTok'
+  };
+  const savedTheme = localStorage.getItem('scientist-theme') || 'default';
+  const applyTheme = theme => {
+    document.body.dataset.theme = theme;
+    localStorage.setItem('scientist-theme', theme);
+    const label = document.getElementById('currentThemeLabel');
+    if (label) label.textContent = themeLabels[theme] || themeLabels.default;
+  };
+  applyTheme(savedTheme);
+  document.querySelectorAll('.theme-option').forEach(btn => {
+    btn.addEventListener('click', () => applyTheme(btn.dataset.themeOption));
+  });
+
   const editBtn = document.getElementById('editGeneralBtn');
   const saveBtn = document.getElementById('saveGeneralBtn');
   const fields = document.querySelectorAll('.general-field');
@@ -203,6 +224,19 @@ document.addEventListener('DOMContentLoaded', () => {
     closeModal(textbookForm);
     toast('Đã thêm sách giáo trình.');
   });
+
+  const paperSearchBtn = document.getElementById('paperSearchBtn');
+  if (paperSearchBtn) {
+    paperSearchBtn.addEventListener('click', () => {
+      const q = document.getElementById('publicationSearch')?.value.trim();
+      const hint = document.getElementById('publicationSearchHint');
+      if (!q) {
+        if (hint) hint.textContent = 'Nhập DOI, link website hoặc tên công trình để tìm.';
+        return;
+      }
+      if (hint) hint.textContent = 'Đã nhận từ khóa: “' + q + '”. Bản GitHub Pages hiện chỉ mô phỏng tìm kiếm; khi chạy Django có thể nối API DOI/Crossref.';
+    });
+  }
 
   const links = [...document.querySelectorAll('.sidebar a[href^="#"]')];
   const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
