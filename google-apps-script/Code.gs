@@ -15,10 +15,6 @@ function doGet(e) {
 
   if (page === 'app' || page === 'home') {
     const user = getCurrentUser();
-    if (!user.email) {
-      return renderLogin_('Không lấy được email Google. Hãy triển khai Web App với quyền "User accessing the web app".');
-    }
-
     const t = HtmlService.createTemplateFromFile('Index');
     t.userJson = JSON.stringify(user);
     return t.evaluate()
@@ -46,11 +42,12 @@ function getWebAppUrl() {
 
 function getCurrentUser() {
   const email = Session.getActiveUser().getEmail() || '';
-  const name = email ? email.split('@')[0] : '';
+  const temporaryKey = Session.getTemporaryActiveUserKey() || '';
+  const name = email ? email.split('@')[0] : 'Người dùng Google';
   return {
     email: email,
     name: name,
-    temporaryKey: Session.getTemporaryActiveUserKey()
+    temporaryKey: temporaryKey
   };
 }
 
@@ -338,7 +335,7 @@ function sanitizeFileName_(name) {
 
 function assertSignedIn_() {
   const user = getCurrentUser();
-  if (!user.email) {
-    throw new Error('Bạn chưa đăng nhập bằng tài khoản Google.');
+  if (!user.email && !user.temporaryKey) {
+    throw new Error('Không xác định được phiên người dùng Google.');
   }
 }
