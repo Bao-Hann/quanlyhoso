@@ -182,7 +182,31 @@
           </ul>
           <div class="tab-content table-wrapper">
             <div class="tab-pane fade show active" id="degree">
-              <table class="table table-hover"><thead class="align-middle table-light"><tr class="text-center"><th>Học hàm/Học vị</th><th>Ngành/Chuyên ngành</th><th>Năm</th><th>Khóa luận/Luận văn/Luận án - Chi tiết</th></tr></thead><tbody id="credentialBody"><tr class="empty-row"><td colspan="4" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+              <table class="table table-hover" id="credentialTable">
+                <thead class="align-middle table-light">
+                  <tr class="text-center">
+                    <th style="width:54px"><input class="form-check-input" type="checkbox" id="credentialSelectAll" aria-label="Chọn tất cả"></th>
+                    <th>Học hàm/Học vị</th>
+                    <th>Ngành/Chuyên ngành</th>
+                    <th>Năm</th>
+                    <th>Khóa luận/Luận văn/Luận án - Chi tiết</th>
+                  </tr>
+                </thead>
+                <tbody id="credentialBody">
+                  <tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr>
+                </tbody>
+              </table>
+              <div class="credential-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="credentialSelectAllBtn">
+                  <i class="bi bi-check2-square me-1"></i>Chọn tất cả
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="credentialClearSelectionBtn">
+                  <i class="bi bi-square me-1"></i>Bỏ chọn
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="credentialDeleteSelectedBtn" disabled>
+                  <i class="bi bi-trash me-1"></i>Xóa đã chọn
+                </button>
+              </div>
             </div>
             <div class="tab-pane fade" id="language">
               <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>Ngoại ngữ</th><th>Mức độ thành thạo</th><th>Chứng chỉ</th></tr></thead><tbody id="languageBody"><tr class="empty-row"><td colspan="3" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
@@ -353,6 +377,7 @@
 <div class="modal fade" id="addCredential" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
     <form id="credentialForm">
+      <input type="hidden" name="credential_edit_key" id="credentialEditKey" value="">
       <div class="modal-header"><h5 class="modal-title">Thêm học vị</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
         <input type="hidden" name="kind" id="credentialKind" value="degree">
