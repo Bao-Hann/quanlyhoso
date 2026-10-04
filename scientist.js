@@ -241,10 +241,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const body = document.getElementById('seminarBody');
     removeEmpty(body);
     const stt = body.querySelectorAll('tr').length + 1;
-    const month = fd.get('published_month') || '';
+    const month = fd.get('month') || '';
+    const year = fd.get('year') || '';
+    const published = [month, year].filter(Boolean).join('/');
     body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+month+
-      '</td><td>'+fd.get('location')+'</td><td>'+fd.get('role')+'</td><td>'+fd.get('description')+'</td></tr>');
+      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+published+
+      '</td><td>'+fd.get('publisher')+'</td><td>'+fd.get('publication_type')+
+      '</td><td>'+fd.get('description')+'</td></tr>');
     seminarForm.reset();
     closeModal(seminarForm);
     toast('Đã thêm Seminar - Hội thảo.');
@@ -257,11 +260,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const body = document.getElementById('textbookBody');
     removeEmpty(body);
     const stt = body.querySelectorAll('tr').length + 1;
-    const month = fd.get('published_month') || '';
-    const year = month ? month.split('-')[0] : '';
+    const month = fd.get('month') || '';
+    const year = fd.get('year') || '';
+    const published = [month, year].filter(Boolean).join('/');
     body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+year+
-      '</td><td>'+fd.get('publisher')+'</td><td>'+fd.get('role')+'</td><td>'+fd.get('description')+'</td></tr>');
+      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+published+
+      '</td><td>'+fd.get('publisher')+'</td><td></td><td>'+fd.get('description')+'</td></tr>');
     textbookForm.reset();
     closeModal(textbookForm);
     toast('Đã thêm sách giáo trình.');
@@ -321,6 +325,17 @@ document.addEventListener('DOMContentLoaded', () => {
           switchPublicationModal(publicationSearchModalEl, publicationManualModalEl);
         });
       }
+    });
+  }
+
+  const savedArticleSearch = document.getElementById('savedArticleSearch');
+  if (savedArticleSearch) {
+    savedArticleSearch.addEventListener('input', () => {
+      const keyword = savedArticleSearch.value.trim().toLowerCase();
+      document.querySelectorAll('#articleBody tr:not(.empty-row)').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(keyword) ? '' : 'none';
+      });
     });
   }
 
