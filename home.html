@@ -16,6 +16,19 @@
     <nav class="col-md-3 col-lg-2 d-md-block sidebar position-fixed vh-100">
       <div class="d-flex flex-column p-3">
         <a class="text-dark text-center text-decoration-none mb-3" href="#top"><h3>Hồ sơ cá nhân</h3></a>
+        <div class="dropdown mb-3 theme-picker">
+          <button class="btn btn-outline-secondary w-100 dropdown-toggle d-flex align-items-center justify-content-between" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span><i class="bi bi-palette me-2"></i>Chủ đề: <strong id="currentThemeLabel">Mặc định</strong></span>
+          </button>
+          <ul class="dropdown-menu w-100 shadow-sm">
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="default"><span class="theme-dot theme-dot-default"></span>Mặc định</button></li>
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="chatgpt"><span class="theme-dot theme-dot-chatgpt"></span>ChatGPT</button></li>
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="github"><span class="theme-dot theme-dot-github"></span>GitHub</button></li>
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="shopee"><span class="theme-dot theme-dot-shopee"></span>Shopee</button></li>
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="youtube"><span class="theme-dot theme-dot-youtube"></span>YouTube</button></li>
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="tiktok"><span class="theme-dot theme-dot-tiktok"></span>TikTok</button></li>
+          </ul>
+        </div>
         <ul class="nav flex-column">
           <li class="nav-item"><a class="nav-link text-dark" href="#general">Thông tin cơ bản</a></li>
           <li class="nav-item"><a class="nav-link text-dark" href="#additional">Thông tin bổ sung</a></li>
@@ -373,9 +386,20 @@
 <div class="modal fade" id="addPublication" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
     <form id="publicationForm">
-      <div class="modal-header"><h5 class="modal-title">Thêm công bố khoa học</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-header">
+        <h5 class="modal-title">Thêm công bố khoa học</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
       <div class="modal-body">
-        <div class="input-group mb-4">
+        <div class="input-group mb-4 publication-search">
+          <input class="form-control" name="search" id="publicationSearch" placeholder="Tìm kiếm công bố bằng Mã DOI, Link website hoặc Tên công trình">
+          <button class="btn btn-outline-success" type="button" id="paperSearchBtn"><i class="bi bi-search"></i></button>
+        </div>
+        <div id="publicationSearchHint" class="small text-muted mb-3">
+          Có thể tìm trước rồi bổ sung/chỉnh sửa thông tin thủ công bên dưới.
+        </div>
+
+        <div class="input-group mb-3">
           <span class="input-group-text">Hình thức công bố</span>
           <select class="form-select" name="type" id="publicationType" required>
             <option value="">Chọn hình thức công bố</option>
@@ -383,12 +407,33 @@
             <option value="special_report">Báo cáo chuyên đề</option>
           </select>
         </div>
-        <div class="input-group mb-4"><span class="input-group-text">Tên nghiên cứu:</span><input class="form-control" name="title" required></div>
-        <div class="row">
-          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Địa điểm:</span><input class="form-control" name="location"></div></div>
-          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm xuất bản</span><input class="form-control" type="month" name="published_month"></div></div>
+
+        <div class="input-group mb-3">
+          <span class="input-group-text">Tên nghiên cứu:</span>
+          <input class="form-control" name="title" placeholder="Nhập tên công trình/nghiên cứu" required>
         </div>
-        <textarea class="form-control" name="description" rows="6" placeholder="Thông tin khác"></textarea>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="input-group mb-3">
+              <span class="input-group-text">Địa điểm:</span>
+              <input class="form-control" name="location" placeholder="Nơi tổ chức/Nơi công bố">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="input-group mb-3">
+              <span class="input-group-text">Thời gian công bố</span>
+              <input class="form-control" type="month" name="published_month">
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group mb-3">
+          <span class="input-group-text">DOI/Link</span>
+          <input class="form-control" name="doi_or_url" placeholder="DOI hoặc đường dẫn công bố">
+        </div>
+
+        <textarea class="form-control" name="description" rows="5" placeholder="Thông tin khác"></textarea>
       </div>
       <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
     </form>
