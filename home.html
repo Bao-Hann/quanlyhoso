@@ -245,15 +245,26 @@
           </ul>
 
           <div class="tab-content publication-tab-content">
-            <div class="tab-pane fade show active table-wrapper" id="articleTab">
-              <table class="table table-hover">
-                <thead class="table-light">
-                  <tr class="text-center">
-                    <th>TT</th><th>Tên bài báo</th><th>Năm</th><th>Tạp chí/Nơi công bố</th><th>DOI/Link</th><th>Thông tin</th>
-                  </tr>
-                </thead>
-                <tbody id="articleBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody>
-              </table>
+            <div class="tab-pane fade show active" id="articleTab">
+              <div class="saved-publication-search mb-4">
+                <i class="bi bi-search"></i>
+                <input type="text" id="savedArticleSearch" placeholder="Tìm kiếm bài báo đã lưu bằng Tên tác giả hoặc Tên tạp chí">
+              </div>
+              <div class="table-wrapper">
+                <table class="table table-hover">
+                  <thead class="table-light">
+                    <tr class="text-center">
+                      <th>TT</th>
+                      <th>Tên công trình</th>
+                      <th>Tác giả</th>
+                      <th>Năm xuất bản</th>
+                      <th>ISSN</th>
+                      <th>Tên tạp chí</th>
+                    </tr>
+                  </thead>
+                  <tbody id="articleBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody>
+                </table>
+              </div>
             </div>
 
             <div class="tab-pane fade table-wrapper" id="seminarTab">
@@ -441,29 +452,31 @@
 </div>
 
 <div class="modal fade" id="addPublication" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content publication-search-modal">
-    <div class="modal-header">
-      <h5 class="modal-title">Thêm công bố khoa học</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-    </div>
-
-    <div class="modal-body publication-search-body">
-      <div class="input-group publication-search">
-        <input class="form-control" id="publicationSearch" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo">
-        <button class="btn btn-outline-success" type="button" id="paperSearchBtn"><i class="bi bi-search"></i></button>
+  <div class="modal-dialog modal-dialog-centered publication-original-dialog">
+    <div class="modal-content publication-search-modal">
+      <div class="original-modal-header">
+        <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        <h5 class="modal-title">Thêm công bố khoa học</h5>
+        <button type="button" class="btn btn-primary original-add-btn" id="articleSearchAddBtn">Add</button>
       </div>
 
-      <div id="publicationSearchResults" class="publication-search-results">
-        <div id="publicationSearchHint" class="text-muted text-center d-none"></div>
+      <div class="modal-body publication-search-body">
+        <div class="input-group publication-search">
+          <input class="form-control" id="publicationSearch" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo">
+          <button class="btn btn-outline-success" type="button" id="paperSearchBtn"><i class="bi bi-search"></i></button>
+        </div>
+        <div id="publicationSearchResults" class="publication-search-results">
+          <div id="publicationSearchHint" class="text-muted text-center d-none"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-start">
+        <button type="button" class="btn btn-link p-0 publication-manual-link" id="openManualPublication">
+          Bạn có thể tạo bài báo bằng cách nhập liệu ở đây
+        </button>
       </div>
     </div>
-
-    <div class="modal-footer justify-content-start">
-      <button type="button" class="btn btn-link p-0 publication-manual-link" id="openManualPublication">
-        Bạn có thể tạo bài báo bằng cách nhập liệu ở đây
-      </button>
-    </div>
-  </div></div>
+  </div>
 </div>
 
 <div class="modal fade" id="addPublicationManual" tabindex="-1">
@@ -517,58 +530,96 @@
 </div>
 
 <div class="modal fade" id="addSeminar" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
-    <form id="seminarForm">
-      <div class="modal-header">
-        <h5 class="modal-title">Thêm Seminar - Hội thảo</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="input-group mb-3">
-          <span class="input-group-text">Tên Seminar/Hội thảo:</span>
-          <input class="form-control" name="title" required>
+  <div class="modal-dialog modal-dialog-centered publication-original-dialog">
+    <div class="modal-content">
+      <form id="seminarForm">
+        <div class="original-modal-header">
+          <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+          <h5 class="modal-title">Thêm công bố khoa học</h5>
+          <button class="btn btn-primary original-add-btn" type="submit">Add</button>
         </div>
-        <div class="row">
-          <div class="col-md-6">
-            <div class="input-group mb-3">
-              <span class="input-group-text">Thời gian:</span>
-              <input class="form-control" type="month" name="published_month">
+
+        <div class="modal-body original-simple-form">
+          <div class="input-group mb-4">
+            <span class="input-group-text">Hình thức công bố</span>
+            <select class="form-select" name="publication_type" required>
+              <option value="">Chọn hình thức công bố</option>
+              <option value="Seminar">Seminar</option>
+              <option value="Hội thảo">Hội thảo</option>
+            </select>
+          </div>
+
+          <div class="input-group mb-4">
+            <span class="input-group-text">Tên giáo trình</span>
+            <input class="form-control" name="title" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="input-group mb-4">
+                <span class="input-group-text">Nơi xuất bản</span>
+                <input class="form-control" name="publisher">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group mb-4">
+                <span class="input-group-text">Năm xuất bản</span>
+                <select class="form-select" name="month">
+                  <option value="">Tháng</option>
+                  <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                </select>
+                <input class="form-control" name="year" type="number" min="1900" max="2100" placeholder="Năm">
+              </div>
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="input-group mb-3">
-              <span class="input-group-text">Địa điểm:</span>
-              <input class="form-control" name="location">
-            </div>
-          </div>
+
+          <textarea class="form-control" name="description" rows="7" placeholder="Thông tin khác"></textarea>
         </div>
-        <div class="input-group mb-3">
-          <span class="input-group-text">Vai trò:</span>
-          <input class="form-control" name="role" placeholder="Báo cáo viên, tham dự, đồng tổ chức...">
-        </div>
-        <textarea class="form-control" name="description" rows="5" placeholder="Thông tin khác"></textarea>
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
-    </form>
-  </div></div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <div class="modal fade" id="addTextbook" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
-    <form id="textbookForm">
-      <div class="modal-header"><h5 class="modal-title">Thêm sách giáo trình</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <div class="input-group mb-4"><span class="input-group-text">Tên giáo trình</span><input class="form-control" name="title" required></div>
-        <div class="row">
-          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Nơi xuất bản</span><input class="form-control" name="publisher"></div></div>
-          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm xuất bản</span><input class="form-control" type="month" name="published_month"></div></div>
+  <div class="modal-dialog modal-dialog-centered publication-original-dialog">
+    <div class="modal-content">
+      <form id="textbookForm">
+        <div class="original-modal-header">
+          <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+          <h5 class="modal-title">Thêm sách giáo trình</h5>
+          <button class="btn btn-primary original-add-btn" type="submit">Add</button>
         </div>
-        <div class="input-group mb-3"><span class="input-group-text">Vai trò/Tác giả:</span><input class="form-control" name="role" placeholder="Chủ biên, đồng chủ biên, tác giả..."></div>
-        <textarea class="form-control" name="description" rows="6" placeholder="Thông tin khác"></textarea>
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
-    </form>
-  </div></div>
+
+        <div class="modal-body original-simple-form">
+          <div class="input-group mb-4">
+            <span class="input-group-text">Tên giáo trình</span>
+            <input class="form-control" name="title" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="input-group mb-4">
+                <span class="input-group-text">Nơi xuất bản</span>
+                <input class="form-control" name="publisher">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group mb-4">
+                <span class="input-group-text">Năm xuất bản</span>
+                <select class="form-select" name="month">
+                  <option value="">Tháng</option>
+                  <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                </select>
+                <input class="form-control" name="year" type="number" min="1900" max="2100" placeholder="Năm">
+              </div>
+            </div>
+          </div>
+
+          <textarea class="form-control" name="description" rows="7" placeholder="Thông tin khác"></textarea>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <div class="modal fade" id="addAward" tabindex="-1">
