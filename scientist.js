@@ -1289,17 +1289,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportPreview = document.getElementById('exportPreview');
   const buildExportPreview = async () => {
     if (!exportPreview) return;
-    try { exportPreview.innerHTML = await window.MinistryExport.preview(); }
+    try { exportPreview.innerHTML = await window.MinistryExport.preview(document.getElementById("exportTemplateSelect")?.value || "standard"); }
     catch (err) { exportPreview.textContent = 'Không mở được mẫu Word: ' + err.message; }
   };
+  document.getElementById('exportTemplateSelect')?.addEventListener('change', buildExportPreview);
   document.getElementById('refreshExportPreview')?.addEventListener('click', buildExportPreview);
   document.getElementById('exportCvModal')?.addEventListener('shown.bs.modal', buildExportPreview);
   document.getElementById('downloadExportDoc')?.addEventListener('click', async event => {
     const button = event.currentTarget; button.disabled = true;
     try {
-      const blob = await window.MinistryExport.create();
+      const variant=document.getElementById("exportTemplateSelect")?.value || "standard";
+      const blob = await window.MinistryExport.create(variant);
       const url = URL.createObjectURL(blob), link = document.createElement('a');
-      link.href = url; link.download = 'ly-lich-khoa-hoc.docx'; link.click();
+      link.href = url; link.download = 'ly-lich-khoa-hoc-' + variant + '.docx'; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 10000);
       toast('Đã xuất lý lịch khoa học theo mẫu Bộ.');
     } catch (err) { toast('Không xuất được Word: ' + err.message, 'danger'); }

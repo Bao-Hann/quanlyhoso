@@ -793,8 +793,14 @@
     <div class="modal-body">
       <div class="row g-3">
         <div class="col-lg-4">
-          <label class="form-label fw-semibold">Chọn mẫu xuất</label>
-          <div class="export-template-list"><p>Mẫu Bộ GDĐT – Phụ lục V, Thông tư 08/2011/TT-BGDĐT, theo tệp mẫu đã cung cấp.</p></div>
+          <label for="exportTemplateSelect" class="form-label fw-semibold">Chọn mẫu xuất</label>
+          <select id="exportTemplateSelect" class="form-select">
+            <option value="standard">1. Mẫu Bộ nguyên bản</option>
+            <option value="textbooks">2. Mẫu Bộ + giáo trình</option>
+            <option value="awards">3. Mẫu Bộ + giải thưởng</option>
+            <option value="full">4. Mẫu Bộ + giáo trình + giải thưởng</option>
+          </select>
+          <p class="small text-muted mt-2">Theo tệp mẫu Bộ đã cung cấp. Giáo trình bổ sung ở mục IV.3; giải thưởng bổ sung ở phần V. Số trang tùy nội dung hồ sơ.</p>
           <button type="button" class="btn btn-outline-primary w-100 mt-3" id="refreshExportPreview"><i class="bi bi-eye me-1"></i>Xem trước</button>
           <button type="button" class="btn btn-primary w-100 mt-2" id="downloadExportDoc"><i class="bi bi-file-earmark-word me-1"></i>Xuất file Word</button>
         </div>

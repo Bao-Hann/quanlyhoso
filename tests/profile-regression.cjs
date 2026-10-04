@@ -79,5 +79,20 @@ function app(account='test-a',gas=false) {
  tableReload.get('#workBody .managed-edit-btn').dispatchEvent(new tableReload.window.Event('click',{bubbles:true}));
  assert.equal(tableReload.get('#workForm [name="institution"]').value,'Đơn vị kiểm thử');
  const tableOther=app('other-account');assert.equal(tableOther.document.querySelectorAll('#workBody tr:not(.empty-row)').length,0);
+ const variants=app('variant-test');variants.set('[name="person_name"]','Nguyễn Văn Kiểm Thử');
+ for(const [body,data] of [['textbookBody',{title:'Giáo trình công nghệ thông tin',year:'2025',publisher:'Nhà xuất bản Giáo dục',description:'Chủ biên'}],['awardBody',{category:'Giải thưởng',name:'Giải thưởng nghiên cứu khoa học',year:'2026',organization:'Trường Đại học',description:'Thành tích xuất sắc'}]]) {
+   const row=variants.document.createElement('tr');Object.assign(row.dataset,data);variants.get('#'+body).appendChild(row);
+ }
+ const variantOut=path.resolve(root,'../qa-export-variants');fs.mkdirSync(variantOut,{recursive:true});
+ for(const variant of ['standard','textbooks','awards','full']) {
+   const file=await variants.exporter.create(variant),buffer=Buffer.from(await file.arrayBuffer());
+   fs.writeFileSync(path.join(variantOut,variant+'.docx'),buffer);
+   const zip=await JSZip.loadAsync(buffer),xml=await zip.file('word/document.xml').async('string');
+   assert.equal(xml.includes('3. Sách và giáo trình'),['textbooks','full'].includes(variant));
+   assert.equal(xml.includes('V. GIẢI THƯỞNG VÀ THÀNH TÍCH'),['awards','full'].includes(variant));
+   assert.equal(xml.includes('Giáo trình công nghệ thông tin'),['textbooks','full'].includes(variant));
+   assert.equal(xml.includes('Giải thưởng nghiên cứu khoa học'),['awards','full'].includes(variant));
+   assert.equal((await variants.exporter.preview(variant)).includes('GIẢI THƯỞNG VÀ THÀNH TÍCH'),['awards','full'].includes(variant));
+ }
  console.log('PASS: personal save/reload/account isolation, GAS save, date bounds, PDF validation/persistence/isolation, exact DOCX template parts and data.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

@@ -97,3 +97,14 @@ Tạo thêm tệp mã `Auth.gs`. Thay nội dung `Code.gs`, `Index.html`, `Login
 ## Kiểm tra
 
 Chạy `npm install` và `npm test` ở thư mục gốc. Kiểm tra gồm tách hai tài khoản, cùng email dùng chung hồ sơ, chặn chạy dưới quyền chủ dự án, đăng ký/đăng nhập mật khẩu, thu hồi phiên, giới hạn thử mật khẩu và lưu/tải lại bảng hồ sơ.
+
+## Bốn mẫu xuất Word
+
+Chọn mẫu trong cửa sổ Xuất hồ sơ rồi xem trước hoặc tải `.docx`:
+
+1. Mẫu Bộ nguyên bản.
+2. Mẫu Bộ + sách, giáo trình ở mục IV.3.
+3. Mẫu Bộ + giải thưởng, thành tích ở phần V.
+4. Mẫu Bộ + cả giáo trình và giải thưởng.
+
+File gốc làm nền cho mọi mẫu, giữ phông chữ, khổ giấy, bảng và phần ký tên. Mẫu bổ sung mở rộng theo cùng định dạng; không phải mẫu mới do Bộ ban hành. Số trang phụ thuộc dữ liệu, không cố định 3–4 trang. Để nhận thay đổi này, cập nhật `Index.html` và `Script.html`, sau đó triển khai phiên bản mới.
