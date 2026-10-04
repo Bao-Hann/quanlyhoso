@@ -29,3 +29,271 @@ html,body{margin:0;min-height:100%;font-family:"Segoe UI",Tahoma,Geneva,Verdana,
 .auth-footerbar{background:#1e293b;color:#fff;text-align:center;padding:1rem}
 .d-none{display:none!important}
 @media(max-width:640px){.auth-nav-inner{padding:0 1rem}.auth-card{padding:1.5rem}.auth-page{padding:1rem}}
+
+/* ===== Scientist Profile login — matched to reference page ===== */
+.scientist-login-page{
+  margin:0;
+  min-height:100vh;
+  background:linear-gradient(135deg,#ff956f 0%,#ffc18d 100%);
+  color:#171717;
+  font-family:Arial,"Helvetica Neue",sans-serif;
+}
+
+.scientist-login-shell{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:36px 28px;
+}
+
+.scientist-login-card{
+  width:min(1050px,100%);
+  min-height:688px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  overflow:hidden;
+  background:#fff;
+  border-radius:24px;
+  box-shadow:0 2px 12px rgba(68,36,16,.08);
+}
+
+.scientist-brand-panel{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:48px 54px;
+  background:#f7f8f9;
+}
+
+.scientist-brand-content{
+  width:100%;
+  max-width:390px;
+  text-align:center;
+}
+
+.scientist-brand-image{
+  display:block;
+  width:300px;
+  height:258px;
+  max-width:100%;
+  object-fit:cover;
+  margin:0 auto 28px;
+}
+
+.scientist-brand-content h1{
+  margin:0;
+  color:#282828;
+  font-size:2rem;
+  line-height:1.2;
+  font-weight:700;
+  letter-spacing:-.03em;
+}
+
+.scientist-brand-content p{
+  margin:16px 0 0;
+  color:#5c5c5c;
+  font-size:1.18rem;
+  line-height:1.45;
+}
+
+.scientist-form-panel{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:42px 38px;
+  background:#fff;
+}
+
+.scientist-form-wrap{
+  width:100%;
+  max-width:452px;
+}
+
+.scientist-form-wrap h2{
+  margin:0 0 42px;
+  text-align:center;
+  color:#151515;
+  font-size:2.9rem;
+  line-height:1.1;
+  font-weight:500;
+  letter-spacing:-.03em;
+}
+
+.scientist-auth-form{
+  display:flex;
+  flex-direction:column;
+  gap:28px;
+}
+
+.scientist-field{
+  display:flex;
+  flex-direction:column;
+  gap:13px;
+}
+
+.scientist-field label{
+  color:#111;
+  font-size:1.27rem;
+  font-weight:400;
+}
+
+.scientist-field input{
+  width:100%;
+  min-height:57px;
+  padding:0 18px;
+  border:1px solid #d8dce1;
+  border-radius:9px;
+  background:#fff;
+  color:#242424;
+  font:inherit;
+  font-size:1.12rem;
+  outline:none;
+  transition:border-color .15s ease,box-shadow .15s ease;
+}
+
+.scientist-field input::placeholder{
+  color:#5d6470;
+  opacity:1;
+}
+
+.scientist-field input:focus{
+  border-color:#b32c2d;
+  box-shadow:0 0 0 3px rgba(179,44,45,.08);
+}
+
+.scientist-login-button{
+  min-height:66px;
+  margin-top:-4px;
+  border:0;
+  border-radius:7px;
+  background:#b32c2d;
+  color:#fff;
+  font-size:1.22rem;
+  font-weight:400;
+  cursor:pointer;
+  transition:background-color .15s ease,transform .05s ease;
+}
+
+.scientist-login-button:hover{
+  background:#9f2526;
+}
+
+.scientist-login-button:active{
+  transform:translateY(1px);
+}
+
+.scientist-divider{
+  height:1px;
+  margin:24px 0;
+  background:#dedede;
+}
+
+.scientist-google-button{
+  width:100%;
+  min-height:69px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  border:1px solid #dadada;
+  border-radius:8px;
+  background:#fff;
+  color:#484848;
+  font:inherit;
+  font-size:1.2rem;
+  font-weight:700;
+  cursor:pointer;
+  transition:background-color .15s ease,border-color .15s ease;
+}
+
+.scientist-google-button:hover{
+  background:#fafafa;
+  border-color:#c9c9c9;
+}
+
+.google-g{
+  width:28px;
+  height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-family:Arial,sans-serif;
+  font-size:1.65rem;
+  font-weight:800;
+  line-height:1;
+  color:#4285f4;
+  position:relative;
+}
+
+.google-g::before{
+  content:"";
+  position:absolute;
+  inset:2px;
+  border-radius:50%;
+  border-top:4px solid #ea4335;
+  border-right:4px solid #4285f4;
+  border-bottom:4px solid #34a853;
+  border-left:4px solid #fbbc05;
+  opacity:.20;
+}
+
+.scientist-register-line{
+  margin:30px 0 0;
+  text-align:center;
+  color:#171717;
+  font-size:1.12rem;
+  line-height:1.5;
+}
+
+.scientist-register-line a{
+  color:#b32c2d;
+  text-decoration:none;
+}
+
+.scientist-register-line a:hover{
+  text-decoration:underline;
+}
+
+.scientist-login-page .auth-message{
+  margin:-22px 0 22px;
+}
+
+@media(max-width:850px){
+  .scientist-login-shell{padding:22px 16px;}
+  .scientist-login-card{
+    grid-template-columns:1fr;
+    min-height:auto;
+    border-radius:20px;
+  }
+  .scientist-brand-panel{
+    padding:34px 24px 28px;
+  }
+  .scientist-brand-image{
+    width:220px;
+    height:auto;
+    margin-bottom:18px;
+  }
+  .scientist-brand-content h1{font-size:1.7rem;}
+  .scientist-brand-content p{font-size:1rem;margin-top:9px;}
+  .scientist-form-panel{padding:34px 24px 40px;}
+  .scientist-form-wrap h2{
+    font-size:2.15rem;
+    margin-bottom:28px;
+  }
+}
+
+@media(max-width:480px){
+  .scientist-login-shell{padding:0;}
+  .scientist-login-card{
+    min-height:100vh;
+    border-radius:0;
+  }
+  .scientist-brand-panel{padding:28px 18px 22px;}
+  .scientist-brand-image{width:180px;}
+  .scientist-form-panel{padding:30px 20px 36px;}
+  .scientist-field label{font-size:1.05rem;}
+  .scientist-field input{min-height:53px;font-size:1rem;}
+  .scientist-login-button,
+  .scientist-google-button{min-height:58px;font-size:1.02rem;}
+}
