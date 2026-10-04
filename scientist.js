@@ -1297,6 +1297,11 @@ document.addEventListener('DOMContentLoaded', () => {
     catch (err) { exportPreview.textContent = 'Không mở được mẫu Word: ' + err.message; }
   };
   document.getElementById('exportTemplateSelect')?.addEventListener('change', buildExportPreview);
+  document.querySelectorAll('[name="exportTemplateChoice"]').forEach(choice=>choice.addEventListener('change',()=>{
+    if(!choice.checked) return;
+    document.getElementById('exportTemplateSelect').value=choice.value;
+    buildExportPreview();
+  }));
   document.getElementById('refreshExportPreview')?.addEventListener('click', buildExportPreview);
   document.getElementById('exportCvModal')?.addEventListener('shown.bs.modal', buildExportPreview);
   document.getElementById('downloadExportDoc')?.addEventListener('click', async event => {

@@ -805,13 +805,13 @@
     <div class="modal-body">
       <div class="row g-3">
         <div class="col-lg-4">
-          <label for="exportTemplateSelect" class="form-label fw-semibold">Chọn mẫu xuất</label>
-          <select id="exportTemplateSelect" class="form-select">
-            <option value="standard">1. Mẫu Bộ nguyên bản</option>
-            <option value="textbooks">2. Mẫu Bộ + giáo trình</option>
-            <option value="awards">3. Mẫu Bộ + giải thưởng</option>
-            <option value="full">4. Mẫu Bộ + giáo trình + giải thưởng</option>
-          </select>
+          <fieldset class="export-template-picker"><legend>Chọn mẫu xuất — 4 mẫu</legend>
+            <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="standard" checked><span><strong>1. Mẫu Bộ nguyên bản</strong><small>Giữ nguyên các mục I–IV của mẫu bạn gửi.</small></span></label>
+            <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="textbooks"><span><strong>2. Thêm giáo trình</strong><small>Bổ sung sách và giáo trình tại mục IV.3.</small></span></label>
+            <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="awards"><span><strong>3. Thêm giải thưởng</strong><small>Bổ sung giải thưởng và thành tích tại phần V.</small></span></label>
+            <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="full"><span><strong>4. Giáo trình và giải thưởng</strong><small>Có đầy đủ mục IV.3 và phần V.</small></span></label>
+          </fieldset>
+          <select id="exportTemplateSelect" hidden aria-hidden="true" tabindex="-1"><option value="standard">Mẫu chuẩn</option><option value="textbooks">Giáo trình</option><option value="awards">Giải thưởng</option><option value="full">Cả hai</option></select>
           <p class="small text-muted mt-2">Theo tệp mẫu Bộ đã cung cấp. Giáo trình bổ sung ở mục IV.3; giải thưởng bổ sung ở phần V. Số trang tùy nội dung hồ sơ.</p>
           <button type="button" class="btn btn-outline-primary w-100 mt-3" id="refreshExportPreview"><i class="bi bi-eye me-1"></i>Xem trước</button>
           <button type="button" class="btn btn-primary w-100 mt-2" id="downloadExportDoc"><i class="bi bi-file-earmark-word me-1"></i>Xuất file Word</button>

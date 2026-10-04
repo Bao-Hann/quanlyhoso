@@ -76,6 +76,9 @@ function app(account='test-a',gas=false) {
  assert.equal(serialize(await blankZip.file('word/document.xml').async('string')),serialize(await original.file('word/document.xml').async('string')),'Blank standard export must retain every original template paragraph, tab, table and signature style');
  const xml=await generated.file('word/document.xml').async('string');assert.match(xml,/Nguyễn Văn Kiểm Thử/);assert.match(xml,/Nghiên cứu kiểm thử/);assert.doesNotMatch(xml,/managed-edit|Chưa có dữ liệu|Han Han/);
  const preview=await a.exporter.preview();assert.match(preview,/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM/);
+ assert.match(preview,/font-weight:700/);assert.match(preview,/display:inline-flex/);assert.match(preview,/border-bottom:1px dotted/);assert.match(preview,/BM04\/QT03\/ĐT/);
+ for(const file of ['index.html','google-apps-script/Index.html']){const html=fs.readFileSync(path.join(root,file),'utf8');assert.equal((html.match(/name="exportTemplateChoice"/g)||[]).length,4,'Four visible export choices in '+file);}
+
  const tableWriter=app('table-test');
  tableWriter.set('#workForm [name="start"]','2026-10-04');tableWriter.set('#workForm [name="end"]','2026-10-05');tableWriter.set('#workForm [name="institution"]','Đơn vị kiểm thử');tableWriter.event('workForm','submit');
  await new Promise(resolve=>setTimeout(resolve,650));

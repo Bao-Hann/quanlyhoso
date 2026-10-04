@@ -2522,3 +2522,13 @@ body[data-theme="dashboard"] .welcome-section{padding:28px 2rem 16px!important;}
   body[data-theme="dashboard"] .welcome-section{padding:16px!important;}
 }
 @media(prefers-reduced-motion:reduce){.welcome-action{transition:none!important;}}
+
+.export-template-picker{border:0;margin:0;padding:0;}
+.export-template-picker legend{font-size:1rem;font-weight:700;margin-bottom:12px;}
+.export-template-card{display:flex;align-items:flex-start;gap:12px;padding:14px;margin-bottom:10px;border:1px solid var(--theme-border);border-radius:10px;background:var(--theme-card);color:var(--theme-text);cursor:pointer;}
+.export-template-card:has(input:checked){border-color:var(--theme-focus);box-shadow:inset 3px 0 var(--theme-focus);background:var(--theme-card-alt);}
+.export-template-card input{margin-top:4px;flex-shrink:0;accent-color:var(--theme-focus);}
+.export-template-card strong{display:block;font-size:.95rem;}
+.export-template-card small{display:block;font-size:.8rem;color:var(--theme-muted);margin-top:4px;line-height:1.5;}
+#exportPreview{overflow-x:auto;}
+#exportPreview>div{min-width:620px;}

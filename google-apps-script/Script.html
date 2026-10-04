@@ -158,18 +158,44 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   const escape=text=>String(text).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
   function previewParagraph(p) {
-    const jc=descendants(p,'jc')[0]?.getAttributeNS(W,'val')||'left';
+    const pr=children(p,'pPr')[0];
+    const jc=pr && children(pr,'jc')[0]?.getAttributeNS(W,'val')||'left';
     const size=Number(descendants(p,'sz')[0]?.getAttributeNS(W,'val')||26)/2;
-    const text=descendants(p,'r').map(r=>children(r,'t').map(t=>escape(t.textContent)).join('')+(children(r,'tab').length?'&emsp;':'')+(children(r,'br').length?'<br>':'')).join('');
-    return '<p style="text-align:'+jc+';font-size:'+size+'pt;margin:0 0 5pt">'+(text||'&nbsp;')+'</p>';
+    const stops=pr?descendants(pr,'tab').filter(t=>t.getAttributeNS(W,'val')!=='clear'):[];
+    const groups=[''];let tabCount=0;
+    children(p,'r').forEach(run=>{
+      const rp=children(run,'rPr')[0];
+      const bold=rp && children(rp,'b').some(x=>x.getAttributeNS(W,'val')!=='0' && x.getAttributeNS(W,'val')!=='false');
+      const italic=rp && children(rp,'i').length;
+      [...run.children].forEach(node=>{
+        if(node.localName==='tab'){groups.push('');tabCount++;}
+        else if(node.localName==='br')groups[groups.length-1]+='<br>';
+        else if(node.localName==='t') groups[groups.length-1]+='<span style="font-weight:'+(bold?'700':'400')+';font-style:'+(italic?'italic':'normal')+'">'+escape(node.textContent)+'</span>';
+      });
+    });
+    let text=groups.join('');
+    if(tabCount && stops.length){
+      let previous=0;
+      text=groups.map((group,i)=>{
+        if(i>=stops.length)return group;
+        const position=Number(stops[i].getAttributeNS(W,'pos'));
+        const width=Math.max(0,position-previous)/9356*100;previous=position;
+        const dotted=stops[i].getAttributeNS(W,'leader')==='dot';
+        return '<span style="display:inline-flex;align-items:baseline;vertical-align:bottom;width:'+width+'%;min-width:0">'+
+          '<span style="flex-shrink:0;max-width:100%;overflow-wrap:anywhere">'+group+'</span>'+
+          '<span style="flex:1;min-width:6px;'+(dotted?'border-bottom:1px dotted #555;':'')+'"></span></span>';
+      }).join('');
+    } else if(tabCount)text=groups.join('&emsp;');
+    return '<p style="text-align:'+jc+';font-size:'+size+'pt;line-height:1.3;margin:0 0 5pt">'+(text||'&nbsp;')+'</p>';
   }
   window.MinistryExport={
     create:async(variant="standard")=>{const {zip}=await build(variant);return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});},
-    preview:async(variant="standard")=>{const {body}=await build(variant);return '<div style="font-family:Times New Roman;color:#000">'+[...body.children].map(el=>{
+    preview:async(variant="standard")=>{const {zip,body}=await build(variant);const logo=await zip.file('word/media/image1.png').async('base64');return '<div style="font-family:Times New Roman;color:#000"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16pt"><img alt="" src="data:image/png;base64,'+logo+'" style="width:115px;height:auto"><span style="font-style:italic;font-size:10pt">BM04/QT03/ĐT</span></div>'+[...body.children].map(el=>{
       if(el.localName==='p')return previewParagraph(el);
       if(el.localName!=='tbl')return '';
       const grid=descendants(el,'gridCol').map(x=>Number(x.getAttributeNS(W,'w'))),sum=grid.reduce((a,b)=>a+b,0);
-      return '<table style="width:100%;border-collapse:collapse;margin:5pt 0">'+children(el,'tr').map(row=>'<tr>'+children(row,'tc').map((cell,i)=>'<td style="border:1px solid #000;padding:3pt;width:'+((grid[i]||sum/grid.length)/sum*100)+'%">'+children(cell,'p').map(previewParagraph).join('')+'</td>').join('')+'</tr>').join('')+'</table>';
+      const bordered=descendants(el,'tblBorders').some(b=>[...b.children].some(x=>!['nil','none'].includes(x.getAttributeNS(W,'val'))));
+      return '<table style="width:100%;border-collapse:collapse;margin:5pt 0">'+children(el,'tr').map(row=>'<tr>'+children(row,'tc').map((cell,i)=>'<td style="border:'+(bordered?'1px solid #000':'0')+';padding:3pt;vertical-align:top;width:'+((grid[i]||sum/grid.length)/sum*100)+'%">'+children(cell,'p').map(previewParagraph).join('')+'</td>').join('')+'</tr>').join('')+'</table>';
     }).join('')+'</div>';}
   };
 })();
@@ -1487,6 +1513,11 @@ document.addEventListener('DOMContentLoaded', () => {
     catch (err) { exportPreview.textContent = 'Không mở được mẫu Word: ' + err.message; }
   };
   document.getElementById('exportTemplateSelect')?.addEventListener('change', buildExportPreview);
+  document.querySelectorAll('[name="exportTemplateChoice"]').forEach(choice=>choice.addEventListener('change',()=>{
+    if(!choice.checked) return;
+    document.getElementById('exportTemplateSelect').value=choice.value;
+    buildExportPreview();
+  }));
   document.getElementById('refreshExportPreview')?.addEventListener('click', buildExportPreview);
   document.getElementById('exportCvModal')?.addEventListener('shown.bs.modal', buildExportPreview);
   document.getElementById('downloadExportDoc')?.addEventListener('click', async event => {
