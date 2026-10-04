@@ -77,7 +77,7 @@ body{
 .theme-dot-chatgpt{background:#10a37f;}
 .theme-dot-github{background:#0969da;}
 .theme-dot-shopee{background:#ee4d2d;}
-.theme-dot-youtube{background:#ff0000;}
+
 .theme-dot-tiktok{background:linear-gradient(135deg,#25f4ee 0 33%,#000 33% 66%,#fe2c55 66%);}
 
 /* Default */
@@ -99,11 +99,6 @@ body[data-theme="github"]{
 body[data-theme="shopee"]{
   --theme-bg:#fff7f3;--theme-surface:#ffffff;--theme-sidebar:#fff0e8;
   --theme-accent:#ee4d2d;--theme-accent-2:#ffd8cc;--theme-text:#2b2b2b;--theme-muted:#777;--theme-border:#f2c6ba;
-}
-/* YouTube */
-body[data-theme="youtube"]{
-  --theme-bg:#f9f9f9;--theme-surface:#ffffff;--theme-sidebar:#ffffff;
-  --theme-accent:#ff0000;--theme-accent-2:#ffe0e0;--theme-text:#0f0f0f;--theme-muted:#606060;--theme-border:#d3d3d3;
 }
 /* TikTok */
 body[data-theme="tiktok"]{
@@ -482,73 +477,7 @@ body[data-theme="shopee"] .form-select:focus{
   box-shadow:0 0 0 2px rgba(238,77,45,.16);
 }
 
-/* ---------- YouTube: clean white chrome, rounded pills, red action ---------- */
-body[data-theme="youtube"]{
-  --theme-font:Roboto,Arial,sans-serif;
-  --theme-canvas:#ffffff;
-  --theme-card:#ffffff;
-  --theme-card-alt:#f2f2f2;
-  --theme-accent:#ff0033;
-  --theme-primary-hover:#cc0029;
-  --theme-text:#0f0f0f;
-  --theme-muted:#606060;
-  --theme-border:#e5e5e5;
-  --theme-sidebar:#ffffff;
-  --theme-accent-2:#f2f2f2;
-  --theme-radius:18px;
-  --theme-radius-lg:16px;
-  --theme-shadow:0 8px 30px rgba(0,0,0,.12);
-  --theme-table-head:#f2f2f2;
-  --theme-input-bg:#ffffff;
-  --theme-heading-weight:600;
-}
-body[data-theme="youtube"] .sidebar{
-  border-right:0;
-}
-body[data-theme="youtube"] .sidebar .nav-link{
-  border-radius:10px;
-  padding:.65rem .75rem;
-}
-body[data-theme="youtube"] .sidebar .nav-link.active{
-  background:#f2f2f2;
-  font-weight:600;
-}
-body[data-theme="youtube"] .full-screen-section>.container{
-  max-width:1180px;
-}
-body[data-theme="youtube"] .full-screen-section:not(.welcome-section)>.container{
-  padding:18px 22px 28px;
-}
-body[data-theme="youtube"] .btn-primary,
-body[data-theme="youtube"] .theme-picker>.btn{
-  border-radius:999px;
-}
-body[data-theme="youtube"] .form-control,
-body[data-theme="youtube"] .form-select{
-  border-radius:999px;
-}
-body[data-theme="youtube"] textarea.form-control{
-  border-radius:12px;
-}
-body[data-theme="youtube"] .input-group>.input-group-text:first-child{
-  border-radius:999px 0 0 999px;
-}
-body[data-theme="youtube"] .input-group>.form-control:last-child,
-body[data-theme="youtube"] .input-group>.form-select:last-child{
-  border-radius:0 999px 999px 0;
-}
-body[data-theme="youtube"] .table-wrapper{
-  border-radius:12px;
-  overflow:auto;
-}
-body[data-theme="youtube"] .table tbody tr:hover{
-  background:#f9f9f9;
-}
-body[data-theme="youtube"] .fixed-hr{
-  opacity:.12;
-}
 
-/* ---------- TikTok: dark creator surface, high contrast cyan/pink ---------- */
 body[data-theme="tiktok"]{
   --theme-font:ProximaNova,Arial,Tahoma,PingFangSC,sans-serif;
   --theme-canvas:#0f0f0f;
@@ -1896,173 +1825,17 @@ body[data-theme="dashboard"] .dropdown-item:active{
   body[data-theme="dashboard"] .oneform-dashboard-overview{padding:1.5rem 1rem;}
   body[data-theme="dashboard"] .full-screen-section:not(.welcome-section){padding:0 1rem!important;}
 }
-
-
-/* =========================================================
-   VISUAL REFERENCE PASS — YouTube / Shopee / ChatGPT / GitHub
-   ========================================================= */
-
-/* Shared: no decorative bullets/icons in themed sidebars */
-body[data-theme="youtube"] .sidebar .nav-link::before,
 body[data-theme="shopee"] .sidebar .nav-link::before,
 body[data-theme="chatgpt"] .sidebar .nav-link::before,
 body[data-theme="github"] .sidebar .nav-link::before{
   content:none!important;
   display:none!important;
 }
-body[data-theme="youtube"] .session-avatar,
 body[data-theme="shopee"] .session-avatar,
 body[data-theme="chatgpt"] .session-avatar,
 body[data-theme="github"] .session-avatar{
   display:none!important;
 }
-
-/* ---------- YouTube — dark sidebar / dark studio-like workspace ---------- */
-body[data-theme="youtube"]{
-  --theme-font:Roboto,Arial,sans-serif;
-  --theme-canvas:#0f0f0f;
-  --theme-card:#0f0f0f;
-  --theme-card-alt:#272727;
-  --theme-accent:#ff0000;
-  --theme-primary-hover:#cc0000;
-  --theme-text:#f1f1f1;
-  --theme-muted:#aaa;
-  --theme-border:#3f3f3f;
-  --theme-sidebar:#0f0f0f;
-  --theme-accent-2:#272727;
-  --theme-radius:10px;
-  --theme-radius-lg:12px;
-  --theme-shadow:none;
-  --theme-table-head:#212121;
-  --theme-input-bg:#121212;
-  --theme-heading-weight:600;
-  background:#0f0f0f!important;
-}
-body[data-theme="youtube"] .sidebar{
-  width:240px!important;
-  background:#0f0f0f!important;
-  border-right:1px solid #303030!important;
-  padding:12px 10px!important;
-}
-body[data-theme="youtube"] main{
-  width:calc(100% - 240px)!important;
-  max-width:none!important;
-  margin-left:240px!important;
-  padding-left:20px!important;
-  padding-right:20px!important;
-  background:#0f0f0f!important;
-  color:#f1f1f1!important;
-}
-body[data-theme="youtube"] .sidebar > .d-flex > a:first-child{
-  text-align:left!important;
-  padding:8px 10px!important;
-  margin-bottom:6px!important;
-}
-body[data-theme="youtube"] .sidebar > .d-flex > a:first-child h3{
-  color:#f1f1f1!important;
-  font-size:1.25rem!important;
-  font-weight:700!important;
-  margin:0!important;
-}
-body[data-theme="youtube"] .session-card{
-  background:transparent!important;
-  border:0!important;
-  padding:8px 12px 14px!important;
-}
-body[data-theme="youtube"] .session-info strong{color:#f1f1f1!important;}
-body[data-theme="youtube"] .session-info small{color:#aaa!important;}
-body[data-theme="youtube"] .theme-picker>.btn{
-  background:#272727!important;
-  color:#f1f1f1!important;
-  border:0!important;
-  border-radius:10px!important;
-  justify-content:flex-start!important;
-  padding:.7rem .9rem!important;
-}
-body[data-theme="youtube"] .theme-picker .dropdown-menu{
-  background:#212121!important;
-  border-color:#3f3f3f!important;
-}
-body[data-theme="youtube"] .theme-picker .dropdown-item{
-  color:#f1f1f1!important;
-}
-body[data-theme="youtube"] .theme-picker .dropdown-item:hover,
-body[data-theme="youtube"] .theme-picker .dropdown-item.active{
-  background:#3f3f3f!important;
-}
-body[data-theme="youtube"] .sidebar .nav{
-  gap:4px;
-}
-body[data-theme="youtube"] .sidebar .nav-link{
-  color:#f1f1f1!important;
-  border-radius:10px!important;
-  padding:.72rem .9rem!important;
-  margin:0!important;
-  font-size:.96rem!important;
-  font-weight:500!important;
-}
-body[data-theme="youtube"] .sidebar .nav-link:hover,
-body[data-theme="youtube"] .sidebar .nav-link.active{
-  background:#272727!important;
-  color:#fff!important;
-}
-body[data-theme="youtube"] .sidebar hr{
-  border-color:#3f3f3f!important;
-  opacity:1!important;
-}
-body[data-theme="youtube"] .full-screen-section:not(.welcome-section)>.container{
-  max-width:1180px!important;
-  background:#181818!important;
-  border:1px solid #303030!important;
-  border-radius:12px!important;
-  padding:24px!important;
-  margin-top:20px!important;
-  margin-bottom:28px!important;
-}
-body[data-theme="youtube"] .welcome-section .container h1,
-body[data-theme="youtube"] .content-header h1,
-body[data-theme="youtube"] .full-screen-section h1{
-  color:#f1f1f1!important;
-}
-body[data-theme="youtube"] .table-wrapper,
-body[data-theme="youtube"] .addition-table-wrapper{
-  border:1px solid #303030!important;
-  background:#181818!important;
-}
-body[data-theme="youtube"] .table thead th{
-  background:#212121!important;
-  color:#f1f1f1!important;
-}
-body[data-theme="youtube"] .table tbody td{
-  background:#181818!important;
-  color:#f1f1f1!important;
-}
-body[data-theme="youtube"] .table-hover>tbody>tr:hover>*{
-  background:#272727!important;
-  color:#fff!important;
-}
-body[data-theme="youtube"] .form-control,
-body[data-theme="youtube"] .form-select{
-  background:#121212!important;
-  border:1px solid #3f3f3f!important;
-  color:#f1f1f1!important;
-  border-radius:10px!important;
-}
-body[data-theme="youtube"] .input-group-text{
-  background:#212121!important;
-  color:#f1f1f1!important;
-  border-color:#3f3f3f!important;
-}
-body[data-theme="youtube"] .modal-content{
-  background:#212121!important;
-  color:#f1f1f1!important;
-  border-color:#3f3f3f!important;
-}
-body[data-theme="youtube"] .modal-header,
-body[data-theme="youtube"] .modal-footer{
-  border-color:#3f3f3f!important;
-}
-body[data-theme="youtube"] .btn-close{filter:invert(1)!important;}
 
 /* ---------- Shopee — catalog/filter language from the reference ---------- */
 body[data-theme="shopee"]{
@@ -2504,7 +2277,6 @@ body[data-theme="github"] a:not(.btn):not(.nav-link):not(.dropdown-item){
 }
 
 @media(max-width:767.98px){
-  body[data-theme="youtube"] .sidebar,
   body[data-theme="shopee"] .sidebar,
   body[data-theme="chatgpt"] .sidebar,
   body[data-theme="github"] .sidebar{
@@ -2512,11 +2284,157 @@ body[data-theme="github"] a:not(.btn):not(.nav-link):not(.dropdown-item){
     position:relative!important;
     height:auto!important;
   }
-  body[data-theme="youtube"] main,
   body[data-theme="shopee"] main,
   body[data-theme="chatgpt"] main,
   body[data-theme="github"] main{
     width:100%!important;
     margin-left:0!important;
   }
+}
+
+
+/* Reference palettes: all controls share the same readable foregrounds. */
+body[data-theme]{
+  --theme-button-text:#fff; --theme-sidebar-text:var(--theme-text);
+  --theme-active-text:var(--theme-text); --theme-focus:#0969da;
+  --theme-head-text:var(--theme-text);
+  font-family:var(--theme-font)!important;
+  background:var(--theme-canvas)!important; color:var(--theme-text)!important;
+  --bs-body-color:var(--theme-text); --bs-body-bg:var(--theme-card);
+  --bs-secondary-color:var(--theme-muted); --bs-border-color:var(--theme-border);
+}
+body[data-theme="chatgpt"]{
+  color-scheme:dark; --theme-canvas:#000; --theme-card:#101010;
+  --theme-sidebar:#000; --theme-card-alt:#1a1a1a; --theme-input-bg:#1a1a1a;
+  --theme-text:#ececec; --theme-muted:#b4b4b4; --theme-border:#333;
+  --theme-accent:#ececec; --theme-accent-2:#1a1a1a; --theme-button-text:#111;
+  --theme-focus:#74a9f8; --theme-table-head:#1a1a1a;
+  --theme-font:"Segoe UI",Arial,sans-serif;
+}
+body[data-theme="github"]{
+  color-scheme:dark; --theme-canvas:#010409; --theme-card:#010409;
+  --theme-sidebar:#0d1117; --theme-card-alt:#161b22; --theme-input-bg:#010409;
+  --theme-text:#f0f6fc; --theme-muted:#9da7b3; --theme-border:#3d444d;
+  --theme-accent:#238636; --theme-primary-hover:#2ea043; --theme-accent-2:#21262d;
+  --theme-focus:#4493f8; --theme-table-head:#161b22;
+  --theme-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+body[data-theme="shopee"]{
+  color-scheme:light; --theme-canvas:#f5f5f5; --theme-card:#fff;
+  --theme-sidebar:#f5f5f5; --theme-card-alt:#fff1eb; --theme-input-bg:#fff;
+  --theme-text:#222; --theme-muted:#666; --theme-border:#d9d9d9;
+  --theme-accent:#c9361c; --theme-primary-hover:#b32d16;
+  --theme-accent-2:#ffede6; --theme-focus:#c9361c; --theme-table-head:#f5f5f5;
+  --theme-font:Arial,"Helvetica Neue",sans-serif;
+}
+body[data-theme="tiktok"]{
+  color-scheme:dark; --theme-canvas:#000; --theme-card:#101010;
+  --theme-sidebar:#000; --theme-card-alt:#222; --theme-input-bg:#222;
+  --theme-text:#f1f1f2; --theme-muted:#b0b0b5; --theme-border:#333;
+  --theme-accent:#fe2c55; --theme-primary-hover:#e41b46;
+  --theme-button-text:#000; --theme-active-text:#ff5275;
+  --theme-accent-2:#222; --theme-focus:#25f4ee; --theme-table-head:#222;
+  --theme-font:Arial,"Segoe UI",sans-serif;
+}
+body[data-theme="ute"],body[data-theme="dashboard"]{
+  color-scheme:light; --theme-canvas:#eef2f6; --theme-card:#fff;
+  --theme-card-alt:#f4f7fa; --theme-sidebar:#045789; --theme-input-bg:#fff;
+  --theme-text:#17344d; --theme-muted:#52677b; --theme-border:#ccd8e2;
+  --theme-accent:#045789; --theme-primary-hover:#03436b; --theme-accent-2:#146c9e;
+  --theme-sidebar-text:#fff; --theme-active-text:#ffdd57;
+  --theme-focus:#045789; --theme-table-head:#045789; --theme-head-text:#fff;
+  --theme-font:"Segoe UI",Tahoma,Arial,sans-serif;
+  --primary-color:#045789; --primary-dark:#03436b; --bg-light:#eef2f6;
+  --text-dark:#17344d; --text-light:#52677b; --border-color:#ccd8e2;
+}
+body[data-theme] main{background:var(--theme-canvas)!important;}
+body[data-theme] .sidebar{background:var(--theme-sidebar)!important; color:var(--theme-sidebar-text)!important;}
+body[data-theme] .sidebar .nav-link{color:var(--theme-sidebar-text)!important;}
+body[data-theme] .sidebar .nav-link:hover,body[data-theme] .sidebar .nav-link.active{
+  background:var(--theme-accent-2)!important; color:var(--theme-active-text)!important;
+}
+body[data-theme] .full-screen-section:not(.welcome-section)>.container,
+body[data-theme] .modal-content,body[data-theme] .dropdown-menu,
+body[data-theme] .card,body[data-theme] .box-title{
+  background:var(--theme-card)!important; color:var(--theme-text)!important;
+  border-color:var(--theme-border)!important;
+}
+body[data-theme] .text-dark,body[data-theme] .form-label,
+body[data-theme] .modal-title,body[data-theme] .dropdown-item{
+  color:var(--theme-text)!important;
+}
+body[data-theme] .text-muted,body[data-theme] .form-text{color:var(--theme-muted)!important;}
+body[data-theme] .dropdown-item:hover,body[data-theme] .dropdown-item.active,
+body[data-theme] .dropdown-item:focus{background:var(--theme-card-alt)!important;color:var(--theme-text)!important;}
+body[data-theme] .theme-option.active{box-shadow:inset 3px 0 var(--theme-focus);font-weight:700;}
+body[data-theme] .form-control,body[data-theme] .form-select,body[data-theme] .input-group-text{
+  background-color:var(--theme-input-bg)!important;color:var(--theme-text)!important;
+  border-color:var(--theme-border)!important;font-family:inherit;
+}
+body[data-theme] .form-control::placeholder{color:var(--theme-muted)!important;opacity:1;}
+body[data-theme] .form-control:focus,body[data-theme] .form-select:focus{
+  border-color:var(--theme-focus)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--theme-focus) 25%,transparent)!important;
+}
+body[data-theme] .form-select option{background:var(--theme-input-bg);color:var(--theme-text);}
+body[data-theme] .table{
+  --bs-table-color:var(--theme-text);--bs-table-bg:var(--theme-card);
+  --bs-table-border-color:var(--theme-border);--bs-table-hover-bg:var(--theme-card-alt);
+  --bs-table-hover-color:var(--theme-text);--bs-table-striped-bg:var(--theme-card-alt);
+  --bs-table-striped-color:var(--theme-text);color:var(--theme-text)!important;
+}
+body[data-theme] .table thead th{background:var(--theme-table-head)!important;color:var(--theme-head-text)!important;border-color:var(--theme-border)!important;}
+body[data-theme] .table tbody td{background:var(--theme-card)!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important;}
+body[data-theme] .table tbody tr:hover>td{background:var(--theme-card-alt)!important;}
+body[data-theme] .btn-primary{background:var(--theme-accent)!important;border-color:var(--theme-accent)!important;color:var(--theme-button-text)!important;box-shadow:none!important;}
+body[data-theme] .btn-primary:hover{background:var(--theme-primary-hover)!important;border-color:var(--theme-primary-hover)!important;}
+body[data-theme] .btn-outline-primary{color:var(--theme-focus)!important;border-color:var(--theme-focus)!important;background:transparent!important;}
+body[data-theme] .btn-outline-primary:hover{background:var(--theme-card-alt)!important;}
+body[data-theme] .btn-outline-secondary,body[data-theme] .theme-picker>.btn{color:var(--theme-text)!important;background:var(--theme-input-bg)!important;border-color:var(--theme-border)!important;}
+body[data-theme] .modal-header,body[data-theme] .modal-footer{background:var(--theme-card-alt)!important;border-color:var(--theme-border)!important;}
+body[data-theme] :focus-visible{outline:2px solid var(--theme-focus);outline-offset:3px;}
+body[data-theme="chatgpt"] .btn-close,body[data-theme="github"] .btn-close,body[data-theme="tiktok"] .btn-close{filter:invert(1)!important;}
+body[data-theme="chatgpt"] .sidebar .nav::before{content:"HỒ SƠ CỦA BẠN";color:#a9a9a9;}
+body[data-theme="chatgpt"] .content-header h1,body[data-theme="chatgpt"] .full-screen-section h1{font-weight:500!important;}
+body[data-theme="github"] a:not(.btn):not(.nav-link):not(.dropdown-item){color:#79b8ff!important;}
+body[data-theme="github"] .sidebar .nav-link.active{box-shadow:inset 3px 0 #4493f8!important;}
+body[data-theme="tiktok"] .sidebar .nav-link.active{box-shadow:none!important;}
+body[data-theme="tiktok"] .sidebar h3{ text-shadow:-1px 0 #25f4ee,1px 0 #fe2c55; }
+body[data-theme="shopee"]::before{height:8px;background:linear-gradient(90deg,#f53d2d,#ff6633);}
+body[data-theme="shopee"] .sidebar .nav-link.active{color:#c9361c!important;}
+body[data-theme="ute"]::before{background:#045789;color:#fff;font-size:clamp(1rem,1.8vw,1.7rem);height:76px;letter-spacing:0;}
+body[data-theme="ute"] main{padding-top:92px!important;}
+body[data-theme="ute"] .sidebar>.d-flex>a:first-child{background:transparent!important;border-radius:0;}
+body[data-theme="ute"] .sidebar h3{color:#fff!important;}
+body[data-theme="ute"] .session-card{background:#034974!important;border:1px solid #397da4;}
+body[data-theme="ute"] .session-info strong,body[data-theme="ute"] .session-info small{color:#fff!important;}
+body[data-theme="ute"] .session-avatar{background:#fff;color:#045789;}
+body[data-theme="ute"] .sidebar .nav::before{font-size:.8rem;color:#ffdd57;letter-spacing:.04em;}
+body[data-theme="ute"] .sidebar .nav-link.active{box-shadow:inset 3px 0 #ffdd57;}
+body[data-theme="ute"] .full-screen-section:not(.welcome-section)>.container{border-radius:8px;box-shadow:0 2px 8px #17344d0a;}
+body[data-theme="ute"] .modal-content{border-radius:10px;}
+body[data-theme="dashboard"] .oneform-dashboard-navbar{background:#045789;border-bottom:3px solid #ffdd57;}
+body[data-theme="dashboard"] .oneform-nav-logo,body[data-theme="dashboard"] .oneform-nav-links>a,
+body[data-theme="dashboard"] .oneform-theme-btn{color:#fff!important;}
+body[data-theme="dashboard"] .oneform-logout-link{border-color:#fff;color:#fff!important;}
+body[data-theme="dashboard"] .oneform-logout-link:hover{background:#146c9e;}
+body[data-theme="dashboard"] .oneform-dashboard-overview h1{color:#045789!important;}
+body[data-theme="dashboard"] .oneform-card{border-radius:10px!important;box-shadow:0 3px 12px #17344d0d!important;}
+.theme-dot-chatgpt{background:#000;}.theme-dot-github{background:#0d1117;}.theme-dot-dashboard{background:#045789;}
+@media(max-width:767.98px){
+  body[data-theme="ute"]::before{display:none;}
+  body[data-theme="ute"] main{padding-top:20px!important;}
+  body[data-theme="dashboard"] .oneform-nav-container{padding:0 16px;flex-wrap:wrap;gap:12px;}
+  body[data-theme="dashboard"] .oneform-nav-links{gap:12px;flex-wrap:wrap;}
+}
+
+body[data-theme="shopee"]::before{
+  content:"Hồ sơ khoa học";height:64px;display:flex;align-items:center;
+  padding:0 28px;color:#fff;font-size:1.4rem;font-weight:600;
+  z-index:1020;
+}
+body[data-theme="shopee"] .sidebar{padding-top:80px!important;}
+body[data-theme="shopee"] main{padding-top:80px!important;}
+@media(max-width:767.98px){
+  body[data-theme="shopee"]::before{position:relative;height:56px;font-size:1.2rem;}
+  body[data-theme="shopee"] .sidebar,body[data-theme="shopee"] main{padding-top:20px!important;}
 }
