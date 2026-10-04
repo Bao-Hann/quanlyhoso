@@ -380,48 +380,217 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('Đã xóa các mục đào tạo đã chọn.', 'info');
   });
 
+  const managedConfigs = new Map();
+
+  const managedRows = bodyId => [...document.querySelectorAll('#'+bodyId+' tr:not(.empty-row)')];
+
+  const managedEnsureEmpty = (bodyId, colspan) => {
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    if (!managedRows(bodyId).length) {
+      body.innerHTML = '<tr class="empty-row"><td colspan="'+colspan+'" class="text-center text-muted">Chưa có dữ liệu</td></tr>';
+    }
+  };
+
+  const managedUpdateSelection = prefix => {
+    const cfg = managedConfigs.get(prefix);
+    if (!cfg) return;
+    const boxes = [...document.querySelectorAll('#'+cfg.bodyId+' .managed-row-check')];
+    const checked = boxes.filter(b => b.checked);
+    const master = document.getElementById(prefix+'SelectAll');
+    const del = document.getElementById(prefix+'DeleteSelectedBtn');
+    if (master) {
+      master.checked = boxes.length > 0 && checked.length === boxes.length;
+      master.indeterminate = checked.length > 0 && checked.length < boxes.length;
+    }
+    if (del) del.disabled = checked.length === 0;
+  };
+
+  const managedRenumber = (bodyId, numberCellIndex) => {
+    if (numberCellIndex == null) return;
+    managedRows(bodyId).forEach((row,index) => {
+      if (row.children[numberCellIndex]) row.children[numberCellIndex].textContent = String(index+1);
+    });
+  };
+
+  const setupManagedTable = (prefix, bodyId, colspan, numberCellIndex=null) => {
+    const cfg = {prefix,bodyId,colspan,numberCellIndex};
+    managedConfigs.set(prefix,cfg);
+
+    document.getElementById(prefix+'SelectAll')?.addEventListener('change', e => {
+      document.querySelectorAll('#'+bodyId+' .managed-row-check').forEach(box => box.checked = e.target.checked);
+      managedUpdateSelection(prefix);
+    });
+    document.getElementById(prefix+'SelectAllBtn')?.addEventListener('click', () => {
+      document.querySelectorAll('#'+bodyId+' .managed-row-check').forEach(box => box.checked = true);
+      managedUpdateSelection(prefix);
+    });
+    document.getElementById(prefix+'ClearSelectionBtn')?.addEventListener('click', () => {
+      document.querySelectorAll('#'+bodyId+' .managed-row-check').forEach(box => box.checked = false);
+      managedUpdateSelection(prefix);
+    });
+    document.getElementById(prefix+'DeleteSelectedBtn')?.addEventListener('click', () => {
+      const selected = [...document.querySelectorAll('#'+bodyId+' .managed-row-check:checked')];
+      if (!selected.length) return;
+      if (!confirm('Xóa '+selected.length+' mục đã chọn?')) return;
+      selected.forEach(box => box.closest('tr')?.remove());
+      managedEnsureEmpty(bodyId,colspan);
+      managedRenumber(bodyId,numberCellIndex);
+      managedUpdateSelection(prefix);
+      toast('Đã xóa các mục đã chọn.','info');
+    });
+  };
+
+  const managedWireRow = (prefix,row,onEdit,onDelete) => {
+    row.querySelector('.managed-row-check')?.addEventListener('change', () => managedUpdateSelection(prefix));
+    row.querySelector('.managed-edit-btn')?.addEventListener('click', () => onEdit?.(row));
+    row.querySelector('.managed-delete-btn')?.addEventListener('click', () => {
+      if (!confirm('Xóa mục này?')) return;
+      onDelete?.(row);
+      row.remove();
+      const cfg=managedConfigs.get(prefix);
+      if (cfg) {
+        managedEnsureEmpty(cfg.bodyId,cfg.colspan);
+        managedRenumber(cfg.bodyId,cfg.numberCellIndex);
+        managedUpdateSelection(prefix);
+      }
+      toast('Đã xóa mục.','info');
+    });
+  };
+
+  const resetEditKey = formId => {
+    const el=document.getElementById(formId+'EditKey');
+    if(el) el.value='';
+  };
+
+  setupManagedTable('teaching','teachingBody',5,null);
+  setupManagedTable('research','researchBody',5,null);
+  setupManagedTable('language','languageBody',5,null);
+  setupManagedTable('work','workBody',7,null);
+  setupManagedTable('project','projectBody',10,1);
+  setupManagedTable('article','articleBody',9,1);
+  setupManagedTable('seminar','seminarBody',8,1);
+  setupManagedTable('textbook','textbookBody',8,1);
+  setupManagedTable('award','awardBody',8,1);
+
+  // Thông tin bổ sung: môn giảng dạy / hướng nghiên cứu
+  const additionForm = document.getElementById('additionForm');
+  if (additionForm) additionForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd=new FormData(additionForm);
+    const type=fd.get('type') || 'teaching';
+    const prefix=type === 'research' ? 'research' : 'teaching';
+    const bodyId=prefix+'Body';
+    const body=document.getElementById(bodyId);
+    removeEmpty(body);
+    const editKey=fd.get('edit_key') || '';
+    const key=editKey || (prefix+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
+    const row=document.createElement('tr');
+    row.dataset.key=key;
+    row.dataset.type=type;
+    row.dataset.major=fd.get('major') || '';
+    row.dataset.title=fd.get('title') || '';
+    row.dataset.description=fd.get('description') || '';
+    row.innerHTML=
+      '<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td>'+
+      '<td>'+escapeHtml(row.dataset.major)+'</td>'+
+      '<td>'+escapeHtml(row.dataset.title)+'</td>'+
+      '<td>'+escapeHtml(row.dataset.description)+'</td>'+
+      '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
+    managedWireRow(prefix,row, r => {
+      additionForm.elements.edit_key.value=r.dataset.key;
+      additionForm.elements.type.value=r.dataset.type;
+      additionForm.elements.major.value=r.dataset.major;
+      additionForm.elements.title.value=r.dataset.title;
+      additionForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addAddition .modal-title').textContent='Chỉnh sửa thông tin bổ sung';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addAddition')).show();
+    });
+    if(editKey){
+      const old=managedRows(bodyId).find(r=>r.dataset.key===editKey);
+      old?.replaceWith(row);
+    }else body.appendChild(row);
+    additionForm.reset(); resetEditKey('additionForm');
+    document.querySelector('#addAddition .modal-title').textContent='Thêm thông tin bổ sung';
+    closeModal(additionForm); managedUpdateSelection(prefix);
+    toast(editKey?'Đã cập nhật thông tin.':'Đã thêm thông tin.');
+  });
+
   const languageForm = document.getElementById('languageForm');
   if (languageForm) languageForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd = new FormData(languageForm);
-    const certificate = fd.get('certificate') === 'Khác' ? (fd.get('certificate_other') || 'Khác') : (fd.get('certificate') || '');
-    const body = document.getElementById('languageBody');
-    removeEmpty(body);
-    body.insertAdjacentHTML('beforeend', '<tr><td>'+fd.get('name')+'</td><td>'+fd.get('proficiency')+'</td><td>'+certificate+'</td></tr>');
-    languageForm.reset();
-    certOther?.classList.add('d-none');
-    closeModal(languageForm);
-    toast('Đã thêm ngoại ngữ.');
+    const fd=new FormData(languageForm);
+    const certificate=fd.get('certificate')==='Khác' ? (fd.get('certificate_other')||'Khác') : (fd.get('certificate')||'');
+    const body=document.getElementById('languageBody'); removeEmpty(body);
+    const editKey=fd.get('edit_key')||'';
+    const key=editKey||('language-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
+    const row=document.createElement('tr');
+    row.dataset.key=key; row.dataset.name=fd.get('name')||''; row.dataset.proficiency=fd.get('proficiency')||''; row.dataset.certificate=certificate;
+    row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td>'+
+      '<td>'+escapeHtml(row.dataset.name)+'</td><td>'+escapeHtml(row.dataset.proficiency)+'</td><td>'+escapeHtml(certificate)+'</td>'+
+      '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
+    managedWireRow('language',row,r=>{
+      languageForm.elements.edit_key.value=r.dataset.key;
+      languageForm.elements.name.value=r.dataset.name;
+      languageForm.elements.proficiency.value=r.dataset.proficiency;
+      const known=['IELTS','TOEIC','VSTEP','SAT','TOEFL'];
+      if(known.includes(r.dataset.certificate)){ languageForm.elements.certificate.value=r.dataset.certificate; certOther?.classList.add('d-none'); }
+      else { languageForm.elements.certificate.value='Khác'; if(certOther){certOther.classList.remove('d-none');certOther.value=r.dataset.certificate;} }
+      document.querySelector('#addLanguage .modal-title').textContent='Chỉnh sửa ngoại ngữ';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addLanguage')).show();
+    });
+    if(editKey){managedRows('languageBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
+    languageForm.reset(); resetEditKey('languageForm'); certOther?.classList.add('d-none');
+    document.querySelector('#addLanguage .modal-title').textContent='Thêm ngoại ngữ';
+    closeModal(languageForm); managedUpdateSelection('language'); toast(editKey?'Đã cập nhật ngoại ngữ.':'Đã thêm ngoại ngữ.');
   });
 
   const workForm = document.getElementById('workForm');
   if (workForm) workForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd = new FormData(workForm);
-    const body = document.getElementById('workBody');
-    removeEmpty(body);
-    body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+fd.get('start')+'</td><td>'+(fd.get('current') ? 'Hiện tại' : (fd.get('end') || ''))+
-      '</td><td>'+fd.get('institution')+'</td><td>'+fd.get('position')+'</td><td>'+fd.get('description')+'</td></tr>');
-    workForm.reset();
-    if (workEndDate) workEndDate.disabled = false;
-    closeModal(workForm);
-    toast('Đã thêm quá trình công tác.');
+    const fd=new FormData(workForm), body=document.getElementById('workBody'); removeEmpty(body);
+    const editKey=fd.get('edit_key')||'', key=editKey||('work-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
+    const row=document.createElement('tr');
+    row.dataset.key=key; row.dataset.start=fd.get('start')||''; row.dataset.end=fd.get('end')||''; row.dataset.current=fd.get('current')==='on'?'1':'0';
+    row.dataset.institution=fd.get('institution')||''; row.dataset.position=fd.get('position')||''; row.dataset.description=fd.get('description')||'';
+    row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td>'+
+      '<td>'+escapeHtml(row.dataset.start)+'</td><td>'+escapeHtml(row.dataset.current==='1'?'Hiện tại':row.dataset.end)+'</td><td>'+escapeHtml(row.dataset.institution)+'</td><td>'+escapeHtml(row.dataset.position)+'</td><td>'+escapeHtml(row.dataset.description)+'</td>'+
+      '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
+    managedWireRow('work',row,r=>{
+      workForm.elements.edit_key.value=r.dataset.key; workForm.elements.start.value=r.dataset.start; workForm.elements.end.value=r.dataset.end;
+      workForm.elements.current.checked=r.dataset.current==='1'; workEndDate.disabled=r.dataset.current==='1';
+      workForm.elements.institution.value=r.dataset.institution; workForm.elements.position.value=r.dataset.position; workForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addWork .modal-title').textContent='Chỉnh sửa quá trình công tác';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addWork')).show();
+    });
+    if(editKey){managedRows('workBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
+    sortRowsByNumericColumn(body,1);
+    workForm.reset(); resetEditKey('workForm'); workEndDate.disabled=false;
+    document.querySelector('#addWork .modal-title').textContent='Thêm quá trình công tác';
+    closeModal(workForm); managedUpdateSelection('work'); toast(editKey?'Đã cập nhật quá trình công tác.':'Đã thêm quá trình công tác.');
   });
 
   const projectForm = document.getElementById('projectForm');
   if (projectForm) projectForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd = new FormData(projectForm);
-    const body = document.getElementById('projectBody');
-    removeEmpty(body);
-    const stt = body.querySelectorAll('tr').length + 1;
-    body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+fd.get('start_year')+'</td><td>'+fd.get('end_year')+
-      '</td><td>'+fd.get('level')+'</td><td>'+fd.get('position')+'</td><td>'+fd.get('budget')+'</td><td>'+fd.get('budget_unit')+'</td></tr>');
-    projectForm.reset();
-    closeModal(projectForm);
-    toast('Đã thêm đề tài.');
+    const fd=new FormData(projectForm), body=document.getElementById('projectBody'); removeEmpty(body);
+    const editKey=fd.get('edit_key')||'', key=editKey||('project-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
+    const row=document.createElement('tr');
+    Object.assign(row.dataset,{key,title:fd.get('title')||'',startYear:fd.get('start_year')||'',endYear:fd.get('end_year')||'',level:fd.get('level')||'',position:fd.get('position')||'',budget:fd.get('budget')||'',budgetUnit:fd.get('budget_unit')||''});
+    row.dataset.sortYear=row.dataset.startYear||'0';
+    row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td><td></td>'+
+      '<td>'+escapeHtml(row.dataset.title)+'</td><td>'+escapeHtml(row.dataset.startYear)+'</td><td>'+escapeHtml(row.dataset.endYear)+'</td><td>'+escapeHtml(row.dataset.level)+'</td><td>'+escapeHtml(row.dataset.position)+'</td><td>'+escapeHtml(row.dataset.budget)+'</td><td>'+escapeHtml(row.dataset.budgetUnit)+'</td>'+
+      '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
+    managedWireRow('project',row,r=>{
+      projectForm.elements.edit_key.value=r.dataset.key; projectForm.elements.title.value=r.dataset.title; projectForm.elements.start_year.value=r.dataset.startYear; projectForm.elements.end_year.value=r.dataset.endYear;
+      projectForm.elements.level.value=r.dataset.level; projectForm.elements.position.value=r.dataset.position; projectForm.elements.budget.value=r.dataset.budget; projectForm.elements.budget_unit.value=r.dataset.budgetUnit;
+      document.querySelector('#addProject .modal-title').textContent='Chỉnh sửa đề tài';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addProject')).show();
+    });
+    if(editKey){managedRows('projectBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
+    sortRowsByNumericColumn(body,3); managedRenumber('projectBody',1);
+    projectForm.reset(); resetEditKey('projectForm'); document.querySelector('#addProject .modal-title').textContent='Thêm đề tài đang tham gia';
+    closeModal(projectForm); managedUpdateSelection('project'); toast(editKey?'Đã cập nhật đề tài.':'Đã thêm đề tài.');
   });
 
   const publicationEvidenceFiles = new Map();
