@@ -214,12 +214,69 @@
 
       <section id="publishedPaper" class="full-screen-section">
         <div class="container">
-          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Công bố khoa học</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><div class="btn-group"><button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-circle"></i> Add</button><div class="dropdown-menu">
-    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addPublication">Công bố khoa học</a>
-    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addTextbook">Sách giáo trình</a>
-  </div></div></div></div></div>
-          <div class="content-body table-wrapper">
-            <table class="table table-hover"><thead class="table-light"><tr class="text-center"><th>TT</th><th>Hình thức</th><th>Tên công trình/Giáo trình</th><th>Năm</th><th>Nơi công bố/Nơi xuất bản</th><th>Thông tin</th></tr></thead><tbody id="publicationBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table>
+          <div class="content-header">
+            <div class="row">
+              <div class="col-sm-8"><h1>Công bố khoa học</h1></div>
+              <div class="col-sm-4 justify-content-center d-flex align-items-center">
+                <div class="btn-group">
+                  <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-plus-circle"></i> Add
+                  </button>
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addPublication">Bài báo khoa học</a>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addSeminar">Seminar - Hội thảo</a>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addTextbook">Sách giáo trình</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ul class="nav nav-tabs publication-tabs" id="publicationTabs">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#articleTab">Bài báo khoa học</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#seminarTab">Seminar - Hội thảo</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#textbookTab">Sách giáo trình</button>
+            </li>
+          </ul>
+
+          <div class="tab-content publication-tab-content">
+            <div class="tab-pane fade show active table-wrapper" id="articleTab">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr class="text-center">
+                    <th>TT</th><th>Tên bài báo</th><th>Năm</th><th>Tạp chí/Nơi công bố</th><th>DOI/Link</th><th>Thông tin</th>
+                  </tr>
+                </thead>
+                <tbody id="articleBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody>
+              </table>
+            </div>
+
+            <div class="tab-pane fade table-wrapper" id="seminarTab">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr class="text-center">
+                    <th>TT</th><th>Tên Seminar/Hội thảo</th><th>Thời gian</th><th>Địa điểm</th><th>Vai trò</th><th>Thông tin</th>
+                  </tr>
+                </thead>
+                <tbody id="seminarBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody>
+              </table>
+            </div>
+
+            <div class="tab-pane fade table-wrapper" id="textbookTab">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr class="text-center">
+                    <th>TT</th><th>Tên giáo trình</th><th>Năm xuất bản</th><th>Nơi xuất bản</th><th>Vai trò/Tác giả</th><th>Thông tin</th>
+                  </tr>
+                </thead>
+                <tbody id="textbookBody"><tr class="empty-row"><td colspan="6" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody>
+              </table>
+            </div>
           </div>
         </div>
         <hr class="fixed-hr">
@@ -414,45 +471,36 @@
     <form id="publicationForm">
       <div class="modal-header">
         <div>
-          <h5 class="modal-title mb-1">Thêm công bố khoa học</h5>
-          <div class="small text-muted">Nhập thông tin công bố thủ công</div>
+          <h5 class="modal-title mb-1">Thêm bài báo khoa học</h5>
+          <div class="small text-muted">Nhập thông tin bài báo thủ công</div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
         <div class="input-group mb-3">
-          <span class="input-group-text">Hình thức công bố</span>
-          <select class="form-select" name="type" id="publicationType" required>
-            <option value="">Chọn hình thức công bố</option>
-            <option value="conference">Hội thảo</option>
-            <option value="special_report">Báo cáo chuyên đề</option>
-          </select>
+          <span class="input-group-text">Tên bài báo:</span>
+          <input class="form-control" name="title" placeholder="Nhập tên bài báo" required>
         </div>
 
         <div class="input-group mb-3">
-          <span class="input-group-text">Tên nghiên cứu:</span>
-          <input class="form-control" name="title" placeholder="Nhập tên công trình/nghiên cứu" required>
+          <span class="input-group-text">Tạp chí/Nơi công bố:</span>
+          <input class="form-control" name="location" placeholder="Tên tạp chí hoặc nơi công bố">
         </div>
 
         <div class="row">
-          <div class="col-md-6">
-            <div class="input-group mb-3">
-              <span class="input-group-text">Địa điểm:</span>
-              <input class="form-control" name="location" placeholder="Nơi tổ chức/Nơi công bố">
-            </div>
-          </div>
           <div class="col-md-6">
             <div class="input-group mb-3">
               <span class="input-group-text">Thời gian công bố</span>
               <input class="form-control" type="month" name="published_month">
             </div>
           </div>
-        </div>
-
-        <div class="input-group mb-3">
-          <span class="input-group-text">DOI/Link</span>
-          <input class="form-control" name="doi_or_url" placeholder="DOI hoặc đường dẫn công bố">
+          <div class="col-md-6">
+            <div class="input-group mb-3">
+              <span class="input-group-text">DOI/Link</span>
+              <input class="form-control" name="doi_or_url" placeholder="DOI hoặc đường dẫn bài báo">
+            </div>
+          </div>
         </div>
 
         <textarea class="form-control" name="description" rows="5" placeholder="Thông tin khác"></textarea>
@@ -468,6 +516,43 @@
   </div></div>
 </div>
 
+<div class="modal fade" id="addSeminar" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+    <form id="seminarForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Thêm Seminar - Hội thảo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <span class="input-group-text">Tên Seminar/Hội thảo:</span>
+          <input class="form-control" name="title" required>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="input-group mb-3">
+              <span class="input-group-text">Thời gian:</span>
+              <input class="form-control" type="month" name="published_month">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="input-group mb-3">
+              <span class="input-group-text">Địa điểm:</span>
+              <input class="form-control" name="location">
+            </div>
+          </div>
+        </div>
+        <div class="input-group mb-3">
+          <span class="input-group-text">Vai trò:</span>
+          <input class="form-control" name="role" placeholder="Báo cáo viên, tham dự, đồng tổ chức...">
+        </div>
+        <textarea class="form-control" name="description" rows="5" placeholder="Thông tin khác"></textarea>
+      </div>
+      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+    </form>
+  </div></div>
+</div>
+
 <div class="modal fade" id="addTextbook" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
     <form id="textbookForm">
@@ -478,6 +563,7 @@
           <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Nơi xuất bản</span><input class="form-control" name="publisher"></div></div>
           <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm xuất bản</span><input class="form-control" type="month" name="published_month"></div></div>
         </div>
+        <div class="input-group mb-3"><span class="input-group-text">Vai trò/Tác giả:</span><input class="form-control" name="role" placeholder="Chủ biên, đồng chủ biên, tác giả..."></div>
         <textarea class="form-control" name="description" rows="6" placeholder="Thông tin khác"></textarea>
       </div>
       <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
