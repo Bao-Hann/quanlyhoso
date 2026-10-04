@@ -1371,3 +1371,221 @@ body[data-theme="ute"] .fixed-hr{
 @media (max-width:767.98px){
   body[data-theme="ute"] .sidebar::before{width:165px;}
 }
+
+.theme-dot-dashboard{background:#2563eb;}
+
+
+/* ---------- OneFormResume dashboard theme ---------- */
+body.auth-guard-pending{visibility:hidden;}
+
+.session-card{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  border-radius:12px;
+}
+.session-avatar{
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;flex:0 0 auto;
+}
+.session-info{min-width:0;display:flex;flex-direction:column}
+.session-info strong,.session-info small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+body[data-theme="dashboard"]{
+  --theme-font:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+  --theme-canvas:#f8fafc;
+  --theme-card:#ffffff;
+  --theme-card-alt:#f8fafc;
+  --theme-accent:#2563eb;
+  --theme-primary-hover:#1d4ed8;
+  --theme-text:#1e293b;
+  --theme-muted:#64748b;
+  --theme-border:#e2e8f0;
+  --theme-sidebar:#ffffff;
+  --theme-accent-2:#3b82f6;
+  --theme-radius:12px;
+  --theme-radius-lg:12px;
+  --theme-shadow:0 4px 6px rgba(15,23,42,.10);
+  --theme-table-head:#f8fafc;
+  --theme-input-bg:#ffffff;
+  --theme-heading-weight:700;
+  background:#f8fafc;
+  color:#1e293b;
+  font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+}
+body[data-theme="dashboard"] .sidebar{
+  background:#fff!important;
+  color:#1e293b;
+  border-right:1px solid #e2e8f0;
+  box-shadow:0 1px 3px rgba(15,23,42,.06);
+}
+body[data-theme="dashboard"] .sidebar > .d-flex > a:first-child h3{
+  color:#1e293b!important;
+  font-size:1.35rem;
+  font-weight:700;
+}
+body[data-theme="dashboard"] .session-card{
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+}
+body[data-theme="dashboard"] .session-avatar{
+  background:#dbeafe;
+  color:#2563eb;
+}
+body[data-theme="dashboard"] .session-info strong{color:#1e293b;font-size:.95rem}
+body[data-theme="dashboard"] .session-info small{color:#64748b;font-size:.78rem}
+body[data-theme="dashboard"] .theme-picker>.btn{
+  background:#fff;
+  border:2px solid #e2e8f0;
+  color:#1e293b;
+  border-radius:8px;
+  font-weight:600;
+}
+body[data-theme="dashboard"] .sidebar .nav-link{
+  color:#1e293b!important;
+  border-radius:8px;
+  padding:.72rem .8rem;
+  font-weight:500;
+}
+body[data-theme="dashboard"] .sidebar .nav-link:hover,
+body[data-theme="dashboard"] .sidebar .nav-link.active{
+  background:#eff6ff;
+  color:#2563eb!important;
+}
+body[data-theme="dashboard"] main{
+  background:#f8fafc;
+}
+body[data-theme="dashboard"] .welcome-section .container{
+  display:block;
+  max-width:1000px;
+  padding-top:24px;
+}
+body[data-theme="dashboard"] .welcome-section .container h1{
+  font-size:2rem;
+  font-weight:700;
+  color:#1e293b!important;
+  text-align:center;
+}
+body[data-theme="dashboard"] .welcome-section .fixed-hr{display:none}
+body[data-theme="dashboard"] .full-screen-section:not(.welcome-section)>.container{
+  max-width:1000px;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  box-shadow:0 4px 6px rgba(15,23,42,.10);
+  padding:2rem;
+  margin-top:1.5rem;
+  margin-bottom:2rem;
+}
+body[data-theme="dashboard"] .full-screen-section:not(.welcome-section)>.container > h1,
+body[data-theme="dashboard"] #general .row:first-child .col h1,
+body[data-theme="dashboard"] .content-header h1{
+  color:#1e293b!important;
+  background:transparent!important;
+  padding:0!important;
+  margin:0 0 1.25rem!important;
+  font-size:1.7rem!important;
+  text-transform:none!important;
+  font-weight:700!important;
+}
+body[data-theme="dashboard"] .full-screen-section:not(.welcome-section)>.container > h1::after,
+body[data-theme="dashboard"] .content-header h1::after{display:none!important}
+body[data-theme="dashboard"] .btn-primary{
+  background:#2563eb;
+  border-color:#2563eb;
+  color:#fff;
+  border-radius:8px;
+  font-weight:600;
+}
+body[data-theme="dashboard"] .btn-primary:hover{
+  background:#1d4ed8;border-color:#1d4ed8;
+}
+body[data-theme="dashboard"] .btn-outline-primary{
+  border:2px solid #2563eb;
+  color:#2563eb;
+  border-radius:8px;
+  font-weight:600;
+}
+body[data-theme="dashboard"] .btn-outline-primary:hover{
+  background:#2563eb;color:#fff;
+}
+body[data-theme="dashboard"] .btn-warning{
+  border-radius:8px;
+  font-weight:600;
+}
+body[data-theme="dashboard"] .form-control,
+body[data-theme="dashboard"] .form-select{
+  background:#fff;
+  border:2px solid #e2e8f0;
+  border-radius:8px;
+  min-height:46px;
+}
+body[data-theme="dashboard"] .form-control:focus,
+body[data-theme="dashboard"] .form-select:focus{
+  border-color:#2563eb;
+  box-shadow:0 0 0 3px rgba(37,99,235,.10);
+}
+body[data-theme="dashboard"] .input-group-text{
+  background:#f8fafc;
+  border:2px solid #e2e8f0;
+  color:#475569;
+  font-weight:600;
+}
+body[data-theme="dashboard"] .nav-tabs .nav-link{
+  color:#64748b;
+  font-weight:600;
+}
+body[data-theme="dashboard"] .nav-tabs .nav-link.active{
+  color:#2563eb;
+  border-color:#e2e8f0 #e2e8f0 #fff;
+}
+body[data-theme="dashboard"] .table-wrapper,
+body[data-theme="dashboard"] .addition-table-wrapper{
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  overflow:hidden;
+}
+body[data-theme="dashboard"] .table thead th{
+  background:#f8fafc!important;
+  color:#1e293b;
+  font-weight:700;
+}
+body[data-theme="dashboard"] .table tbody td{
+  background:#fff;
+  color:#1e293b;
+}
+body[data-theme="dashboard"] .data-bulk-actions,
+body[data-theme="dashboard"] .credential-bulk-actions{
+  background:#f8fafc;
+}
+body[data-theme="dashboard"] .modal-content{
+  border:0;
+  border-radius:12px;
+  box-shadow:0 10px 25px rgba(15,23,42,.15);
+}
+body[data-theme="dashboard"] .modal-header,
+body[data-theme="dashboard"] .original-modal-header{
+  background:#fff;
+  border-bottom:1px solid #e2e8f0;
+}
+body[data-theme="dashboard"] .modal-title{
+  color:#1e293b!important;
+  font-weight:700;
+}
+body[data-theme="dashboard"] .dropdown-menu{
+  border:1px solid #e2e8f0;
+  border-radius:8px;
+  box-shadow:0 10px 25px rgba(15,23,42,.10);
+}
+body[data-theme="dashboard"] .dropdown-item.active,
+body[data-theme="dashboard"] .dropdown-item:active{
+  background:#2563eb;
+  color:#fff;
+}
+body[data-theme="dashboard"] #support .sync-panel,
+body[data-theme="dashboard"] .export-template-option{
+  background:#fff;
+  border-color:#e2e8f0;
+}
