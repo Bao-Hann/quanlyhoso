@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (publicationAddBtn) publicationAddBtn.disabled = true;
     if (publicationSearchResults) {
       publicationSearchResults.innerHTML =
-        '<div class="publication-loading"><div class="spinner-border spinner-border-sm" role="status"></div><span>Đang lấy dữ liệu từ Crossref...</span></div>';
+        '<div class="publication-loading"><div class="spinner-border spinner-border-sm" role="status"></div><span>Đang tìm dữ liệu bài báo...</span></div>';
     }
     setPublicationStatus('');
 
@@ -495,18 +495,18 @@ document.addEventListener('DOMContentLoaded', () => {
       renderPublicationResults();
       setPublicationStatus(
         publicationSearchState.items.length
-          ? 'Đã lấy dữ liệu từ Crossref.'
+          ? 'Đã tìm thấy dữ liệu bài báo.'
           : 'Không tìm thấy kết quả phù hợp.',
         publicationSearchState.items.length ? 'success' : 'info'
       );
     } catch (error) {
-      console.error('Crossref search failed:', error);
+      console.error('Publication search failed:', error);
       publicationSearchState.items = [];
       publicationSearchState.total = 0;
       if (publicationSearchResults) {
         publicationSearchResults.innerHTML =
           '<div class="publication-search-empty text-center">' +
-          '<div class="text-danger mb-2">Không lấy được dữ liệu từ Crossref.</div>' +
+          '<div class="text-danger mb-2">Không lấy được dữ liệu bài báo. Vui lòng thử lại.</div>' +
           '<div class="text-muted small">Bạn vẫn có thể nhập bài báo thủ công bằng liên kết phía dưới.</div>' +
           '</div>';
       }
@@ -562,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!item) return;
       appendArticleToTable(item);
       bootstrap.Modal.getOrCreateInstance(publicationSearchModalEl).hide();
-      toast('Đã thêm bài báo từ Crossref.');
+      toast('Đã thêm bài báo khoa học.');
     });
   }
 
