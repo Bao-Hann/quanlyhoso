@@ -766,3 +766,111 @@ body[data-theme="tiktok"] .text-muted{
   .original-add-btn{min-width:62px;min-height:44px;font-size:1rem;}
   .original-simple-form{padding:16px;min-height:auto;}
 }
+
+
+/* Crossref result list */
+.publication-search-status{
+  margin-top:14px;
+  font-size:.98rem;
+}
+.publication-loading{
+  width:100%;
+  min-height:160px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  color:var(--theme-muted);
+}
+.publication-search-empty{
+  width:100%;
+  padding:36px 16px;
+}
+.crossref-result-card{
+  width:100%;
+  display:grid;
+  grid-template-columns:28px 1fr;
+  gap:12px;
+  text-align:left;
+  border:1px solid var(--theme-border);
+  background:var(--theme-surface);
+  color:var(--theme-text);
+  border-radius:10px;
+  padding:14px 16px;
+  margin-bottom:10px;
+  cursor:pointer;
+  transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease;
+}
+.crossref-result-card:hover{
+  border-color:var(--theme-accent);
+  background:color-mix(in srgb,var(--theme-accent) 5%,var(--theme-surface));
+}
+.crossref-result-card.selected{
+  border-color:var(--theme-accent);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--theme-accent) 18%,transparent);
+}
+.crossref-result-select{
+  padding-top:4px;
+}
+.crossref-result-select span{
+  display:block;
+  width:18px;
+  height:18px;
+  border:2px solid var(--theme-border);
+  border-radius:50%;
+  background:var(--theme-surface);
+}
+.crossref-result-card.selected .crossref-result-select span{
+  border:5px solid var(--theme-accent);
+}
+.crossref-result-title{
+  font-weight:700;
+  line-height:1.35;
+  margin-bottom:6px;
+}
+.crossref-result-meta{
+  color:var(--theme-muted);
+  font-size:.94rem;
+  margin-top:2px;
+}
+.crossref-result-identifiers{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:7px;
+  color:var(--theme-muted);
+  font-size:.86rem;
+}
+.publication-search-results{
+  display:block;
+  overflow-y:auto;
+  padding-top:18px;
+}
+.publication-search-footer{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.publication-pagination{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+.publication-page-btn{
+  width:52px;
+  height:48px;
+}
+#articleSearchAddBtn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+@media (max-width:767.98px){
+  .publication-search-footer{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .publication-pagination{
+    margin-left:0!important;
+    justify-content:center;
+  }
+}
