@@ -1,27 +1,72 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đăng nhập - Hồ sơ khoa học</title>
-  <link rel="stylesheet" href="./auth.css?v=2">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập - Scientist Profile</title>
+  <link rel="stylesheet" href="./auth.css?v=scientist-login-1">
 </head>
-<body>
-  <nav class="auth-navbar"><div class="auth-nav-inner">
-    <a href="./login.html" class="auth-brand">Hồ sơ khoa học</a>
-    <div class="auth-nav-actions"><a href="./register.html" class="auth-btn auth-btn-primary">Đăng ký</a></div>
-  </div></nav>
-  <main class="auth-page">
-    <div class="auth-card">
-      <div class="auth-header"><h1>Chào mừng trở lại</h1><p>Đăng nhập để truy cập hồ sơ khoa học của bạn</p></div>
-      <div id="authMessage" class="d-none"></div>
-      <form id="loginForm" class="auth-form" novalidate>
-        <div class="auth-group"><label for="id_username">Tên đăng nhập</label><input class="auth-input" id="id_username" name="username" placeholder="Nhập tên đăng nhập" autocomplete="username" required></div>
-        <div class="auth-group"><label for="id_password">Mật khẩu</label><input class="auth-input" type="password" id="id_password" name="password" placeholder="Nhập mật khẩu" autocomplete="current-password" required></div>
-        <button class="auth-btn auth-btn-primary auth-btn-full" type="submit">Đăng nhập</button>
-      </form>
-      <div class="auth-footer"><p>Chưa có tài khoản? <a href="./register.html">Đăng ký tại đây</a></p></div>
-    </div>
+<body class="scientist-login-page">
+  <main class="scientist-login-shell">
+    <section class="scientist-login-card">
+      <div class="scientist-brand-panel">
+        <div class="scientist-brand-content">
+          <img class="scientist-brand-image" src="./scientist_tree.svg" alt="Scientist Profile">
+          <h1>Scientist Profile</h1>
+          <p>Kết nối các nhà nghiên cứu Việt Nam</p>
+        </div>
+      </div>
+
+      <div class="scientist-form-panel">
+        <div class="scientist-form-wrap">
+          <h2>Đăng nhập</h2>
+
+          <div id="authMessage" class="d-none"></div>
+
+          <form id="loginForm" class="scientist-auth-form" novalidate>
+            <div class="scientist-field">
+              <label for="id_username">Email</label>
+              <input
+                id="id_username"
+                name="username"
+                type="text"
+                placeholder="Email"
+                autocomplete="username"
+                required
+              >
+            </div>
+
+            <div class="scientist-field">
+              <label for="id_password">Mật khẩu</label>
+              <input
+                id="id_password"
+                name="password"
+                type="password"
+                placeholder="Mật khẩu"
+                autocomplete="current-password"
+                required
+              >
+            </div>
+
+            <button class="scientist-login-button" type="submit">Đăng nhập</button>
+          </form>
+
+          <div class="scientist-divider" aria-hidden="true"></div>
+
+          <button class="scientist-google-button" type="button" id="googleLoginBtn">
+            <span class="google-g" aria-hidden="true">G</span>
+            <span>Đăng nhập với Google</span>
+          </button>
+
+          <p class="scientist-register-line">
+            Chưa có tài khoản?
+            <a href="./register.html">Đăng ký</a>
+          </p>
+        </div>
+      </div>
+    </section>
   </main>
-  <footer class="auth-footerbar">© 2026 Hồ sơ khoa học</footer>
-  <script src="./auth.js?v=2"></script>
-</body></html>
+
+  <script src="./auth.js?v=scientist-login-1"></script>
+</body>
+</html>
