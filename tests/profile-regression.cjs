@@ -76,8 +76,10 @@ function app(account='test-a',gas=false) {
  assert.equal(serialize(await blankZip.file('word/document.xml').async('string')),serialize(await original.file('word/document.xml').async('string')),'Blank standard export must retain every original template paragraph, tab, table and signature style');
  const xml=await generated.file('word/document.xml').async('string');assert.match(xml,/Nguyễn Văn Kiểm Thử/);assert.match(xml,/Nghiên cứu kiểm thử/);assert.doesNotMatch(xml,/managed-edit|Chưa có dữ liệu|Han Han/);
  const preview=await a.exporter.preview();assert.match(preview,/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM/);
- assert.match(preview,/font-weight:700/);assert.match(preview,/display:inline-flex/);assert.match(preview,/border-bottom:1px dotted/);assert.match(preview,/BM04\/QT03\/ĐT/);
- const previewDoc=parseHTML(preview).document;const previewTables=[...previewDoc.querySelectorAll('table')];
+ assert.match(preview,/font-weight:700/);assert.match(preview,/display:inline-flex/);assert.match(preview,/class="ministry-leader"/);assert.match(preview,/display:flex;flex-wrap:nowrap/);assert.match(preview,/BM04\/QT03\/ĐT/);
+ const previewDoc=parseHTML(preview).document;
+ for(const label of ['Chức vụ (hiện tại','Chỗ ở riêng','Thạc sĩ chuyên ngành','Tiến sĩ chuyên ngành','Tên luận án']){const paragraph=[...previewDoc.querySelectorAll('p')].find(p=>p.textContent.includes(label));assert.ok(paragraph,label);assert.match(paragraph.getAttribute('style'),/flex-wrap:nowrap/);assert.equal(paragraph.querySelectorAll('br').length,0);assert.ok(paragraph.querySelector('.ministry-leader'));}
+const previewTables=[...previewDoc.querySelectorAll('table')];
  assert.equal(previewTables.length,5);
  for(const table of previewTables.slice(1,4))for(const cell of table.querySelectorAll('td'))assert.match(cell.getAttribute('style'),/border:1px solid #000/,'Every ministry table cell needs its border');
  for(const cell of previewTables[4].querySelectorAll('td'))assert.match(cell.getAttribute('style'),/border:0;/,'Signature must have no frame');

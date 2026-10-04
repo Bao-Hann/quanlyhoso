@@ -161,35 +161,36 @@
         else if(node.localName==='t'){plain[plain.length-1]+=node.textContent;groups[groups.length-1]+='<span style="font-weight:'+(bold?'700':'400')+';font-style:'+(italic?'italic':'normal')+';font-size:'+runSize+'pt;text-decoration:'+(underline?'underline':'none')+'">'+escape(node.textContent)+'</span>';}
       });
     });
-    let text=groups.join('');
-    if(tabCount && stops.length){
-      let previous=0;let stopIndex=0;
-      let context=null;try{context=document.createElement('canvas').getContext('2d');}catch(_){}
-      if(context)context.font=size+'pt "Times New Roman"';
-      text=groups.map((group,i)=>{
-        if(i>=tabCount)return group;
-        const measured=context?context.measureText(plain[i]).width:plain[i].length*size*0.62;
-        const occupied=measured*15;
-        while(stopIndex<stops.length && Number(stops[stopIndex].getAttributeNS(W,'pos'))<previous+occupied+30)stopIndex++;
-        const stop=stops[stopIndex++];
-        const position=stop?Number(stop.getAttributeNS(W,'pos')):9356;
-        const width=Math.max(0,position-previous)/9356*100;previous=position;
-        const dotted=stop?.getAttributeNS(W,'leader')==='dot';
-        return '<span style="display:inline-flex;align-items:baseline;vertical-align:bottom;width:'+width+'%;min-width:0">'+
-          '<span style="flex-shrink:0;max-width:100%;white-space:nowrap">'+group+'</span>'+
-          '<span style="flex:1;min-width:6px;'+(dotted?'border-bottom:1px dotted #555;':'')+'"></span></span>';
-      }).join('');
-    } else if(tabCount)text=groups.join('&emsp;');
     const numId=pr && descendants(pr,'numId')[0]?.getAttributeNS(W,'val');
     const number={'5':'1.','1':'2.','3':'−'}[numId];
-    if(number)text='<span style="display:inline-block;width:24pt;font-weight:'+(numId==='3'?'400':'700')+'">'+number+'</span>'+text;
+    const prefix=number?'<span style="display:inline-block;width:24pt;flex-shrink:0;font-weight:'+(numId==='3'?'400':'700')+'">'+number+'</span>':'';
+    let text=groups.join('');
+    if(tabCount && stops.length){
+      // Empty consecutive tabs only extend the same leader; they must never create a new line.
+      const segments=groups.map((html,i)=>({html,plain:plain[i],index:i})).filter((g,i)=>g.plain.trim()||i===0);
+      let context=null;try{context=document.createElement('canvas').getContext('2d');}catch(_){}
+      if(context)context.font=size+'pt "Times New Roman"';
+      let previous=0;
+      text=segments.map((segment,i)=>{
+        const group=segment.html.replace(/([.…]{3,})/g,'<span class="ministry-leader" style="display:inline-block;width:7em;height:0.85em"></span>');
+        const measured=context?context.measureText(segment.plain).width:segment.plain.length*size*0.62;
+        const occupied=measured*15+(i===0&&number?480:0);
+        const later=segments.slice(i+1).reduce((sum,g)=>sum+(context?context.measureText(g.plain).width:g.plain.length*size*0.62)*15+90,0);
+        const stop=stops.find(t=>Number(t.getAttributeNS(W,'pos'))>previous+occupied+15 && Number(t.getAttributeNS(W,'pos'))<=9356-later);
+        const position=i===segments.length-1?9356:(stop?Number(stop.getAttributeNS(W,'pos')):Math.max(previous+occupied,9356-later));
+        const width=Math.max(0,position-previous)/9356*100;previous=position;
+        return '<span class="ministry-field" style="display:inline-flex;align-items:baseline;flex:0 1 '+width+'%;min-width:0">'+
+          (i===0?prefix:'')+'<span style="flex-shrink:0;white-space:nowrap">'+group+'</span>'+
+          (segment.index<tabCount?'<span class="ministry-leader" style="flex:1;min-width:0;height:0.85em"></span>':'')+'</span>';
+      }).join('');
+    } else {text=tabCount?groups.join('&emsp;'):text;text=prefix+text;}
     const spacing=pr && children(pr,'spacing')[0];
     const before=Number(spacing?.getAttributeNS(W,'before')||0)/20;
     const after=Number(spacing?.getAttributeNS(W,'after')||0)/20;
     const line=Number(spacing?.getAttributeNS(W,'line')||240);
     const rule=spacing?.getAttributeNS(W,'lineRule');
     const lineHeight=rule==='exact'||rule==='atLeast'?(line/20)+'pt':line/240;
-    return '<p style="font-family:Times New Roman,serif;color:#000;text-align:'+jc+';font-size:'+size+'pt;line-height:'+lineHeight+';margin:'+before+'pt 0 '+after+'pt">'+(text||'&nbsp;')+'</p>';
+    return '<p style="font-family:Times New Roman,serif;color:#000;'+(tabCount&&stops.length?'display:flex;flex-wrap:nowrap;':'')+'text-align:'+jc+';font-size:'+size+'pt;line-height:'+lineHeight+';margin:'+before+'pt 0 '+after+'pt">'+(text||'&nbsp;')+'</p>';
   }
   window.MinistryExport={
     create:async(variant="standard")=>{const {zip}=await build(variant);return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});},
