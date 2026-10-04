@@ -114,3 +114,12 @@ body[data-theme="tiktok"] .btn-close{filter:invert(1);}
 body[data-theme="tiktok"] .table-hover>tbody>tr:hover>*{color:var(--theme-text);background-color:#202020;}
 
 .publication-search .btn{min-width:58px;}
+
+.theme-picker{position:relative;z-index:1060;}
+.theme-picker .dropdown-menu{z-index:1070;pointer-events:auto;}
+.theme-picker .dropdown-item{cursor:pointer;}
+.theme-picker .dropdown-item.active{
+  background:var(--theme-accent);
+  color:#fff!important;
+}
+.theme-picker .dropdown-toggle::after{margin-left:auto;}
