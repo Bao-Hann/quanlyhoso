@@ -639,3 +639,25 @@ body[data-theme="tiktok"] .text-muted{
     padding:16px;
   }
 }
+
+
+/* Publication search -> manual entry flow */
+.publication-search-modal .publication-search-body{
+  min-height:520px;
+  display:flex;
+  flex-direction:column;
+}
+.publication-search-results{
+  flex:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding-top:22px;
+}
+.publication-manual-link{
+  font-size:1rem;
+  text-decoration:underline;
+}
+.publication-search-modal .modal-footer{
+  min-height:72px;
+}
