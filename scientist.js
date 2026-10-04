@@ -552,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const editKey=fd.get('edit_key')||'', key=editKey||('work-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
     const row=document.createElement('tr');
     row.dataset.key=key; row.dataset.start=fd.get('start')||''; row.dataset.end=fd.get('end')||''; row.dataset.current=fd.get('current')==='on'?'1':'0';
-    row.dataset.institution=fd.get('institution')||''; row.dataset.position=fd.get('position')||''; row.dataset.description=fd.get('description')||'';
+    row.dataset.institution=fd.get('institution')||''; row.dataset.position=fd.get('position')||''; row.dataset.description=fd.get('description')||''; row.dataset.sortYear=(row.dataset.start||'').replaceAll('-','')||'0';
     row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td>'+
       '<td>'+escapeHtml(row.dataset.start)+'</td><td>'+escapeHtml(row.dataset.current==='1'?'Hiện tại':row.dataset.end)+'</td><td>'+escapeHtml(row.dataset.institution)+'</td><td>'+escapeHtml(row.dataset.position)+'</td><td>'+escapeHtml(row.dataset.description)+'</td>'+
       '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
@@ -612,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const renumberArticleRows = () => {
     document.querySelectorAll('#articleBody tr:not(.empty-row)').forEach((row,index) => {
-      if (row.children[0]) row.children[0].textContent = String(index + 1);
+      if (row.children[1]) row.children[1].textContent = String(index + 1);
     });
   };
 
@@ -623,6 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
         publicationEvidenceFiles.delete(key);
         row.remove();
         renumberArticleRows();
+        managedUpdateSelection('article');
         if (!document.querySelector('#articleBody tr:not(.empty-row)')) {
           document.getElementById('articleBody').innerHTML='<tr class="empty-row"><td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td></tr>';
         }
@@ -667,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     tr.innerHTML =
-      '<td></td>'+
+      '<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td><td></td>'+
       '<td>'+escapeHtml(article.title || '')+'</td>'+
       '<td>'+escapeHtml(article.authors || '')+'</td>'+
       '<td>'+escapeHtml(article.year || '')+'</td>'+
@@ -679,6 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
       '<button type="button" class="btn btn-sm btn-outline-danger article-delete-btn" title="Xóa"><i class="bi bi-trash"></i></button>'+
       '</div></td>';
     addArticleActions(tr);
+    tr.querySelector('.managed-row-check')?.addEventListener('change',()=>managedUpdateSelection('article'));
     return tr;
   };
 
@@ -707,8 +709,9 @@ document.addEventListener('DOMContentLoaded', () => {
       body.appendChild(createArticleRow(article));
     }
 
-    sortRowsByNumericColumn(body, 3);
+    sortRowsByNumericColumn(body, 4);
     renumberArticleRows();
+    managedUpdateSelection('article');
     return true;
   };
 
@@ -751,38 +754,71 @@ document.addEventListener('DOMContentLoaded', () => {
   const seminarForm = document.getElementById('seminarForm');
   if (seminarForm) seminarForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd = new FormData(seminarForm);
-    const body = document.getElementById('seminarBody');
-    removeEmpty(body);
-    const stt = body.querySelectorAll('tr').length + 1;
-    const month = fd.get('month') || '';
-    const year = fd.get('year') || '';
-    const published = [month, year].filter(Boolean).join('/');
-    body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+published+
-      '</td><td>'+fd.get('publisher')+'</td><td>'+fd.get('publication_type')+
-      '</td><td>'+fd.get('description')+'</td></tr>');
-    seminarForm.reset();
-    closeModal(seminarForm);
-    toast('Đã thêm Seminar - Hội thảo.');
+    const fd=new FormData(seminarForm), body=document.getElementById('seminarBody'); removeEmpty(body);
+    const editKey=fd.get('edit_key')||'', key=editKey||('seminar-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
+    const month=fd.get('month')||'', year=fd.get('year')||'', published=[month,year].filter(Boolean).join('/');
+    const row=document.createElement('tr');
+    Object.assign(row.dataset,{key,title:fd.get('title')||'',publisher:fd.get('publisher')||'',publicationType:fd.get('publication_type')||'',month,year,description:fd.get('description')||''});
+    row.dataset.sortYear=year||'0';
+    row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td><td></td>'+
+      '<td>'+escapeHtml(row.dataset.title)+'</td><td>'+escapeHtml(published)+'</td><td>'+escapeHtml(row.dataset.publisher)+'</td><td>'+escapeHtml(row.dataset.publicationType)+'</td><td>'+escapeHtml(row.dataset.description)+'</td>'+
+      '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
+    managedWireRow('seminar',row,r=>{
+      seminarForm.elements.edit_key.value=r.dataset.key; seminarForm.elements.publication_type.value=r.dataset.publicationType; seminarForm.elements.title.value=r.dataset.title; seminarForm.elements.publisher.value=r.dataset.publisher; seminarForm.elements.month.value=r.dataset.month; seminarForm.elements.year.value=r.dataset.year; seminarForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addSeminar .modal-title').textContent='Chỉnh sửa công bố khoa học';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addSeminar')).show();
+    });
+    if(editKey){managedRows('seminarBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
+    sortRowsByNumericColumn(body,3); managedRenumber('seminarBody',1);
+    seminarForm.reset(); resetEditKey('seminarForm'); document.querySelector('#addSeminar .modal-title').textContent='Thêm công bố khoa học';
+    closeModal(seminarForm); managedUpdateSelection('seminar'); toast(editKey?'Đã cập nhật Seminar - Hội thảo.':'Đã thêm Seminar - Hội thảo.');
   });
 
   const textbookForm = document.getElementById('textbookForm');
   if (textbookForm) textbookForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd = new FormData(textbookForm);
-    const body = document.getElementById('textbookBody');
-    removeEmpty(body);
-    const stt = body.querySelectorAll('tr').length + 1;
-    const month = fd.get('month') || '';
-    const year = fd.get('year') || '';
-    const published = [month, year].filter(Boolean).join('/');
-    body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+published+
-      '</td><td>'+fd.get('publisher')+'</td><td></td><td>'+fd.get('description')+'</td></tr>');
-    textbookForm.reset();
-    closeModal(textbookForm);
-    toast('Đã thêm sách giáo trình.');
+    const fd=new FormData(textbookForm), body=document.getElementById('textbookBody'); removeEmpty(body);
+    const editKey=fd.get('edit_key')||'', key=editKey||('textbook-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
+    const month=fd.get('month')||'', year=fd.get('year')||'', published=[month,year].filter(Boolean).join('/');
+    const row=document.createElement('tr');
+    Object.assign(row.dataset,{key,title:fd.get('title')||'',publisher:fd.get('publisher')||'',month,year,description:fd.get('description')||''});
+    row.dataset.sortYear=year||'0';
+    row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td><td></td>'+
+      '<td>'+escapeHtml(row.dataset.title)+'</td><td>'+escapeHtml(published)+'</td><td>'+escapeHtml(row.dataset.publisher)+'</td><td></td><td>'+escapeHtml(row.dataset.description)+'</td>'+
+      '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
+    managedWireRow('textbook',row,r=>{
+      textbookForm.elements.edit_key.value=r.dataset.key; textbookForm.elements.title.value=r.dataset.title; textbookForm.elements.publisher.value=r.dataset.publisher; textbookForm.elements.month.value=r.dataset.month; textbookForm.elements.year.value=r.dataset.year; textbookForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addTextbook .modal-title').textContent='Chỉnh sửa sách giáo trình';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addTextbook')).show();
+    });
+    if(editKey){managedRows('textbookBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
+    sortRowsByNumericColumn(body,3); managedRenumber('textbookBody',1);
+    textbookForm.reset(); resetEditKey('textbookForm'); document.querySelector('#addTextbook .modal-title').textContent='Thêm sách giáo trình';
+    closeModal(textbookForm); managedUpdateSelection('textbook'); toast(editKey?'Đã cập nhật sách giáo trình.':'Đã thêm sách giáo trình.');
+  });
+
+  const awardForm = document.getElementById('awardForm');
+  if (awardForm) awardForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd=new FormData(awardForm), body=document.getElementById('awardBody'); removeEmpty(body);
+    const editKey=fd.get('edit_key')||'', key=editKey||('award-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
+    const row=document.createElement('tr');
+    Object.assign(row.dataset,{key,category:fd.get('category')||'',name:fd.get('name')||'',organization:fd.get('organization')||'',year:fd.get('year')||'',description:fd.get('description')||''});
+    row.dataset.sortYear=row.dataset.year||'0';
+    const categoryLabel=row.dataset.category==='tech_transfer'?'Chuyển giao công nghệ':'Giải thưởng KH&CN';
+    row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td><td></td>'+
+      '<td>'+escapeHtml(categoryLabel)+'</td><td>'+escapeHtml(row.dataset.name)+'</td><td>'+escapeHtml(row.dataset.organization)+'</td><td>'+escapeHtml(row.dataset.year)+'</td><td>'+escapeHtml(row.dataset.description)+'</td>'+
+      '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
+    managedWireRow('award',row,r=>{
+      awardForm.elements.edit_key.value=r.dataset.key; awardForm.elements.category.value=r.dataset.category; awardForm.elements.name.value=r.dataset.name; awardForm.elements.organization.value=r.dataset.organization; awardForm.elements.year.value=r.dataset.year; awardForm.elements.description.value=r.dataset.description;
+      awardCategory?.dispatchEvent(new Event('change'));
+      document.querySelector('#addAward .modal-title').textContent='Chỉnh sửa giải thưởng';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addAward')).show();
+    });
+    if(editKey){managedRows('awardBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
+    sortRowsByNumericColumn(body,5); managedRenumber('awardBody',1);
+    awardForm.reset(); resetEditKey('awardForm'); document.querySelector('#addAward .modal-title').textContent='Thêm giải thưởng';
+    closeModal(awardForm); managedUpdateSelection('award'); toast(editKey?'Đã cập nhật giải thưởng.':'Đã thêm giải thưởng.');
   });
 
   const publicationSearchModalEl = document.getElementById('addPublication');
