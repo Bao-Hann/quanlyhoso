@@ -26,12 +26,12 @@ function normalizedEmail_(value) {
 function registerLocal(email,password) {
   email=normalizedEmail_(email);password=String(password||'');
   const googleUser=getCurrentUser();
-  if(googleUser.email!==email) throw new Error('Để tạo mật khẩu, hãy đăng nhập Google bằng đúng email này trước.');
+  if(googleUser.email!==email) throw new Error('Để đăng ký, hãy đăng nhập Google bằng đúng email này để xác nhận quyền sở hữu email.');
   if(password.length<12 || password.length>128) throw new Error('Mật khẩu cần từ 12 đến 128 ký tự.');
   const key='AUTH_USER_'+hashId_(email),props=PropertiesService.getScriptProperties();
   const lock=LockService.getScriptLock();lock.waitLock(10000);
   try {
-    if(props.getProperty(key)) throw new Error('Email đã có mật khẩu. Hãy đăng nhập.');
+    if(props.getProperty(key)) throw new Error('Tài khoản đã tồn tại. Hãy đăng nhập.');
     const salt=Utilities.getUuid()+Utilities.getUuid();
     props.setProperty(key,JSON.stringify({salt:salt,hash:passwordHash_(password,salt),email:email}));
   } finally {lock.releaseLock();}
