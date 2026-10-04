@@ -71,6 +71,9 @@ function app(account='test-a',gas=false) {
  const empty=app('empty-account');const blank=await empty.exporter.create();fs.writeFileSync(path.join(out,'empty.docx'),Buffer.from(await blank.arrayBuffer()));
  const generated=await JSZip.loadAsync(Buffer.from(await blob.arrayBuffer())),original=await JSZip.loadAsync(fs.readFileSync(path.join(root,'LY_LICH_KHOA_HOC_MAU_CUA_BO.docx')));
  for(const name of Object.keys(original.files).filter(x=>!original.files[x].dir&&x!=='word/document.xml'))assert.deepEqual(await generated.file(name).async('nodebuffer'),await original.file(name).async('nodebuffer'),'Preserved DOCX part '+name);
+ const blankZip=await JSZip.loadAsync(Buffer.from(await blank.arrayBuffer()));
+ const serialize=xml=>new XMLSerializer().serializeToString(new DOMParser().parseFromString(xml,'application/xml'));
+ assert.equal(serialize(await blankZip.file('word/document.xml').async('string')),serialize(await original.file('word/document.xml').async('string')),'Blank standard export must retain every original template paragraph, tab, table and signature style');
  const xml=await generated.file('word/document.xml').async('string');assert.match(xml,/Nguyễn Văn Kiểm Thử/);assert.match(xml,/Nghiên cứu kiểm thử/);assert.doesNotMatch(xml,/managed-edit|Chưa có dữ liệu|Han Han/);
  const preview=await a.exporter.preview();assert.match(preview,/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM/);
  const tableWriter=app('table-test');
