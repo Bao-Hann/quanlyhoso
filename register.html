@@ -1,27 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register - Hồ sơ khoa học</title>
+  <title>Đăng ký - Hồ sơ khoa học</title>
   <link rel="stylesheet" href="./auth.css?v=2">
 </head>
 <body>
   <nav class="auth-navbar"><div class="auth-nav-inner">
-    <a href="./login.html" class="auth-brand">📄 Hồ sơ khoa học</a>
-    <div class="auth-nav-actions"><a href="./login.html" class="auth-btn auth-btn-outline">Login</a></div>
+    <a href="./login.html" class="auth-brand">Hồ sơ khoa học</a>
+    <div class="auth-nav-actions"><a href="./login.html" class="auth-btn auth-btn-outline">Đăng nhập</a></div>
   </div></nav>
   <main class="auth-page">
     <div class="auth-card">
-      <div class="auth-header"><h1>Create Account</h1><p>Join us and build your scientific profile</p></div>
+      <div class="auth-header"><h1>Tạo tài khoản</h1><p>Tạo tài khoản để xây dựng hồ sơ khoa học của bạn</p></div>
       <div id="authMessage" class="d-none"></div>
       <form id="registerForm" class="auth-form" novalidate>
-        <div class="auth-group"><label for="id_username">Username</label><input class="auth-input" id="id_username" name="username" placeholder="Choose a username" autocomplete="username" required><small class="auth-help">Letters, digits and @/./+/-/_ only.</small></div>
-        <div class="auth-group"><label for="id_email">Email</label><input class="auth-input" type="email" id="id_email" name="email" placeholder="Enter your email" autocomplete="email" required></div>
-        <div class="auth-group"><label for="id_password1">Password</label><input class="auth-input" type="password" id="id_password1" name="password1" placeholder="Create a password" autocomplete="new-password" required><small class="auth-help">At least 8 characters and not entirely numeric.</small></div>
-        <div class="auth-group"><label for="id_password2">Confirm Password</label><input class="auth-input" type="password" id="id_password2" name="password2" placeholder="Confirm your password" autocomplete="new-password" required></div>
-        <button class="auth-btn auth-btn-primary auth-btn-full" type="submit">Create Account</button>
+        <div class="auth-group"><label for="id_username">Tên đăng nhập</label><input class="auth-input" id="id_username" name="username" placeholder="Chọn tên đăng nhập" autocomplete="username" required><small class="auth-help">Chỉ dùng chữ, số và các ký tự @ . + - _.</small></div>
+        <div class="auth-group"><label for="id_email">Email</label><input class="auth-input" type="email" id="id_email" name="email" placeholder="Nhập email" autocomplete="email" required></div>
+        <div class="auth-group"><label for="id_password1">Mật khẩu</label><input class="auth-input" type="password" id="id_password1" name="password1" placeholder="Tạo mật khẩu" autocomplete="new-password" required><small class="auth-help">Tối thiểu 8 ký tự và không được chỉ gồm chữ số.</small></div>
+        <div class="auth-group"><label for="id_password2">Xác nhận mật khẩu</label><input class="auth-input" type="password" id="id_password2" name="password2" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required></div>
+        <button class="auth-btn auth-btn-primary auth-btn-full" type="submit">Tạo tài khoản</button>
       </form>
-      <div class="auth-footer"><p>Already have an account? <a href="./login.html">Login here</a></p></div>
+      <div class="auth-footer"><p>Đã có tài khoản? <a href="./login.html">Đăng nhập tại đây</a></p></div>
     </div>
   </main>
   <footer class="auth-footerbar">© 2026 Hồ sơ khoa học</footer>
