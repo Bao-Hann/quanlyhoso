@@ -457,23 +457,38 @@
       <div class="original-modal-header">
         <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
         <h5 class="modal-title">Thêm công bố khoa học</h5>
-        <button type="button" class="btn btn-primary original-add-btn" id="articleSearchAddBtn">Add</button>
+        <button type="button" class="btn btn-primary original-add-btn" id="articleSearchAddBtn" disabled>Add</button>
       </div>
 
       <div class="modal-body publication-search-body">
         <div class="input-group publication-search">
-          <input class="form-control" id="publicationSearch" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo">
-          <button class="btn btn-outline-success" type="button" id="paperSearchBtn"><i class="bi bi-search"></i></button>
+          <input class="form-control" id="publicationSearch" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo" autocomplete="off">
+          <button class="btn btn-outline-success" type="button" id="paperSearchBtn" aria-label="Tìm kiếm"><i class="bi bi-search"></i></button>
         </div>
+
+        <div id="publicationSearchStatus" class="publication-search-status d-none"></div>
+
         <div id="publicationSearchResults" class="publication-search-results">
-          <div id="publicationSearchHint" class="text-muted text-center d-none"></div>
+          <div class="text-muted text-center publication-search-empty">
+            Nhập DOI, đường dẫn DOI hoặc tên bài báo để tìm dữ liệu từ Crossref.
+          </div>
         </div>
       </div>
 
-      <div class="modal-footer justify-content-start">
+      <div class="modal-footer publication-search-footer">
         <button type="button" class="btn btn-link p-0 publication-manual-link" id="openManualPublication">
           Bạn có thể tạo bài báo bằng cách nhập liệu ở đây
         </button>
+
+        <div class="publication-pagination ms-auto">
+          <button type="button" class="btn btn-outline-primary publication-page-btn" id="publicationPrevPage" disabled aria-label="Trang trước">
+            <i class="bi bi-caret-left-fill"></i>
+          </button>
+          <strong id="publicationPageLabel">Trang 1</strong>
+          <button type="button" class="btn btn-outline-primary publication-page-btn" id="publicationNextPage" disabled aria-label="Trang sau">
+            <i class="bi bi-caret-right-fill"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
