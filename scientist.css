@@ -1114,22 +1114,21 @@ body[data-theme="ute"] .sidebar{
 }
 
 body[data-theme="ute"] .sidebar::before{
-  content:"HCMUTE";
+  content:"";
   display:block;
-  width:132px;
-  height:132px;
-  margin:0 auto 16px;
-  border-radius:50%;
-  border:5px solid #fff;
-  background:
-    radial-gradient(circle at 50% 38%,#fff 0 22%,transparent 23%),
-    linear-gradient(180deg,#fff 0 28%,#e4212e 29% 45%,#fff 46% 62%,#e4212e 63% 79%,#fff 80%);
-  color:#00639b;
-  font-weight:900;
-  font-size:1.05rem;
-  line-height:132px;
-  text-align:center;
-  box-shadow:0 0 0 3px rgba(255,255,255,.2);
+  width:230px;
+  max-width:92%;
+  aspect-ratio:550/365;
+  height:auto;
+  margin:4px auto 14px;
+  border:0;
+  border-radius:0;
+  background-color:transparent;
+  background-image:url("./ute_logo.png");
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+  box-shadow:none;
 }
 
 body[data-theme="ute"] .sidebar > .d-flex > a:first-child{
@@ -1359,4 +1358,16 @@ body[data-theme="ute"] .fixed-hr{
     border-radius:14px;
     padding:18px;
   }
+}
+
+
+/* UTE local logo responsive sizing */
+@media (max-width:1199.98px){
+  body[data-theme="ute"] .sidebar::before{width:205px;}
+}
+@media (max-width:991.98px){
+  body[data-theme="ute"] .sidebar::before{width:175px;}
+}
+@media (max-width:767.98px){
+  body[data-theme="ute"] .sidebar::before{width:165px;}
 }
