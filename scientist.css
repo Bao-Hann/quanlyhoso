@@ -1,0 +1,37 @@
+html { scroll-behavior: smooth; }
+body { background:#fff; color:#212529; }
+.sidebar {
+    height: 100vh;
+    overflow-y: auto;
+    background-color: #eef3fbc6 !important;
+    border-right: 1px solid rgba(0,0,0,.05);
+    z-index: 1030;
+}
+.sidebar .nav-link { padding: 8px 16px; transition: background-color .2s; border-radius:4px; }
+.sidebar .nav-link:hover, .sidebar .nav-link.active { background-color:#7db0e2c6; }
+section { padding-top:35px; }
+.full-screen-section { min-height:100vh; display:flex; position:relative; align-items:flex-start; }
+.full-screen-section>.container { width:100%; }
+.welcome-section { align-items:flex-start; padding-top:70px; }
+.fixed-hr { position:absolute; bottom:0; left:0; width:100%; border:none; border-top:2px solid #000; margin:0; opacity:.55; }
+.fixed-modal { width:900px; min-height:420px; max-width:100%; max-height:88vh; overflow-y:auto; margin:auto; }
+.modal { --bs-modal-width:900px; --bs-modal-header-padding-x:1rem; }
+.table-wrapper { max-height:38rem; overflow-y:auto; }
+.addition-table-wrapper { max-height:19rem; overflow-y:auto; }
+thead { position:sticky; top:0; background:#fff; z-index:100; }
+.box-title { margin:auto; padding:0 15px 0 10px; font-size:20px; background:#fff; position:relative; top:-35px; right:-10px; display:inline-block; }
+.custom-switch { width:2.5em !important; height:1.5em !important; font-size:1.2rem; }
+.content-header { margin-bottom:1rem; }
+.table td, .table th { vertical-align:middle; }
+.input-group-text { white-space:normal; }
+.nav-tabs .nav-link { color:#212529; }
+.nav-tabs .nav-link.active { font-weight:600; }
+@media (max-width: 767.98px) {
+  .sidebar { position:relative !important; width:100%; height:auto !important; }
+  main { margin-left:0 !important; padding-left:1rem !important; padding-right:1rem !important; }
+  .full-screen-section { min-height:auto; padding-bottom:55px; }
+  .fixed-hr { width:100%; }
+  .row>.col { min-width:100%; margin-bottom:.5rem; }
+  .input-group { flex-wrap:wrap; }
+  .input-group>.input-group-text { min-width:100%; border-radius:.375rem .375rem 0 0; }
+}
