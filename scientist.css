@@ -874,3 +874,109 @@ body[data-theme="tiktok"] .text-muted{
     justify-content:center;
   }
 }
+
+
+/* ===== Data-entry quality improvements ===== */
+.compact-date{max-width:190px;}
+.compact-phone{max-width:180px;}
+.compact-id{max-width:220px;}
+.compact-location{min-width:220px;}
+.compact-ethnicity{min-width:180px;}
+
+.capslock-on{
+  border-color:#dc3545!important;
+  box-shadow:0 0 0 3px rgba(220,53,69,.12)!important;
+}
+
+#credentialBody tr,
+#projectBody tr,
+#articleBody tr{
+  transition:background-color .15s ease;
+}
+#articleBody .btn-sm{
+  --bs-btn-padding-y:.22rem;
+  --bs-btn-padding-x:.45rem;
+}
+
+.export-template-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.export-template-option{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  border:1px solid var(--theme-border);
+  background:var(--theme-surface);
+  padding:12px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.export-template-option:hover{
+  border-color:var(--theme-accent);
+}
+.export-template-option input{
+  margin-top:4px;
+}
+.export-template-option span{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.export-template-option small{
+  color:var(--theme-muted);
+}
+.export-preview-paper{
+  min-height:620px;
+  background:#fff;
+  color:#111;
+  border:1px solid #d7d7d7;
+  box-shadow:0 4px 18px rgba(0,0,0,.08);
+  padding:42px 48px;
+  font-family:"Times New Roman",serif;
+  font-size:15px;
+  overflow:auto;
+}
+.export-preview-paper h3{
+  color:#111!important;
+  font-family:"Times New Roman",serif;
+  font-weight:700;
+}
+.export-preview-paper h5{
+  color:#111!important;
+  margin-top:18px;
+  font-family:"Times New Roman",serif;
+  font-weight:700;
+}
+.export-preview-paper table{
+  width:100%;
+  border-collapse:collapse;
+  margin:8px 0 16px;
+}
+.export-preview-paper td{
+  border:1px solid #333;
+  padding:6px;
+  vertical-align:top;
+}
+
+.sync-panel{
+  background:color-mix(in srgb,var(--theme-accent) 3%,var(--theme-surface));
+}
+
+@media (min-width:768px){
+  #general .input-group > .compact-date{flex:0 0 190px;}
+  #general .input-group > .compact-phone{flex:0 0 160px;}
+  #general .input-group > .compact-id{flex:0 0 220px;}
+}
+
+@media (max-width:767.98px){
+  .compact-date,.compact-phone,.compact-id,.compact-location,.compact-ethnicity{
+    max-width:none;
+    min-width:100%;
+  }
+  .export-preview-paper{
+    padding:24px 18px;
+    min-height:420px;
+  }
+}
