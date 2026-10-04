@@ -7,6 +7,7 @@ Thư mục này là bản chuyển đổi từ website GitHub Pages sang **Googl
 Tạo một Apps Script project và tạo đúng các file sau:
 
 - `Code.gs`
+- `Auth.gs`
 - `Index.html`
 - `Login.html`
 - `Styles.html`
@@ -50,7 +51,7 @@ Sau đó bấm **Deploy** và cấp quyền.
 
 ## Dữ liệu được lưu ở đâu?
 
-- Thông tin cá nhân lưu trong UserProperties của từng tài khoản Google. Cần triển khai với **User accessing the web app** để tách biệt tài khoản.
+- Thông tin cá nhân và các bảng hồ sơ lưu trên máy chủ, khóa theo email đã xác thực. Google và email/mật khẩu cùng email dùng chung bộ hồ sơ; email khác dùng bộ riêng. Cần triển khai với **User accessing the web app** để tách biệt tài khoản.
 - File hỗ trợ chỉ nhận PDF, tối đa 20 MB, lưu bằng IndexedDB theo tài khoản trong trình duyệt hiện tại. File không được gửi lên máy chủ, Drive hoặc quản trị viên; đổi trình duyệt hoặc xóa dữ liệu trình duyệt sẽ không còn file đã lưu.
 - Đã bỏ phần đồng bộ Google Sheets/Drive. Dữ liệu cũ trên Drive không bị xóa.
 - Word xuất thành `.docx` từ mẫu Bộ trong repo, giữ định dạng, bảng, đầu trang và chân trang của mẫu.
@@ -81,4 +82,18 @@ Không cần đổi URL Web App sau mỗi lần cập nhật deployment.
 
 ## Cập nhật bản sửa hồ sơ
 
-Thay nội dung `Code.gs`, `Index.html`, `Login.html`, `Script.html` và `appsscript.json` bằng bản trong thư mục này. Giữ `Styles.html`. Lưu dự án, sau đó cập nhật deployment bằng **New version** theo hướng dẫn trên. `Script.html` đã nhúng JSZip và mẫu Word, không cần thêm file JavaScript.
+Tạo thêm tệp mã `Auth.gs`. Thay nội dung `Code.gs`, `Index.html`, `Login.html`, `Script.html` và `appsscript.json` bằng bản trong thư mục này. Giữ `Styles.html`. Lưu dự án, sau đó cập nhật deployment bằng **New version** theo hướng dẫn trên. `Script.html` đã nhúng JSZip và mẫu Word, không cần thêm file JavaScript.
+
+## Đăng nhập và tách hồ sơ
+
+- Bắt buộc giữ **Execute as: User accessing the web app**. Nếu chạy dưới quyền chủ dự án, ứng dụng từ chối đọc/lưu hồ sơ để tránh dùng chung danh tính.
+- Email được lấy từ tài khoản Google hoặc phiên mật khẩu đã xác thực; không lấy email đang chỉnh trong hồ sơ làm khóa lưu.
+- Tạo mật khẩu chỉ được khi email nhập trùng tài khoản Google đang đăng nhập. Mật khẩu riêng tối thiểu 12 ký tự, lưu bằng PBKDF2-HMAC-SHA256 (100.000 vòng). Không nhập mật khẩu Google.
+- Phiên mật khẩu hết hạn sau 24 giờ; đăng xuất thu hồi phiên. Sau 5 lần thử đăng nhập, tài khoản tạm khóa thử tiếp trong 15 phút.
+- Google và mật khẩu cùng email dùng chung thông tin cá nhân và các bảng. PDF hỗ trợ vẫn chỉ lưu trong trình duyệt, theo email.
+- Dữ liệu dùng chung của bản cũ không tự gán cho tài khoản mới, vì không xác định được ai là chủ sở hữu. Các file Drive cũ không bị xóa.
+- Do chạy trên Apps Script, Google vẫn có thể yêu cầu đăng nhập/cấp quyền truy cập ứng dụng, kể cả khi dùng mật khẩu riêng.
+
+## Kiểm tra
+
+Chạy `npm install` và `npm test` ở thư mục gốc. Kiểm tra gồm tách hai tài khoản, cùng email dùng chung hồ sơ, chặn chạy dưới quyền chủ dự án, đăng ký/đăng nhập mật khẩu, thu hồi phiên, giới hạn thử mật khẩu và lưu/tải lại bảng hồ sơ.

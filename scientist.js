@@ -99,7 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const generalForm = document.getElementById('editGeneral');
   const identity = window.GAS_USER || window.OneFormAuth?.getSession?.() || {};
-  const accountId = identity.userId || identity.email || identity.username || 'local-user';
+  const accountId = identity.email ? ('email:' + identity.email.trim().toLowerCase()) : identity.userId || identity.username || 'local-user';
+  const authToken = window.GAS_AUTH_TOKEN || '';
+  const ownsCurrentSession = () => !window.OneFormAuth || (window.OneFormAuth.getSession?.()?.email || '') === (identity.email || '');
   const generalKey = 'scientist-general-v2:' + accountId;
   const readGeneral = () => Object.fromEntries([...fields]
     .filter(el => el.name && (el.type !== 'radio' || el.checked))
@@ -122,13 +124,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (editBtn) editBtn.disabled = false;
     }).withFailureHandler(err => {
       toast('Không tải được hồ sơ: ' + err.message, 'danger');
-    }).loadGeneral();
+    }).loadGeneral(authToken);
   } else {
     try { applyGeneral(JSON.parse(localStorage.getItem(generalKey) || '{}')); }
     catch (err) { toast('Không đọc được hồ sơ đã lưu.', 'warning'); }
   }
   generalForm?.addEventListener('submit', event => {
     event.preventDefault();
+    if (!ownsCurrentSession()) { toast('Tài khoản đã thay đổi. Hãy tải lại trang trước khi lưu.', 'danger'); return; }
     if (!generalReady || !generalForm.reportValidity()) return;
     const data = readGeneral(); saveBtn.disabled = true;
     const done = () => {
@@ -137,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
       toast('Đã lưu thông tin cá nhân.');
     };
     const failed = err => { saveBtn.disabled = false; toast('Không lưu được: ' + err.message, 'danger'); };
-    if (window.google?.script?.run) google.script.run.withSuccessHandler(done).withFailureHandler(failed).saveGeneral(data);
+    if (window.google?.script?.run) google.script.run.withSuccessHandler(done).withFailureHandler(failed).saveGeneral(data, authToken);
     else { try { localStorage.setItem(generalKey, JSON.stringify(data)); done(); } catch (err) { failed(err); } }
   });
 
@@ -1323,4 +1326,128 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }, {rootMargin:'-35% 0px -55% 0px', threshold:0});
   sections.forEach(s => observer.observe(s));
+  // Toàn bộ bảng được lưu theo danh tính đã xác thực, không đọc dữ liệu dùng chung cũ.
+  const profileBodies = [...document.querySelectorAll('.managed-table tbody[id]')];
+  const profileDataKey = 'scientist-tables-v3:' + accountId;
+  const restoredHandlers = new Map();
+restoredHandlers.set('teaching', r => {
+      additionForm.elements.edit_key.value=r.dataset.key;
+      additionForm.elements.type.value=r.dataset.type;
+      additionForm.elements.major.value=r.dataset.major;
+      additionForm.elements.title.value=r.dataset.title;
+      additionForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addAddition .modal-title').textContent='Chỉnh sửa thông tin bổ sung';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addAddition')).show();
+    });
+restoredHandlers.set('research', r => {
+      additionForm.elements.edit_key.value=r.dataset.key;
+      additionForm.elements.type.value=r.dataset.type;
+      additionForm.elements.major.value=r.dataset.major;
+      additionForm.elements.title.value=r.dataset.title;
+      additionForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addAddition .modal-title').textContent='Chỉnh sửa thông tin bổ sung';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addAddition')).show();
+    });
+restoredHandlers.set('language', r=>{
+      languageForm.elements.edit_key.value=r.dataset.key;
+      languageForm.elements.name.value=r.dataset.name;
+      languageForm.elements.proficiency.value=r.dataset.proficiency;
+      const known=['IELTS','TOEIC','VSTEP','SAT','TOEFL'];
+      if(known.includes(r.dataset.certificate)){ languageForm.elements.certificate.value=r.dataset.certificate; certOther?.classList.add('d-none'); }
+      else { languageForm.elements.certificate.value='Khác'; if(certOther){certOther.classList.remove('d-none');certOther.value=r.dataset.certificate;} }
+      document.querySelector('#addLanguage .modal-title').textContent='Chỉnh sửa ngoại ngữ';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addLanguage')).show();
+    });
+restoredHandlers.set('work', r=>{
+      workForm.elements.edit_key.value=r.dataset.key; workForm.elements.start.value=r.dataset.start; workForm.elements.end.value=r.dataset.end;
+      workForm.elements.current.checked=r.dataset.current==='1'; workEndDate.disabled=r.dataset.current==='1';
+      workForm.elements.institution.value=r.dataset.institution; workForm.elements.position.value=r.dataset.position; workForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addWork .modal-title').textContent='Chỉnh sửa quá trình công tác';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addWork')).show();
+    });
+restoredHandlers.set('project', r=>{
+      projectForm.elements.edit_key.value=r.dataset.key; projectForm.elements.title.value=r.dataset.title; projectForm.elements.start_year.value=r.dataset.startYear; projectForm.elements.end_year.value=r.dataset.endYear;
+      projectForm.elements.level.value=r.dataset.level; projectForm.elements.position.value=r.dataset.position; projectForm.elements.budget.value=r.dataset.budget; projectForm.elements.budget_unit.value=r.dataset.budgetUnit;
+      document.querySelector('#addProject .modal-title').textContent='Chỉnh sửa đề tài';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addProject')).show();
+    });
+restoredHandlers.set('seminar', r=>{
+      seminarForm.elements.edit_key.value=r.dataset.key; seminarForm.elements.publication_type.value=r.dataset.publicationType; seminarForm.elements.title.value=r.dataset.title; seminarForm.elements.publisher.value=r.dataset.publisher; seminarForm.elements.month.value=r.dataset.month; seminarForm.elements.year.value=r.dataset.year; seminarForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addSeminar .modal-title').textContent='Chỉnh sửa công bố khoa học';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addSeminar')).show();
+    });
+restoredHandlers.set('textbook', r=>{
+      textbookForm.elements.edit_key.value=r.dataset.key; textbookForm.elements.title.value=r.dataset.title; textbookForm.elements.publisher.value=r.dataset.publisher; textbookForm.elements.month.value=r.dataset.month; textbookForm.elements.year.value=r.dataset.year; textbookForm.elements.description.value=r.dataset.description;
+      document.querySelector('#addTextbook .modal-title').textContent='Chỉnh sửa sách giáo trình';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addTextbook')).show();
+    });
+restoredHandlers.set('award', r=>{
+      awardForm.elements.edit_key.value=r.dataset.key; awardForm.elements.category.value=r.dataset.category; awardForm.elements.name.value=r.dataset.name; awardForm.elements.organization.value=r.dataset.organization; awardForm.elements.year.value=r.dataset.year; awardForm.elements.description.value=r.dataset.description;
+      awardCategory?.dispatchEvent(new Event('change'));
+      document.querySelector('#addAward .modal-title').textContent='Chỉnh sửa giải thưởng';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addAward')).show();
+    });
+  const collectTables = () => Object.fromEntries(profileBodies.map(body => [body.id,
+    [...body.querySelectorAll('tr:not(.empty-row)')].map(row => ({data:{...row.dataset},cells:[...row.children].map(cell=>cell.textContent)}))]));
+  const restoreTables = snapshot => {
+    profileBodies.forEach(body => {
+      const rows=snapshot?.[body.id]; if(!Array.isArray(rows)) return;
+      body.querySelectorAll('tr:not(.empty-row)').forEach(row=>row.remove());
+      if(rows.length) removeEmpty(body);
+      rows.forEach(record => {
+        if(!record || !record.data || !Array.isArray(record.cells)) return;
+        let row;
+        if(body.id==='credentialBody') {
+          const d=record.data;
+          row=createCredentialRow({...d,rawYear:d.year,displayYear:record.cells[3]||'',detail:record.cells[4]?.split('Sửa')[0]||'',unfinished:d.unfinished==='1'});
+        } else if(body.id==='articleBody') row=createArticleRow(record.data);
+        else {
+          row=document.createElement('tr');Object.assign(row.dataset,record.data);
+          const count=body.closest('table').querySelectorAll('thead th').length;
+          for(let i=0;i<count;i++) {
+            const cell=document.createElement('td');
+            if(i===0) cell.innerHTML='<input class="form-check-input managed-row-check" type="checkbox">';
+            else if(i===count-1) cell.innerHTML='<button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn">Sửa</button> <button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn">Xóa</button>';
+            else cell.textContent=record.cells[i]||'';
+            row.appendChild(cell);
+          }
+          const prefix=body.id.replace(/Body$/,'');
+          managedWireRow(prefix,row,restoredHandlers.get(prefix));
+        }
+        body.appendChild(row);
+      });
+    });
+  };
+  let tablesReady=!window.google?.script?.run, tablesLoading=false, saveTimer, saving=false, pending=false;
+  const flushTables = () => {
+    if(!tablesReady || tablesLoading || !ownsCurrentSession()) return;
+    if(saving) {pending=true;return;}
+    const snapshot=collectTables();
+    if(!window.google?.script?.run) {
+      try {localStorage.setItem(profileDataKey,JSON.stringify(snapshot));} catch(err){toast('Không lưu được các mục hồ sơ.','danger');}
+      return;
+    }
+    saving=true;
+    google.script.run.withSuccessHandler(()=>{saving=false;if(pending){pending=false;flushTables();}})
+      .withFailureHandler(err=>{saving=false;toast('Chưa lưu được các mục hồ sơ: '+err.message,'danger');}).saveTables(snapshot,authToken);
+  };
+  if(window.google?.script?.run) {
+    google.script.run.withSuccessHandler(result=>{
+      tablesLoading=true;restoreTables(result.data||{});tablesReady=true;
+      setTimeout(()=>{tablesLoading=false;},0);
+    }).withFailureHandler(err=>toast('Không tải được các mục hồ sơ: '+err.message,'danger')).loadTables(authToken);
+  } else {
+    try {restoreTables(JSON.parse(localStorage.getItem(profileDataKey)||'{}'));}catch(err){toast('Không đọc được các mục hồ sơ đã lưu.','danger');}
+  }
+  document.querySelectorAll('.modal form').forEach(form=>form.addEventListener('submit',event=>{
+    if(!tablesReady || !ownsCurrentSession()) {event.preventDefault();event.stopImmediatePropagation();toast('Hồ sơ chưa tải xong hoặc tài khoản đã đổi. Hãy tải lại trang.','warning');}
+  },true));
+  if(window.MutationObserver) {
+    const watcher=new window.MutationObserver(()=>{
+      if(tablesLoading || !tablesReady) return;
+      clearTimeout(saveTimer);saveTimer=setTimeout(flushTables,500);
+    });
+    profileBodies.forEach(body=>watcher.observe(body,{childList:true,subtree:true,attributes:true,attributeFilter:['data-key','data-title','data-description']}));
+  }
+
 });

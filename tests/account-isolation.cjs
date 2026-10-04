@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto'),path=require('node:path');
+const props=new Map();let active='first@example.com',effective=active;
+const signed=b=>[...b].map(x=>x>127?x-256:x),bytes=a=>Buffer.from(a.map(x=>(x+256)%256));
+const properties={getProperty:k=>props.has(k)?props.get(k):null,setProperty:(k,v)=>props.set(k,v),deleteProperty:k=>props.delete(k),getProperties:()=>Object.fromEntries(props),setProperties:o=>Object.entries(o).forEach(([k,v])=>props.set(k,v))};
+const context={Session:{getActiveUser:()=>({getEmail:()=>active}),getEffectiveUser:()=>({getEmail:()=>effective})},PropertiesService:{getScriptProperties:()=>properties},LockService:{getScriptLock:()=>({waitLock(){},releaseLock(){}})},Utilities:{DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},computeDigest:(a,s)=>signed(crypto.createHash(a).update(s).digest()),computeHmacSha256Signature:(data,key)=>signed(crypto.createHmac('sha256',bytes(key)).update(bytes(data)).digest()),getUuid:()=>crypto.randomUUID(),newBlob:data=>({getBytes:()=>signed(typeof data==='string'?Buffer.from(data):bytes(data)),getDataAsString:()=>typeof data==='string'?data:bytes(data).toString()}),base64Encode:a=>bytes(a).toString('base64'),base64Decode:s=>signed(Buffer.from(s,'base64'))},console,Date};
+vm.createContext(context);for(const name of ['Auth.gs','Code.gs'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../google-apps-script',name),'utf8'),context);
+assert.equal(context.passwordHash_('test passphrase','salt'),crypto.pbkdf2Sync('test passphrase','salt',100000,32,'sha256').toString('base64'));
+context.saveGeneral({person_name:'First',person_email:'edited@example.com'});context.saveTables({projectBody:[{data:{title:'Only First'},cells:[]}]});
+active=effective='second@example.com';assert.deepEqual(JSON.parse(JSON.stringify(context.loadGeneral().data)),{});assert.deepEqual(JSON.parse(JSON.stringify(context.loadTables().data)),{});
+context.saveGeneral({person_name:'Second'});active=effective='first@example.com';assert.equal(context.loadGeneral().data.person_name,'First');assert.equal(context.loadTables().data.projectBody[0].data.title,'Only First');
+effective='owner@example.com';assert.throws(()=>context.loadGeneral(),/User accessing/);active='';assert.throws(()=>context.loadGeneral(),/User accessing/);
+active=effective='first@example.com';assert.throws(()=>context.registerLocal('second@example.com','a secure password'),/đúng email/);
+context.registerLocal('first@example.com','a secure password');assert.throws(()=>context.loginLocal('first@example.com','wrong password'),/không đúng/);
+const login=context.loginLocal('FIRST@example.com','a secure password');assert.equal(context.loadGeneral(login.token).data.person_name,'First');assert.equal(context.loadTables(login.token).data.projectBody[0].data.title,'Only First');
+context.saveGeneral({person_name:'Same email'},login.token);assert.equal(context.loadGeneral().data.person_name,'Same email');
+context.logoutLocal(login.token);assert.throws(()=>context.loadGeneral(login.token),/đăng nhập lại/);assert.throws(()=>context.loadGeneral('fake'),/đăng nhập lại/);
+for(let i=0;i<5;i++)assert.throws(()=>context.loginLocal('first@example.com','wrong password'),/không đúng/);assert.throws(()=>context.loginLocal('first@example.com','a secure password'),/15 phút/);
+console.log('PASS: two Google accounts isolated; same verified email synchronized across methods; owner deployment rejected; password registration, PBKDF2, token revocation and login limits.');

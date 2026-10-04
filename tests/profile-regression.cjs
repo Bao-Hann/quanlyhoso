@@ -27,7 +27,7 @@ function app(account='test-a',gas=false) {
  const props=new Map();
  if(gas) {
   window.GAS_USER={userId:account,email:account+'@example.invalid'};
-  const runner={withSuccessHandler(fn){this.ok=fn;return this;},withFailureHandler(fn){this.fail=fn;return this;},loadGeneral(){const ok=this.ok;setTimeout(()=>ok({data:props.get(account)||{}}),0);},saveGeneral(data){props.set(account,data);const ok=this.ok;setTimeout(()=>ok({ok:true}),0);}};
+  const runner={withSuccessHandler(fn){this.ok=fn;return this;},withFailureHandler(fn){this.fail=fn;return this;},loadTables(){const ok=this.ok;setTimeout(()=>ok({data:{}}),0);},saveTables(data){const ok=this.ok;setTimeout(()=>ok({ok:true}),0);},loadGeneral(){const ok=this.ok;setTimeout(()=>ok({data:props.get(account)||{}}),0);},saveGeneral(data){props.set(account,data);const ok=this.ok;setTimeout(()=>ok({ok:true}),0);}};
   window.google={script:{run:runner}};
  }
  const context={window,document,google:window.google,localStorage,bootstrap,console,URL,Blob,TextDecoder,indexedDB,JSZip,DOMParser,XMLSerializer,setTimeout,clearTimeout,Date,HTMLInputElement:window.HTMLInputElement,HTMLTextAreaElement:window.HTMLTextAreaElement,IntersectionObserver:class {observe(){}},confirm:()=>true,location:{href:'https://example.invalid'},FormData:class {constructor(form){this.data=new Map();form.querySelectorAll('[name]').forEach(el=>{if(el.type!=='checkbox'||el.checked)this.data.set(el.name,el.type==='checkbox'?'on':el.value);});}get(k){return this.data.get(k)||null;}}};
@@ -44,7 +44,7 @@ function app(account='test-a',gas=false) {
  assert.equal(a.get('[name="person_name"]').value,'');assert.equal(a.get('[name="person_email"]').value,'');
  a.event('editGeneralBtn','click');a.set('[name="person_name"]','Nguyễn Văn Kiểm Thử');a.set('[name="person_email"]','test@example.invalid');
  a.event('editGeneral','submit');
- assert.equal(JSON.parse(store.get('scientist-general-v2:test-a@example.invalid')).person_name,'Nguyễn Văn Kiểm Thử');
+ assert.equal(JSON.parse(store.get('scientist-general-v2:email:test-a@example.invalid')).person_name,'Nguyễn Văn Kiểm Thử');
  assert.equal(a.get('[name="person_name"]').disabled,true);
  assert.equal(app().get('[name="person_name"]').value,'Nguyễn Văn Kiểm Thử');
  assert.equal(app('test-b').get('[name="person_name"]').value,'');
@@ -70,5 +70,14 @@ function app(account='test-a',gas=false) {
  for(const name of Object.keys(original.files).filter(x=>!original.files[x].dir&&x!=='word/document.xml'))assert.deepEqual(await generated.file(name).async('nodebuffer'),await original.file(name).async('nodebuffer'),'Preserved DOCX part '+name);
  const xml=await generated.file('word/document.xml').async('string');assert.match(xml,/Nguyễn Văn Kiểm Thử/);assert.match(xml,/Nghiên cứu kiểm thử/);assert.doesNotMatch(xml,/managed-edit|Chưa có dữ liệu|Han Han/);
  const preview=await a.exporter.preview();assert.match(preview,/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM/);
+ const tableWriter=app('table-test');
+ tableWriter.set('#workForm [name="start"]','2026-10-04');tableWriter.set('#workForm [name="end"]','2026-10-05');tableWriter.set('#workForm [name="institution"]','Đơn vị kiểm thử');tableWriter.event('workForm','submit');
+ await new Promise(resolve=>setTimeout(resolve,650));
+ const tables=JSON.parse(store.get('scientist-tables-v3:email:table-test@example.invalid')||'{}');
+ assert.equal(tables.workBody?.[0]?.data.institution,'Đơn vị kiểm thử');
+ const tableReload=app('table-test');assert.equal(tableReload.document.querySelectorAll('#workBody tr:not(.empty-row)').length,1);
+ tableReload.get('#workBody .managed-edit-btn').dispatchEvent(new tableReload.window.Event('click',{bubbles:true}));
+ assert.equal(tableReload.get('#workForm [name="institution"]').value,'Đơn vị kiểm thử');
+ const tableOther=app('other-account');assert.equal(tableOther.document.querySelectorAll('#workBody tr:not(.empty-row)').length,0);
  console.log('PASS: personal save/reload/account isolation, GAS save, date bounds, PDF validation/persistence/isolation, exact DOCX template parts and data.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

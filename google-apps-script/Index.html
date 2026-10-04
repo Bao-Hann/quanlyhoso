@@ -9,6 +9,12 @@
   <?!= include('Styles'); ?>
 <script>
     window.GAS_USER = <?!= userJson ?>;
+    if (window.GAS_USER.provider === 'local') {
+      try {
+        const session = JSON.parse(sessionStorage.getItem('scientist-local-session') || 'null');
+        if (session) { window.GAS_USER = session.user; window.GAS_AUTH_TOKEN = session.token; }
+      } catch (_) {}
+    }
     window.GAS_WEB_APP_URL = <?!= JSON.stringify(ScriptApp.getService().getUrl() || '') ?>;
   </script>
 </head>

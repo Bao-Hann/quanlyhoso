@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "node tests/profile-regression.cjs"
+    "test": "node tests/profile-regression.cjs && node tests/account-isolation.cjs"
   },
   "devDependencies": {
     "@xmldom/xmldom": "0.9.12",

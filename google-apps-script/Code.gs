@@ -11,7 +11,7 @@ function doGet(e) {
   const page = String((e && e.parameter && e.parameter.page) || 'login').toLowerCase();
 
   if (page === 'app' || page === 'home') {
-    const user = getCurrentUser();
+    const user = e && e.parameter && e.parameter.mode === "local" ? {provider:"local"} : getCurrentUser();
     const t = HtmlService.createTemplateFromFile('Index');
     t.userJson = JSON.stringify(user);
     return t.evaluate()
@@ -38,23 +38,20 @@ function getWebAppUrl() {
 }
 
 function getCurrentUser() {
-  const email = Session.getActiveUser().getEmail() || '';
-  const temporaryKey = Session.getTemporaryActiveUserKey() || '';
-  const props = PropertiesService.getUserProperties();
-  let userId = props.getProperty('APP_USER_ID');
-  if (!userId) { userId = Utilities.getUuid(); props.setProperty('APP_USER_ID', userId); }
-  const name = email ? email.split('@')[0] : 'Người dùng Google';
-  return {
-    userId: userId,
-    email: email,
-    name: name,
-    temporaryKey: temporaryKey
-  };
+  const email = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
+  const effective = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
+  if (!email || email !== effective) throw new Error('Hãy triển khai với quyền Người dùng truy cập ứng dụng (User accessing the web app). Không thể lưu hồ sơ dưới quyền chủ dự án.');
+  return {userId: 'email:' + email, provider:'google', email:email, name:email.split('@')[0]};
+}
+
+function profileKey_(token) {
+  const user = token ? localSession_(token) : getCurrentUser();
+  return 'PROFILE_V3_' + hashId_(user.userId);
 }
 
 // Hồ sơ cá nhân được lưu theo người dùng trong ứng dụng, không đồng bộ Drive/Sheets.
-function saveGeneral(data) {
-  assertSignedIn_();
+function saveGeneral(data, token) {
+  const key = profileKey_(token);
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Hồ sơ không hợp lệ.');
   const clean = {};
   Object.keys(data).forEach(key => {
@@ -62,20 +59,20 @@ function saveGeneral(data) {
   });
   const json = JSON.stringify(clean);
   if (Utilities.newBlob(json).getBytes().length > 8500) throw new Error('Thông tin cá nhân quá dài.');
-  PropertiesService.getUserProperties().setProperty('GENERAL_PROFILE_V2', json);
+  PropertiesService.getScriptProperties().setProperty(key, json);
   return {ok:true};
 }
-function loadGeneral() {
-  assertSignedIn_();
-  const raw = PropertiesService.getUserProperties().getProperty('GENERAL_PROFILE_V2');
-  return {ok:true, data:raw ? JSON.parse(raw) : {}};
+function loadGeneral(token) {
+  const key = profileKey_(token);
+  const raw = PropertiesService.getScriptProperties().getProperty(key);
+  return {ok:true, user:token ? localSession_(token) : getCurrentUser(), data:raw ? JSON.parse(raw) : {}};
 }
 
 /**
  * Tìm metadata bài báo ở phía Apps Script để tránh lỗi CORS trên trình duyệt.
  */
-function searchPublications(query, page, rows) {
-  assertSignedIn_();
+function searchPublications(query, page, rows, token) {
+  profileKey_(token);
 
   query = String(query || '').trim();
   if (!query) return { items: [], total: 0, page: 1 };
@@ -173,4 +170,32 @@ function assertSignedIn_() {
   if (!user.email && !user.temporaryKey) {
     throw new Error('Không xác định được phiên người dùng Google.');
   }
+}
+
+function saveTables(data,token) {
+  const key=profileKey_(token)+'_TABLES',props=PropertiesService.getScriptProperties();
+  if(!data || typeof data!=='object' || Array.isArray(data)) throw new Error('Các mục hồ sơ không hợp lệ.');
+  const allowed=['teachingBody','researchBody','credentialBody','languageBody','workBody','projectBody','articleBody','seminarBody','textbookBody','awardBody'];
+  const clean={};allowed.forEach(k=>{if(Array.isArray(data[k])) clean[k]=data[k];});
+  const encoded=Utilities.base64Encode(Utilities.newBlob(JSON.stringify(clean)).getBytes());
+  if(encoded.length>180000) throw new Error('Hồ sơ quá lớn để lưu.');
+  const lock=LockService.getScriptLock();lock.waitLock(10000);
+  try {
+    const version=Utilities.getUuid(),parts=Math.ceil(encoded.length/8000),values={};
+    for(let i=0;i<parts;i++) values[key+'_'+version+'_'+i]=encoded.slice(i*8000,(i+1)*8000);
+    props.setProperties(values);
+    const old=JSON.parse(props.getProperty(key)||'null');
+    props.setProperty(key,JSON.stringify({version:version,parts:parts}));
+    if(old) for(let i=0;i<old.parts;i++) props.deleteProperty(key+'_'+old.version+'_'+i);
+  } finally {lock.releaseLock();}
+  return {ok:true};
+}
+function loadTables(token) {
+  const key=profileKey_(token)+'_TABLES',props=PropertiesService.getScriptProperties();
+  const lock=LockService.getScriptLock();lock.waitLock(10000);
+  try {
+    const meta=JSON.parse(props.getProperty(key)||'null');if(!meta) return {ok:true,data:{}};
+    let raw='';for(let i=0;i<meta.parts;i++) {const part=props.getProperty(key+'_'+meta.version+'_'+i);if(part===null) throw new Error('Dữ liệu hồ sơ chưa đầy đủ.');raw+=part;}
+    return {ok:true,data:JSON.parse(Utilities.newBlob(Utilities.base64Decode(raw)).getDataAsString())};
+  } finally {lock.releaseLock();}
 }
