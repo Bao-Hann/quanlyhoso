@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Chủ đề giao diện theo tâm trạng
-  const validThemes = ['default','chatgpt','github','shopee','youtube','tiktok','ute'];
+  const validThemes = ['default','chatgpt','github','shopee','youtube','tiktok','ute','dashboard'];
 
   const readSavedTheme = () => {
     try {
