@@ -252,16 +252,60 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('Đã thêm sách giáo trình.');
   });
 
+  const publicationSearchModalEl = document.getElementById('addPublication');
+  const publicationManualModalEl = document.getElementById('addPublicationManual');
+  const manualOpenBtn = document.getElementById('openManualPublication');
+  const backToSearchBtn = document.getElementById('backToPublicationSearch');
   const paperSearchBtn = document.getElementById('paperSearchBtn');
+
+  const switchPublicationModal = (fromEl, toEl) => {
+    if (!fromEl || !toEl) return;
+    const from = bootstrap.Modal.getOrCreateInstance(fromEl);
+    fromEl.addEventListener('hidden.bs.modal', () => {
+      bootstrap.Modal.getOrCreateInstance(toEl).show();
+    }, { once:true });
+    from.hide();
+  };
+
+  if (manualOpenBtn) {
+    manualOpenBtn.addEventListener('click', () => {
+      switchPublicationModal(publicationSearchModalEl, publicationManualModalEl);
+    });
+  }
+
+  if (backToSearchBtn) {
+    backToSearchBtn.addEventListener('click', () => {
+      switchPublicationModal(publicationManualModalEl, publicationSearchModalEl);
+    });
+  }
+
   if (paperSearchBtn) {
     paperSearchBtn.addEventListener('click', () => {
       const q = document.getElementById('publicationSearch')?.value.trim();
+      const results = document.getElementById('publicationSearchResults');
       const hint = document.getElementById('publicationSearchHint');
+
       if (!q) {
-        if (hint) hint.textContent = 'Nhập DOI, link website hoặc tên công trình để tìm.';
+        if (hint) {
+          hint.classList.remove('d-none');
+          hint.textContent = 'Nhập DOI, link website hoặc tên bài báo để tìm.';
+        }
         return;
       }
-      if (hint) hint.textContent = 'Đã nhận từ khóa: “' + q + '”. Bản GitHub Pages hiện chỉ mô phỏng tìm kiếm; khi chạy Django có thể nối API DOI/Crossref.';
+
+      if (hint) {
+        hint.classList.remove('d-none');
+        hint.innerHTML =
+          '<div class="p-3 border rounded text-start">' +
+          '<strong>Chưa kết nối nguồn tìm kiếm thật trên GitHub Pages.</strong><br>' +
+          'Từ khóa: <span class="text-break">' + q.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) + '</span><br>' +
+          '<button type="button" class="btn btn-link p-0 mt-2" id="searchToManual">Không thấy bài? Nhập thủ công</button>' +
+          '</div>';
+
+        document.getElementById('searchToManual')?.addEventListener('click', () => {
+          switchPublicationModal(publicationSearchModalEl, publicationManualModalEl);
+        });
+      }
     });
   }
 
