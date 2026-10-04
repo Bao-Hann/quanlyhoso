@@ -49,7 +49,7 @@
 
   const logout = () => {
     localStorage.removeItem(SESSION_KEY);
-    setFlash('You have been logged out successfully.', 'info');
+    setFlash('Đã đăng xuất thành công.', 'info');
     window.location.replace('./login.html');
   };
 
@@ -99,20 +99,28 @@
     if (flash) showMessage(flash.message, flash.type);
 
     const form = document.getElementById('loginForm');
+    document.getElementById('googleLoginBtn')?.addEventListener('click', () => {
+      showMessage('Đăng nhập Google cần cấu hình Google OAuth Client ID trên máy chủ.', 'info');
+    });
+
     form?.addEventListener('submit', async event => {
       event.preventDefault();
       const username = form.elements.username.value.trim();
       const password = form.elements.password.value;
 
       const users = readJson(USERS_KEY, []);
-      const user = users.find(item => item.username.toLowerCase() === username.toLowerCase());
+      const normalized = username.toLowerCase();
+      const user = users.find(item =>
+        item.username.toLowerCase() === normalized ||
+        String(item.email || '').toLowerCase() === normalized
+      );
       if (!user || user.passwordHash !== await hashPassword(password)) {
-        showMessage('Invalid username or password.', 'error');
+        showMessage('Email hoặc mật khẩu không đúng.', 'error');
         return;
       }
 
       setSession(user);
-      setFlash('Welcome back, ' + user.username + '!', 'success');
+      setFlash('Đăng nhập thành công.', 'success');
       const params = new URLSearchParams(location.search);
       const next = params.get('next');
       window.location.replace(next && !next.includes('://') ? './' + next.replace(/^\.\//,'') : './index.html');
