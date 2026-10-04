@@ -1000,3 +1000,64 @@ body[data-theme="tiktok"] .text-muted{
 #credentialBody tr:has(.credential-row-check:checked){
   background:color-mix(in srgb,var(--theme-accent) 7%,var(--theme-surface));
 }
+
+
+/* Unified row selection / edit controls */
+.managed-table .select-col,
+.managed-table td:first-child,
+#articleTab th.select-col,
+#articleTab td:first-child{
+  width:54px;
+  min-width:54px;
+  text-align:center;
+  vertical-align:middle;
+}
+.managed-row-check,
+.managed-table thead .form-check-input,
+#articleSelectAll{
+  width:22px;
+  height:22px;
+  background-color:#fff!important;
+  border:1.5px solid #c8ced6!important;
+  box-shadow:none!important;
+  cursor:pointer;
+}
+.managed-row-check:checked,
+.managed-table thead .form-check-input:checked,
+#articleSelectAll:checked{
+  background-color:var(--theme-accent)!important;
+  border-color:var(--theme-accent)!important;
+}
+.managed-row-check:focus,
+.managed-table thead .form-check-input:focus,
+#articleSelectAll:focus{
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--theme-accent) 18%,transparent)!important;
+}
+.data-bulk-actions,
+.credential-bulk-actions{
+  background:color-mix(in srgb,var(--theme-accent) 2.5%,var(--theme-surface));
+  position:sticky;
+  bottom:0;
+  z-index:2;
+}
+.data-bulk-actions .btn,
+.credential-bulk-actions .btn{
+  min-height:38px;
+  font-weight:600;
+}
+.managed-table tbody tr:has(.managed-row-check:checked),
+#articleBody tr:has(.managed-row-check:checked){
+  background:color-mix(in srgb,var(--theme-accent) 8%,var(--theme-surface))!important;
+}
+.managed-edit-btn,
+.managed-delete-btn,
+.article-edit-btn,
+.article-delete-btn{
+  min-width:36px;
+}
+@media (max-width:767.98px){
+  .data-bulk-actions,
+  .credential-bulk-actions{
+    justify-content:flex-start!important;
+  }
+}
