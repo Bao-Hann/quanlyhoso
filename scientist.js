@@ -132,11 +132,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Demo lưu cục bộ trên GitHub Pages để có thể thử giao diện.
-  const toast = message => {
+  const toast = (message, kind='success') => {
     const host = document.getElementById('toastHost');
     if (!host) return;
-    host.innerHTML = '<div class="alert alert-success shadow">' + message + '</div>';
-    setTimeout(() => host.innerHTML = '', 2200);
+    const cls = kind === 'danger' ? 'danger' : kind === 'warning' ? 'warning' : kind === 'info' ? 'info' : 'success';
+    host.innerHTML = '<div class="alert alert-' + cls + ' shadow">' + message + '</div>';
+    setTimeout(() => host.innerHTML = '', 3200);
   };
 
   const closeModal = form => {
@@ -147,6 +148,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const removeEmpty = body => body?.querySelector('.empty-row')?.remove();
 
+  const currentYear = new Date().getFullYear();
+  const degreeYear = document.getElementById('degreeYear');
+  const degreeNotGraduated = document.getElementById('degreeNotGraduated');
+  const degreeThesisLabel = document.getElementById('degreeThesisLabel');
+  if (degreeYear) degreeYear.max = String(currentYear);
+
+  const updateDegreeThesisLabel = () => {
+    if (!degreeThesisLabel || !degreeLevel) return;
+    const value = degreeLevel.value;
+    let label = 'Khóa luận/Luận văn/Luận án';
+    if (value === 'Cử nhân' || value === 'Kỹ sư') label = 'Khóa luận';
+    if (value === 'Thạc sĩ') label = 'Luận văn';
+    if (value.includes('Tiến sĩ')) label = 'Luận án';
+    degreeThesisLabel.textContent = label;
+  };
+  degreeLevel?.addEventListener('change', updateDegreeThesisLabel);
+
+  if (degreeNotGraduated && degreeYear) {
+    degreeNotGraduated.addEventListener('change', () => {
+      degreeYear.disabled = degreeNotGraduated.checked;
+      degreeYear.required = !degreeNotGraduated.checked;
+      if (degreeNotGraduated.checked) degreeYear.value = '';
+    });
+  }
+
+  const sortRowsByNumericColumn = (body, columnIndex, unfinishedOnTop=false) => {
+    if (!body) return;
+    const rows = [...body.querySelectorAll('tr:not(.empty-row)')];
+    rows.sort((a,b) => {
+      const av = a.dataset.sortYear ? Number(a.dataset.sortYear) : Number((a.children[columnIndex]?.textContent || '').match(/\d{4}/)?.[0] || 0);
+      const bv = b.dataset.sortYear ? Number(b.dataset.sortYear) : Number((b.children[columnIndex]?.textContent || '').match(/\d{4}/)?.[0] || 0);
+      return bv - av;
+    });
+    rows.forEach(row => body.appendChild(row));
+  };
+
   const credentialForm = document.getElementById('credentialForm');
   if (credentialForm) credentialForm.addEventListener('submit', e => {
     e.preventDefault();
@@ -154,21 +191,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const kind = fd.get('kind');
     const body = document.getElementById('credentialBody');
     removeEmpty(body);
-    let level, major, year, detail;
+    let level='', major='', year='', detail='', sortYear=0;
+
     if (kind === 'title') {
       level = fd.get('title_level') || '';
       major = fd.get('title_major') || '';
       year = fd.get('title_year') || '';
+      if (year && Number(year) > currentYear) {
+        toast('Năm phong không được vượt quá năm hiện tại.', 'warning');
+        return;
+      }
+      sortYear = Number(year || 0);
       detail = 'Học hàm';
     } else {
       level = fd.get('degree_level') || '';
       major = fd.get('degree_major') || '';
-      year = fd.get('degree_year') || '';
-      detail = [fd.get('degree_institution') || '', fd.get('study_level') === 'undergraduate' ? 'Đại học' : 'Sau đại học'].filter(Boolean).join(' - ');
+      const notGraduated = fd.get('degree_not_graduated') === 'on';
+      const rawYear = fd.get('degree_year') || '';
+      if (!notGraduated && rawYear && Number(rawYear) > currentYear) {
+        toast('Năm tốt nghiệp không được vượt quá năm hiện tại. Nếu chưa tốt nghiệp, hãy chọn “Chưa tốt nghiệp”.', 'warning');
+        return;
+      }
+      year = notGraduated ? 'Chưa tốt nghiệp' : rawYear;
+      sortYear = notGraduated ? currentYear + 1 : Number(rawYear || 0);
+      const thesis = fd.get('degree_thesis') || '';
+      const institution = fd.get('degree_institution') || '';
+      detail = [thesis, institution].filter(Boolean).join(' — ');
     }
-    body.insertAdjacentHTML('beforeend', '<tr><td>'+level+'</td><td>'+major+'</td><td>'+year+'</td><td>'+detail+'</td></tr>');
+
+    const tr = document.createElement('tr');
+    tr.dataset.sortYear = String(sortYear);
+    tr.innerHTML = '<td>'+escapeHtml(level)+'</td><td>'+escapeHtml(major)+'</td><td>'+escapeHtml(year)+'</td><td>'+escapeHtml(detail)+'</td>';
+    body.appendChild(tr);
+    sortRowsByNumericColumn(body, 2, true);
+
     credentialForm.reset();
-    if (degreeLevel) { degreeLevel.innerHTML='<option value="">Chọn học vị</option>'; degreeLevel.disabled=true; }
+    if (degreeLevel) {
+      degreeLevel.innerHTML='<option value="">Chọn học vị</option>';
+      degreeLevel.disabled=true;
+    }
+    if (degreeYear) degreeYear.disabled=false;
+    updateDegreeThesisLabel();
     closeModal(credentialForm);
     toast('Đã thêm thông tin đào tạo.');
   });
@@ -217,21 +280,159 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('Đã thêm đề tài.');
   });
 
+  const publicationEvidenceFiles = new Map();
+
+  const normalizeArticleKey = article => {
+    const doi = String(article.doi || article.doi_or_url || '').trim().toLowerCase()
+      .replace(/^https?:\/\/(dx\.)?doi\.org\//i,'')
+      .replace(/^doi:\s*/i,'');
+    if (doi && /^10\.\d{4,9}\//i.test(doi)) return 'doi:' + doi;
+    return 'meta:' + [article.title, article.journal || article.location, article.year]
+      .map(v => String(v || '').trim().toLowerCase().replace(/\s+/g,' ')).join('|');
+  };
+
+  const getExistingArticleKeys = () => new Set(
+    [...document.querySelectorAll('#articleBody tr:not(.empty-row)')]
+      .map(row => row.dataset.articleKey)
+      .filter(Boolean)
+  );
+
+  const renumberArticleRows = () => {
+    document.querySelectorAll('#articleBody tr:not(.empty-row)').forEach((row,index) => {
+      if (row.children[0]) row.children[0].textContent = String(index + 1);
+    });
+  };
+
+  const addArticleActions = row => {
+    row.querySelector('.article-delete-btn')?.addEventListener('click', () => {
+      const key = row.dataset.articleKey;
+      if (confirm('Xóa bài báo này khỏi hồ sơ?')) {
+        publicationEvidenceFiles.delete(key);
+        row.remove();
+        renumberArticleRows();
+        if (!document.querySelector('#articleBody tr:not(.empty-row)')) {
+          document.getElementById('articleBody').innerHTML='<tr class="empty-row"><td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td></tr>';
+        }
+        toast('Đã xóa bài báo.', 'info');
+      }
+    });
+
+    row.querySelector('.article-edit-btn')?.addEventListener('click', () => {
+      const form = document.getElementById('publicationForm');
+      if (!form) return;
+      form.elements.edit_index.value = row.dataset.articleKey || '';
+      form.elements.title.value = row.dataset.title || '';
+      form.elements.authors.value = row.dataset.authors || '';
+      form.elements.issn.value = row.dataset.issn || '';
+      form.elements.location.value = row.dataset.journal || '';
+      form.elements.published_month.value = row.dataset.year ? row.dataset.year + '-01' : '';
+      form.elements.doi_or_url.value = row.dataset.doi || '';
+      form.elements.description.value = row.dataset.description || '';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('addPublicationManual')).show();
+    });
+  };
+
+  const createArticleRow = article => {
+    const key = normalizeArticleKey(article);
+    const file = article.file || null;
+    const tr = document.createElement('tr');
+    tr.dataset.articleKey = key;
+    tr.dataset.title = article.title || '';
+    tr.dataset.authors = article.authors || '';
+    tr.dataset.year = article.year || '';
+    tr.dataset.issn = article.issn || '';
+    tr.dataset.journal = article.journal || article.location || '';
+    tr.dataset.doi = article.doi || article.doi_or_url || '';
+    tr.dataset.description = article.description || '';
+    tr.dataset.sortYear = String(Number(article.year || 0));
+
+    let evidenceHtml = '<span class="text-muted">—</span>';
+    if (file) {
+      publicationEvidenceFiles.set(key, file);
+      const blobUrl = URL.createObjectURL(file);
+      evidenceHtml = '<a href="'+blobUrl+'" target="_blank" class="btn btn-sm btn-outline-secondary">PDF</a>';
+    }
+
+    tr.innerHTML =
+      '<td></td>'+
+      '<td>'+escapeHtml(article.title || '')+'</td>'+
+      '<td>'+escapeHtml(article.authors || '')+'</td>'+
+      '<td>'+escapeHtml(article.year || '')+'</td>'+
+      '<td>'+escapeHtml(article.issn || '')+'</td>'+
+      '<td>'+escapeHtml(article.journal || article.location || '')+'</td>'+
+      '<td>'+evidenceHtml+'</td>'+
+      '<td><div class="d-flex gap-1 justify-content-center">'+
+      '<button type="button" class="btn btn-sm btn-outline-primary article-edit-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>'+
+      '<button type="button" class="btn btn-sm btn-outline-danger article-delete-btn" title="Xóa"><i class="bi bi-trash"></i></button>'+
+      '</div></td>';
+    addArticleActions(tr);
+    return tr;
+  };
+
+  const upsertArticle = article => {
+    const body = document.getElementById('articleBody');
+    if (!body) return false;
+    removeEmpty(body);
+    const key = normalizeArticleKey(article);
+    const editingKey = article.editingKey || '';
+    const existing = [...body.querySelectorAll('tr:not(.empty-row)')].find(row => row.dataset.articleKey === key && row.dataset.articleKey !== editingKey);
+
+    if (existing) {
+      toast('Bài báo này đã có trong hồ sơ. Hệ thống không thêm bản trùng.', 'warning');
+      return false;
+    }
+
+    if (editingKey) {
+      const oldRow = [...body.querySelectorAll('tr:not(.empty-row)')].find(row => row.dataset.articleKey === editingKey);
+      if (oldRow) {
+        publicationEvidenceFiles.delete(editingKey);
+        oldRow.replaceWith(createArticleRow(article));
+      } else {
+        body.appendChild(createArticleRow(article));
+      }
+    } else {
+      body.appendChild(createArticleRow(article));
+    }
+
+    sortRowsByNumericColumn(body, 3);
+    renumberArticleRows();
+    return true;
+  };
+
   const publicationForm = document.getElementById('publicationForm');
   if (publicationForm) publicationForm.addEventListener('submit', e => {
     e.preventDefault();
     const fd = new FormData(publicationForm);
-    const body = document.getElementById('articleBody');
-    removeEmpty(body);
-    const stt = body.querySelectorAll('tr').length + 1;
     const month = fd.get('published_month') || '';
     const year = month ? month.split('-')[0] : '';
-    body.insertAdjacentHTML('beforeend',
-      '<tr><td>'+stt+'</td><td>'+fd.get('title')+'</td><td>'+year+
-      '</td><td>'+fd.get('location')+'</td><td>'+fd.get('doi_or_url')+'</td><td>'+fd.get('description')+'</td></tr>');
+    if (year && Number(year) > currentYear) {
+      toast('Năm xuất bản không được vượt quá năm hiện tại.', 'warning');
+      return;
+    }
+    const file = document.getElementById('publicationEvidencePdf')?.files?.[0] || null;
+    if (file && file.type && file.type !== 'application/pdf') {
+      toast('Minh chứng phải là file PDF.', 'warning');
+      return;
+    }
+
+    const article = {
+      title: fd.get('title') || '',
+      authors: fd.get('authors') || '',
+      year,
+      issn: fd.get('issn') || '',
+      journal: fd.get('location') || '',
+      doi_or_url: fd.get('doi_or_url') || '',
+      description: fd.get('description') || '',
+      file,
+      editingKey: fd.get('edit_index') || ''
+    };
+
+    if (!upsertArticle(article)) return;
+
     publicationForm.reset();
+    document.getElementById('publicationEditIndex').value='';
     closeModal(publicationForm);
-    toast('Đã thêm bài báo khoa học.');
+    toast(article.editingKey ? 'Đã cập nhật bài báo.' : 'Đã thêm bài báo khoa học.');
   });
 
   const seminarForm = document.getElementById('seminarForm');
@@ -541,30 +742,147 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const appendArticleToTable = item => {
-    const body = document.getElementById('articleBody');
-    if (!body || !item) return;
-    removeEmpty(body);
-    const stt = body.querySelectorAll('tr:not(.empty-row)').length + 1;
-    body.insertAdjacentHTML('beforeend',
-      '<tr>' +
-      '<td>'+stt+'</td>' +
-      '<td>'+escapeHtml(item.title)+'</td>' +
-      '<td>'+escapeHtml(item.authors)+'</td>' +
-      '<td>'+escapeHtml(item.year)+'</td>' +
-      '<td>'+escapeHtml(item.issn)+'</td>' +
-      '<td>'+escapeHtml(item.journal)+'</td>' +
-      '</tr>');
+    if (!item) return false;
+    return upsertArticle({
+      title:item.title,
+      authors:item.authors,
+      year:item.year,
+      issn:item.issn,
+      journal:item.journal,
+      doi:item.doi,
+      description:''
+    });
   };
 
   if (publicationAddBtn) {
     publicationAddBtn.addEventListener('click', () => {
       const item = publicationSearchState.items[publicationSearchState.selectedIndex];
       if (!item) return;
-      appendArticleToTable(item);
+      if (!appendArticleToTable(item)) return;
       bootstrap.Modal.getOrCreateInstance(publicationSearchModalEl).hide();
       toast('Đã thêm bài báo khoa học.');
     });
   }
+
+  // Chuẩn hóa nội dung nhập: hạn chế lỗi Caps Lock / nhập toàn chữ hoa.
+  const toSmartTitleCase = value => {
+    const trimmed = String(value || '').trim().replace(/\s+/g,' ');
+    if (!trimmed) return '';
+    if (trimmed === trimmed.toUpperCase() && /[A-ZÀ-Ỹ]/.test(trimmed)) {
+      return trimmed.toLocaleLowerCase('vi-VN').replace(/(^|[\s\-\/])([a-zà-ỹ])/g, (m,p1,p2) => p1 + p2.toLocaleUpperCase('vi-VN'));
+    }
+    return trimmed;
+  };
+  document.querySelectorAll('.smart-titlecase').forEach(input => {
+    input.addEventListener('blur', () => input.value = toSmartTitleCase(input.value));
+  });
+
+  // Gợi ý Caps Lock ngay khi người dùng nhập.
+  document.addEventListener('keydown', event => {
+    if (!(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLTextAreaElement)) return;
+    const on = event.getModifierState && event.getModifierState('CapsLock');
+    event.target.classList.toggle('capslock-on', Boolean(on));
+    event.target.title = on ? 'Caps Lock đang bật' : '';
+  });
+
+  // Xem trước / xuất Word theo nhiều mẫu.
+  const exportPreview = document.getElementById('exportPreview');
+  const getCellRows = selector => [...document.querySelectorAll(selector+' tr:not(.empty-row)')].map(row => [...row.children].map(td => td.innerText.trim()));
+  const getGeneralValue = name => document.querySelector('[name="'+name+'"]')?.value || '';
+
+  const buildExportPreview = () => {
+    if (!exportPreview) return;
+    const template = document.querySelector('input[name="export_template"]:checked')?.value || 'standard';
+    const education = getCellRows('#credentialBody');
+    const work = getCellRows('#workBody');
+    const projects = getCellRows('#projectBody');
+    const articles = getCellRows('#articleBody');
+    const textbooks = getCellRows('#textbookBody');
+
+    let html = '<h3 class="text-center">LÝ LỊCH KHOA HỌC</h3>'+
+      '<h5>I. LÝ LỊCH SƠ LƯỢC</h5>'+
+      '<p><b>Họ và tên:</b> '+escapeHtml(getGeneralValue('person_name'))+'</p>'+
+      '<p><b>Ngày sinh:</b> '+escapeHtml(getGeneralValue('person_dob'))+' &nbsp; <b>Nơi sinh:</b> '+escapeHtml(getGeneralValue('person_pob'))+'</p>'+
+      '<p><b>Quê quán:</b> '+escapeHtml(getGeneralValue('person_hometown'))+' &nbsp; <b>Dân tộc:</b> '+escapeHtml(getGeneralValue('person_ethnicity'))+'</p>'+
+      '<p><b>Chức vụ:</b> '+escapeHtml(getGeneralValue('person_position'))+'</p>'+
+      '<p><b>Đơn vị công tác:</b> '+escapeHtml(getGeneralValue('person_work_unit'))+'</p>';
+
+    const table = (title, rows) => {
+      if (!rows.length) return '<h5>'+title+'</h5><p class="text-muted">Chưa có dữ liệu.</p>';
+      return '<h5>'+title+'</h5><table><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+escapeHtml(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    };
+
+    html += table('II. QUÁ TRÌNH ĐÀO TẠO', education);
+    html += table('III. QUÁ TRÌNH CÔNG TÁC', work);
+    html += table('IV. QUÁ TRÌNH NGHIÊN CỨU KHOA HỌC - Đề tài', projects);
+    html += table('Công bố khoa học', articles.map(r=>r.slice(0,6)));
+
+    if (template === 'textbook' || template === 'full') html += table('Sách giáo trình', textbooks);
+    if (template === 'award' || template === 'full') html += table('V. GIẢI THƯỞNG', getCellRows('#awardBody'));
+
+    exportPreview.innerHTML = html;
+  };
+
+  document.getElementById('refreshExportPreview')?.addEventListener('click', buildExportPreview);
+  document.querySelectorAll('input[name="export_template"]').forEach(r => r.addEventListener('change', buildExportPreview));
+  document.getElementById('exportCvModal')?.addEventListener('shown.bs.modal', buildExportPreview);
+
+  document.getElementById('downloadExportDoc')?.addEventListener('click', () => {
+    buildExportPreview();
+    const html = '<html><head><meta charset="utf-8"><style>body{font-family:Times New Roman;font-size:13pt}table{border-collapse:collapse;width:100%}td{border:1px solid #000;padding:5px}</style></head><body>'+exportPreview.innerHTML+'</body></html>';
+    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url;
+    a.download='ly-lich-khoa-hoc.doc';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('Đã tạo file Word theo mẫu đã chọn.');
+  });
+
+  // Cấu hình đồng bộ Google Sheet / Drive qua Apps Script Web App.
+  const endpointInput = document.getElementById('googleSyncEndpoint');
+  const folderInput = document.getElementById('googleDriveFolderId');
+  const syncStatus = document.getElementById('googleSyncStatus');
+  if (endpointInput) endpointInput.value = localStorage.getItem('google-sync-endpoint') || '';
+  if (folderInput) folderInput.value = localStorage.getItem('google-drive-folder') || '';
+
+  document.getElementById('saveGoogleSyncConfig')?.addEventListener('click', () => {
+    localStorage.setItem('google-sync-endpoint', endpointInput?.value.trim() || '');
+    localStorage.setItem('google-drive-folder', folderInput?.value.trim() || '');
+    if (syncStatus) syncStatus.textContent='Đã lưu cấu hình trên trình duyệt.';
+    toast('Đã lưu cấu hình đồng bộ.');
+  });
+
+  document.getElementById('syncProfileBtn')?.addEventListener('click', async () => {
+    const endpoint = endpointInput?.value.trim();
+    if (!endpoint) {
+      toast('Cần nhập URL Web App Google Apps Script trước khi đồng bộ.', 'warning');
+      return;
+    }
+    const payload = {
+      folderId: folderInput?.value.trim() || '',
+      general: Object.fromEntries([...document.querySelectorAll('#editGeneral [name]')].map(el=>[el.name, el.type==='radio' ? (el.checked?el.value:undefined) : el.value]).filter(([,v])=>v!==undefined)),
+      education:getCellRows('#credentialBody'),
+      work:getCellRows('#workBody'),
+      projects:getCellRows('#projectBody'),
+      articles:getCellRows('#articleBody').map(r=>r.slice(0,6)),
+      seminar:getCellRows('#seminarBody'),
+      textbooks:getCellRows('#textbookBody'),
+      awards:getCellRows('#awardBody')
+    };
+    try {
+      if (syncStatus) syncStatus.textContent='Đang đồng bộ...';
+      const res = await fetch(endpoint, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      if (syncStatus) syncStatus.textContent='Đồng bộ thành công.';
+      toast('Đã đồng bộ dữ liệu.');
+    } catch(err) {
+      console.error(err);
+      if (syncStatus) syncStatus.textContent='Không đồng bộ được. Kiểm tra URL Web App và quyền truy cập.';
+      toast('Đồng bộ thất bại. Kiểm tra cấu hình Google Apps Script.', 'danger');
+    }
+  });
 
   const savedArticleSearch = document.getElementById('savedArticleSearch');
   if (savedArticleSearch) {
