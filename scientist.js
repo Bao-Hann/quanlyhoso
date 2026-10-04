@@ -1,23 +1,50 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Chủ đề giao diện theo tâm trạng
-  const themeLabels = {
-    default:'Mặc định',
-    chatgpt:'ChatGPT',
-    github:'GitHub',
-    shopee:'Shopee',
-    youtube:'YouTube',
-    tiktok:'TikTok'
+  const validThemes = ['default','chatgpt','github','shopee','youtube','tiktok'];
+
+  const readSavedTheme = () => {
+    try {
+      const saved = localStorage.getItem('scientist-theme');
+      return validThemes.includes(saved) ? saved : 'default';
+    } catch (err) {
+      return 'default';
+    }
   };
-  const savedTheme = localStorage.getItem('scientist-theme') || 'default';
+
+  const saveTheme = theme => {
+    try {
+      localStorage.setItem('scientist-theme', theme);
+    } catch (err) {
+      // Trình duyệt có thể chặn lưu cục bộ; giao diện vẫn đổi bình thường.
+    }
+  };
+
   const applyTheme = theme => {
-    document.body.dataset.theme = theme;
-    localStorage.setItem('scientist-theme', theme);
-    const label = document.getElementById('currentThemeLabel');
-    if (label) label.textContent = themeLabels[theme] || themeLabels.default;
+    const selectedTheme = validThemes.includes(theme) ? theme : 'default';
+    document.body.setAttribute('data-theme', selectedTheme);
+    saveTheme(selectedTheme);
+
+    document.querySelectorAll('.theme-option').forEach(option => {
+      const isActive = option.dataset.themeOption === selectedTheme;
+      option.classList.toggle('active', isActive);
+      option.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
   };
-  applyTheme(savedTheme);
-  document.querySelectorAll('.theme-option').forEach(btn => {
-    btn.addEventListener('click', () => applyTheme(btn.dataset.themeOption));
+
+  applyTheme(readSavedTheme());
+
+  document.addEventListener('click', event => {
+    const option = event.target.closest('.theme-option');
+    if (!option) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    applyTheme(option.dataset.themeOption);
+
+    const menuButton = document.getElementById('themeMenuButton');
+    if (menuButton && window.bootstrap?.Dropdown) {
+      bootstrap.Dropdown.getOrCreateInstance(menuButton).hide();
+    }
   });
 
   const editBtn = document.getElementById('editGeneralBtn');
