@@ -33,6 +33,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   applyTheme(readSavedTheme());
 
+  const syncOneFormDashboardIdentity = () => {
+    const session = window.OneFormAuth?.getSession?.();
+    const username = session?.username || 'User';
+    const email = session?.email || 'user@example.com';
+    const dashName = document.getElementById('dashboardWelcomeName');
+    const dashEmail = document.getElementById('dashboardAccountEmail');
+    if (dashName) dashName.textContent = username;
+    if (dashEmail) dashEmail.textContent = email;
+  };
+  syncOneFormDashboardIdentity();
+
+  document.querySelectorAll('[data-oneform-logout]').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      window.OneFormAuth?.logout?.();
+    });
+  });
+
   document.querySelectorAll('.theme-option').forEach(option => {
     option.addEventListener('click', event => {
       event.preventDefault();
