@@ -661,3 +661,108 @@ body[data-theme="tiktok"] .text-muted{
 .publication-search-modal .modal-footer{
   min-height:72px;
 }
+
+
+/* Original publication layouts */
+.publication-original-dialog{
+  --bs-modal-width:1340px;
+  width:min(96vw,1340px);
+  max-width:1340px;
+}
+.original-modal-header{
+  min-height:104px;
+  display:grid;
+  grid-template-columns:110px 1fr 110px;
+  align-items:center;
+  border-bottom:1px solid var(--theme-border);
+  padding:0 24px;
+}
+.original-modal-header .modal-title{
+  text-align:center;
+  font-size:1.9rem;
+  font-weight:600;
+}
+.original-close-btn{
+  justify-self:start;
+  color:#777;
+  font-size:1.7rem;
+  border:0;
+  background:transparent;
+}
+.original-add-btn{
+  justify-self:end;
+  min-width:82px;
+  min-height:56px;
+  font-size:1.25rem;
+}
+.original-simple-form{
+  padding:24px 24px 36px;
+  min-height:620px;
+}
+.original-simple-form .input-group-text{
+  font-size:1.08rem;
+  padding-left:18px;
+  padding-right:18px;
+}
+.original-simple-form .form-control,
+.original-simple-form .form-select{
+  font-size:1.05rem;
+  min-height:56px;
+}
+.original-simple-form textarea.form-control{
+  min-height:200px;
+  border-radius:6px;
+}
+.publication-search-modal .publication-search-body{
+  padding:24px;
+  min-height:710px;
+}
+.publication-search-modal .publication-search .form-control{
+  min-height:56px;
+  font-size:1.05rem;
+}
+.publication-search-modal .publication-search .btn{
+  min-width:64px;
+  font-size:1.25rem;
+}
+.publication-search-modal .modal-footer{
+  min-height:82px;
+  padding:18px 24px;
+}
+.saved-publication-search{
+  height:74px;
+  border:1px solid var(--theme-border);
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0 16px;
+  background:var(--theme-surface);
+}
+.saved-publication-search i{
+  font-size:1.65rem;
+  color:var(--theme-muted);
+}
+.saved-publication-search input{
+  width:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--theme-text);
+  font-size:1.05rem;
+}
+.saved-publication-search input::placeholder{
+  color:var(--theme-muted);
+}
+.publication-tabs{
+  margin-bottom:14px;
+}
+.publication-tabs .nav-link{
+  font-size:1.05rem;
+}
+@media (max-width:767.98px){
+  .publication-original-dialog{width:auto;max-width:calc(100% - 1rem);}
+  .original-modal-header{grid-template-columns:54px 1fr 70px;padding:0 10px;min-height:82px;}
+  .original-modal-header .modal-title{font-size:1.2rem;}
+  .original-add-btn{min-width:62px;min-height:44px;font-size:1rem;}
+  .original-simple-form{padding:16px;min-height:auto;}
+}
