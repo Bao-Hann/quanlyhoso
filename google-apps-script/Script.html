@@ -164,19 +164,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     [26,28,30].forEach(i=>setParagraphIndent(p[i],720,360));
     [27,29,31,32].forEach(i=>setParagraphIndent(p[i],720,0));
 
-    // Đồng bộ khoảng cách dọc của 3 dòng "Tên luận án".
-    // Dòng đầu đang có khoảng cách đúng theo mẫu, nên sao chép đúng thuộc tính spacing sang dòng chấm kế tiếp.
-    const copyParagraphSpacing = (source,target) => {
-      if(!source || !target) return;
-      const sourcePr=children(source,'pPr')[0];
-      const targetPr=children(target,'pPr')[0] || target.insertBefore(target.ownerDocument.createElementNS(W,'w:pPr'),target.firstChild);
-      children(targetPr,'spacing').forEach(x=>x.remove());
-      const spacing=sourcePr && children(sourcePr,'spacing')[0];
-      if(spacing) targetPr.appendChild(spacing.cloneNode(true));
+    // Giãn đều 3 dòng của cụm "Tên luận án" theo bố cục mẫu.
+    // Dùng cùng một chiều cao dòng và cùng khoảng cách sau đoạn để không còn dòng bị dính sát.
+    const setUniformThesisSpacing = paragraph => {
+      if(!paragraph) return;
+      const pr=children(paragraph,'pPr')[0] || paragraph.insertBefore(paragraph.ownerDocument.createElementNS(W,'w:pPr'),paragraph.firstChild);
+      children(pr,'spacing').forEach(x=>x.remove());
+      const spacing=paragraph.ownerDocument.createElementNS(W,'w:spacing');
+      spacing.setAttributeNS(W,'w:before','0');
+      spacing.setAttributeNS(W,'w:after','120');
+      spacing.setAttributeNS(W,'w:line','300');
+      spacing.setAttributeNS(W,'w:lineRule','auto');
+      pr.appendChild(spacing);
     };
-    copyParagraphSpacing(p[30],p[31]);
+    [30,31,32].forEach(i=>setUniformThesisSpacing(p[i]));
 
-    // Giữ hai dòng đầu của cụm luận án đi cùng nhau để Word không ép dòng cuối sát lên trên.
+    // Giữ cụm luận án liền nhau khi ở cuối trang.
     [30,31].forEach(i=>{
       const pr=children(p[i],'pPr')[0] || p[i].insertBefore(doc.createElementNS(W,'w:pPr'),p[i].firstChild);
       if(!children(pr,'keepNext').length) pr.appendChild(doc.createElementNS(W,'w:keepNext'));
