@@ -487,12 +487,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editBtn) editBtn.disabled = true;
     google.script.run.withSuccessHandler(result => {
       if (result.user) {
-        const email = String(result.user.email || '').trim();
-        const currentName = String(result.user.name || '').trim();
-        const profileName = String(result.data?.person_name || '').trim();
-        if ((!currentName || currentName.toLowerCase() === email.toLowerCase()) && profileName) {
-          result.user.name = profileName;
-        }
         window.GAS_USER = result.user;
         syncAccountIdentity(result.user);
       }
