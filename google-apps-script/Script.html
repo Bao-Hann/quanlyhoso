@@ -384,45 +384,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   syncAccountIdentity();
 
-  const ensureAccountDisplayName = user => {
-    if (!user) return;
-    const email = String(user.email || '').trim();
-    const currentName = String(user.name || user.displayName || '').trim();
-    if (currentName || !email || !window.google?.script?.run) return;
-
-    const entered = window.prompt(
-      'Tên tài khoản đang trống.\n\nHãy nhập tên sẽ hiển thị cho ' + email + ':',
-      ''
-    );
-    if (entered == null) return;
-
-    const name = String(entered).trim().replace(/\s+/g,' ');
-    if (name.length < 2 || name.length > 100) {
-      window.alert('Tên tài khoản cần từ 2 đến 100 ký tự.');
-      return;
-    }
-
-    google.script.run
-      .withSuccessHandler(updatedUser => {
-        if (!updatedUser) return;
-        window.GAS_USER = updatedUser;
-        syncAccountIdentity(updatedUser);
-      })
-      .withFailureHandler(err => {
-        window.alert('Không lưu được tên tài khoản: ' + (err?.message || err));
-      })
-      .setAccountDisplayName(name, window.GAS_AUTH_TOKEN || '');
-  };
-
-  // Làm mới danh tính tài khoản. Nếu Google không trả tên và tài khoản chưa từng lưu tên,
-  // hỏi đúng một lần rồi lưu riêng theo email.
+  // Làm mới danh tính trực tiếp từ tài khoản Google; không hỏi người dùng nhập tên.
   if(window.google?.script?.run && window.GAS_USER?.provider === 'google') {
     google.script.run
       .withSuccessHandler(user => {
         if (!user) return;
         window.GAS_USER = user;
         syncAccountIdentity(user);
-        ensureAccountDisplayName(user);
       })
       .withFailureHandler(() => {})
       .refreshGoogleIdentity();
