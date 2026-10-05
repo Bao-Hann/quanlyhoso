@@ -46,6 +46,28 @@ function registerLocal(email,password,displayName) {
   } finally {lock.releaseLock();}
   return {ok:true};
 }
+function createAppSession_(user) {
+  if(!user || !user.email) throw new Error('Không thể tạo phiên đăng nhập.');
+  const props=PropertiesService.getScriptProperties();
+  const token=Utilities.getUuid()+Utilities.getUuid();
+  const now=Date.now();
+  props.setProperty(
+    'AUTH_SESSION_'+hashId_(token),
+    JSON.stringify({user:user,expires:now+24*60*60*1000})
+  );
+
+  // Dọn các phiên đã hết hạn.
+  const all=props.getProperties();
+  Object.keys(all).filter(k=>k.indexOf('AUTH_SESSION_')===0).forEach(k=>{
+    try {
+      if(JSON.parse(all[k]).expires<now) props.deleteProperty(k);
+    } catch (_) {
+      props.deleteProperty(k);
+    }
+  });
+  return {ok:true,token:token,user:user};
+}
+
 function loginLocal(email,password) {
   email=normalizedEmail_(email);password=String(password||'');
   if(password.length>128) throw new Error('Email hoặc mật khẩu không đúng.');
@@ -63,7 +85,6 @@ function loginLocal(email,password) {
     if(!raw || !sameHash_(computed,record.hash)) throw new Error('Email hoặc mật khẩu không đúng.');
     props.deleteProperty(rateKey);
 
-    const token=Utilities.getUuid()+Utilities.getUuid();
     let safeName=String(record.name || '').trim();
     if(!safeName || safeName.toLowerCase()===email) {
       try {
@@ -72,10 +93,7 @@ function loginLocal(email,password) {
       } catch (_) {}
     }
     const user={userId:'email:'+email,email:email,name:(safeName && safeName.toLowerCase()!==email) ? safeName : '',provider:'password'};
-    props.setProperty('AUTH_SESSION_'+hashId_(token),JSON.stringify({user:user,expires:now+24*60*60*1000}));
-    // Xóa phiên hết hạn, tránh đầy dung lượng lưu trữ.
-    const all=props.getProperties();Object.keys(all).filter(k=>k.indexOf('AUTH_SESSION_')===0).forEach(k=>{if(JSON.parse(all[k]).expires<now) props.deleteProperty(k);});
-    return {ok:true,token:token,user:user};
+    return createAppSession_(user);
   } finally {lock.releaseLock();}
 }
 function localSession_(token) {
