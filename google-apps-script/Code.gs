@@ -206,7 +206,7 @@ function completeGoogleOAuthFromExec_(params) {
   const handoff=Utilities.getUuid()+Utilities.getUuid();
   cache.put('GOOGLE_HANDOFF_'+hashId_(handoff),JSON.stringify(session),120);
 
-  const target=(ScriptApp.getService().getUrl() || '') +
+  const target=googleOAuthCallbackUrl_() +
     '?page=oauthcomplete&handoff=' + encodeURIComponent(handoff);
 
   return HtmlService.createHtmlOutput(
@@ -229,7 +229,7 @@ function renderOAuthHandoff_(handoff) {
   if(!raw) return renderLogin_('Phiên đăng nhập Google đã hết hạn. Hãy thử lại.');
 
   const session=JSON.parse(raw);
-  const appUrl=(ScriptApp.getService().getUrl() || '')+'?page=app&mode=local';
+  const appUrl=googleOAuthCallbackUrl_()+'?page=app&mode=local';
   const payload=JSON.stringify(session).replace(/</g,'\\u003c');
 
   return HtmlService.createHtmlOutput(
@@ -239,7 +239,7 @@ function renderOAuthHandoff_(handoff) {
     '<script>'+
     'try{sessionStorage.setItem("scientist-local-session",JSON.stringify('+payload+'));}catch(e){};'+
     'window.top.location.replace('+JSON.stringify(appUrl)+');'+
-    '<\\/script></body></html>'
+    '</script></body></html>'
   ).setTitle('Đang mở hồ sơ - '+APP_TITLE);
 }
 
