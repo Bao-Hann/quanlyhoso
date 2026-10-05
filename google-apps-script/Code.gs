@@ -48,24 +48,47 @@ function getCurrentUser() {
 // Identity comes from Google, never from editable profile fields.
 var googleNames_ = {};
 function googleDisplayName_(email) {
+  email = String(email || '').trim().toLowerCase();
   if (googleNames_[email]) return googleNames_[email];
-  let name = email.split('@')[0];
-  try {
-    const response = UrlFetchApp.fetch('https://openidconnect.googleapis.com/v1/userinfo', {
-      headers: {Authorization: 'Bearer ' + ScriptApp.getOAuthToken()},
-      muteHttpExceptions: true
-    });
-    if (response.getResponseCode() === 200) {
+
+  const token = ScriptApp.getOAuthToken();
+  const endpoints = [
+    'https://www.googleapis.com/oauth2/v3/userinfo',
+    'https://openidconnect.googleapis.com/v1/userinfo'
+  ];
+
+  for (let i = 0; i < endpoints.length; i++) {
+    try {
+      const response = UrlFetchApp.fetch(endpoints[i], {
+        headers: {Authorization: 'Bearer ' + token},
+        muteHttpExceptions: true
+      });
+      if (response.getResponseCode() !== 200) continue;
+
       const profile = JSON.parse(response.getContentText());
-      if (String(profile.email || '').trim().toLowerCase() === email && profile.name) {
-        name = String(profile.name).trim();
+      const profileEmail = String(profile.email || '').trim().toLowerCase();
+      if (profileEmail && profileEmail !== email) continue;
+
+      const fullName = String(profile.name || '').trim();
+      const composedName = [
+        String(profile.given_name || '').trim(),
+        String(profile.family_name || '').trim()
+      ].filter(Boolean).join(' ').trim();
+      const name = fullName || composedName;
+
+      if (name) {
+        googleNames_[email] = name;
+        return name;
       }
+    } catch (_) {
+      // Thử endpoint tiếp theo.
     }
-  } catch (_) {
-    // An unavailable profile endpoint must not block access to saved data.
   }
-  googleNames_[email] = name;
-  return name;
+
+  // Không tự cắt phần trước dấu @ làm tên. Nếu Google không trả tên,
+  // giữ nguyên email để tránh hiển thị một tên sai.
+  googleNames_[email] = email;
+  return email;
 }
 
 function profileKey_(token) {
