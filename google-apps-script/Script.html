@@ -399,18 +399,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   syncAccountIdentity();
 
-  // Làm mới danh tính trực tiếp từ tài khoản Google; không hỏi người dùng nhập tên.
-  if(window.google?.script?.run && window.GAS_USER?.provider === 'google') {
-    google.script.run
-      .withSuccessHandler(user => {
-        if (!user) return;
-        window.GAS_USER = user;
-        syncAccountIdentity(user);
-      })
-      .withFailureHandler(() => {})
-      .refreshGoogleIdentity();
-  }
-
   let signingOut = false;
   const signOut = event => {
     event?.preventDefault();
