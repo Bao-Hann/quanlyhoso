@@ -192,7 +192,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if(!children(signPr,'cantSplit').length) signPr.appendChild(doc.createElementNS(W,'w:cantSplit'));
     }
     descendants(body,'r').forEach(forceTimesNewRoman);
-    tables.slice(0,4).forEach(ensureTableBorders);
+    // Bảng 0 là mục "3. Ngoại ngữ" của mẫu Bộ: dùng bảng chỉ để căn cột, tuyệt đối giữ nguyên trạng thái không viền.
+    // Các bảng dữ liệu từ bảng 1 trở đi mới cần đường kẻ.
+    tables.slice(1,4).forEach(ensureTableBorders);
     zip.file('word/document.xml',new XMLSerializer().serializeToString(doc));
     return {zip,body};
   }
