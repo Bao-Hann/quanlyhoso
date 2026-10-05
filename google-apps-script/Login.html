@@ -219,26 +219,18 @@
             <button class="primary" id="submitLogin" type="submit">Đăng nhập</button>
           </form>
           <hr class="separator">
-          <a class="google" id="googleOAuthBtn" href="<?= googleOAuthReady ? googleOAuthUrl : '#' ?>" target="_top" rel="noopener" aria-disabled="<?= googleOAuthReady ? 'false' : 'true' ?>">
+          <a class="google" id="googleOAuthBtn" href="<?= googleAccountChooserUrl ?>" target="_top" rel="noopener">
             <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M22 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.4 3.1-7.6"/><path fill="#34a853" d="M12 22c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1-2.7 0-5-1.8-5.8-4.3H2.7v2.7A10.4 10.4 0 0 0 12 22"/><path fill="#fbbc05" d="M6.2 13.6a6.2 6.2 0 0 1 0-3.2V7.7H2.7a10.3 10.3 0 0 0 0 8.6z"/><path fill="#ea4335" d="M12 6.1c1.5 0 2.9.5 4 1.6l3-3A10 10 0 0 0 2.7 7.7l3.5 2.7C7 7.9 9.3 6.1 12 6.1"/></svg>
             <span>Đăng nhập bằng tài khoản Google</span>
           </a>
           <p class="register"><span id="accountPrompt">Chưa có tài khoản?</span> <button id="registerToggle" type="button">Đăng ký</button></p>
-          <p class="privacy"><?= googleOAuthReady ? 'Google sẽ cho bạn chọn tài khoản. Tên, email và ảnh đại diện được lấy trực tiếp từ tài khoản đã chọn.' : 'Quản trị viên cần cấu hình Google OAuth Client ID trước khi dùng đăng nhập Google.' ?></p>
+          <p class="privacy">Google sẽ cho bạn chọn tài khoản trước khi mở hồ sơ.</p>
         </div>
       </div>
     </section>
   </main>
 <script>
   const appUrl = <?!= JSON.stringify(webAppUrl) ?>;
-  const googleOAuthReady = <?!= JSON.stringify(Boolean(googleOAuthReady)) ?>;
-  const googleOAuthBtn = document.getElementById('googleOAuthBtn');
-  if (googleOAuthBtn && !googleOAuthReady) {
-    googleOAuthBtn.addEventListener('click', event => {
-      event.preventDefault();
-      show('Đăng nhập Google chưa được cấu hình. Cần thêm GOOGLE_OAUTH_CLIENT_ID và GOOGLE_OAUTH_CLIENT_SECRET trong Script Properties.');
-    });
-  }
   let registering=false;
   const form=document.getElementById('loginForm'),button=document.getElementById('submitLogin'),message=document.getElementById('authMessage');
   const show=text=>{message.textContent=text;message.hidden=false;};
