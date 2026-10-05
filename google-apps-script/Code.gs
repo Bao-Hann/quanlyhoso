@@ -11,7 +11,9 @@ function doGet(e) {
   const page = String((e && e.parameter && e.parameter.page) || 'login').toLowerCase();
 
   if (page === 'app' || page === 'home') {
-    const user = e && e.parameter && e.parameter.mode === "local" ? {provider:"local"} : getCurrentUser();
+    const localMode = e && e.parameter && e.parameter.mode === "local";
+    const fromGoogleChooser = e && e.parameter && e.parameter.google === "1";
+    const user = localMode ? {provider:"local"} : getCurrentUser(fromGoogleChooser);
     const t = HtmlService.createTemplateFromFile('Index');
     t.userJson = JSON.stringify(user).replace(/</g, '\\u003c');
     return t.evaluate()
@@ -132,7 +134,7 @@ function googleProfileForActiveUser_(email) {
   }
 }
 
-function getCurrentUser() {
+function getCurrentUser(forceGoogleRefresh) {
   const sessionEmail = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
   const effectiveEmail = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
 
@@ -168,6 +170,8 @@ function getCurrentUser() {
     googlePicture = String(profile.picture || '').trim();
   }
 
+  // Sau khi đi qua AccountChooser, ưu tiên hồ sơ Google vừa chọn.
+  // Nếu đã lấy được tên thật từ Google, stableAccountIdentity_ sẽ ghi đè dữ liệu cũ của đúng email này.
   const accountIdentity = stableAccountIdentity_(email, googleName, googlePicture);
 
   return {
@@ -177,12 +181,13 @@ function getCurrentUser() {
     name:accountIdentity.name,
     displayName:accountIdentity.name,
     picture:accountIdentity.picture,
+    identitySource: googleName ? 'google-live' : (accountIdentity.name ? 'google-cache' : ''),
     executionEmail:effectiveEmail
   };
 }
 
 function refreshGoogleIdentity() {
-  return getCurrentUser();
+  return getCurrentUser(true);
 }
 
 function profileKey_(token) {
