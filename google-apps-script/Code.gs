@@ -10,14 +10,25 @@
 const APP_TITLE = 'Scientist Profile';
 
 function doGet(e) {
-  const page = String((e && e.parameter && e.parameter.page) || 'login').toLowerCase();
+  const params = (e && e.parameter) || {};
+
+  // Google OAuth callback now returns directly to the deployed /exec URL.
+  if (params.code || params.error) {
+    try {
+      return completeGoogleOAuthFromExec_(params);
+    } catch (err) {
+      return renderLogin_('Đăng nhập Google thất bại: ' + String(err.message || err));
+    }
+  }
+
+  const page = String(params.page || 'login').toLowerCase();
 
   if (page === 'oauthcomplete') {
-    return renderOAuthHandoff_(String((e && e.parameter && e.parameter.handoff) || ''));
+    return renderOAuthHandoff_(String(params.handoff || ''));
   }
 
   if (page === 'app' || page === 'home') {
-    const localMode = e && e.parameter && e.parameter.mode === 'local';
+    const localMode = params.mode === 'local';
     if (!localMode) return renderLogin_('Hãy đăng nhập để mở hồ sơ.');
 
     const t = HtmlService.createTemplateFromFile('Index');
@@ -39,21 +50,24 @@ function googleOAuthConfig_() {
 }
 
 function googleOAuthCallbackUrl_() {
-  return 'https://script.google.com/macros/d/' + ScriptApp.getScriptId() + '/usercallback';
+  return ScriptApp.getService().getUrl() || '';
 }
 
 function googleOAuthStartUrl_() {
   const config=googleOAuthConfig_();
-  if(!config.clientId || !config.clientSecret) return '';
+  const redirectUri=googleOAuthCallbackUrl_();
+  if(!config.clientId || !config.clientSecret || !redirectUri) return '';
 
-  const state=ScriptApp.newStateToken()
-    .withMethod('googleOAuthCallback')
-    .withTimeout(600)
-    .createToken();
+  const state=Utilities.getUuid()+Utilities.getUuid();
+  CacheService.getScriptCache().put(
+    'GOOGLE_OAUTH_STATE_'+hashId_(state),
+    '1',
+    600
+  );
 
   const params={
     client_id:config.clientId,
-    redirect_uri:googleOAuthCallbackUrl_(),
+    redirect_uri:redirectUri,
     response_type:'code',
     scope:'openid email profile',
     prompt:'select_account',
@@ -81,107 +95,94 @@ function accountIdentityKey_(email) {
   return 'ACCOUNT_IDENTITY_' + hashId_(String(email || '').trim().toLowerCase());
 }
 
-function googleOAuthCallback(request) {
-  try {
-    const params=request && request.parameter ? request.parameter : {};
-    if(params.error) throw new Error('Google không hoàn tất đăng nhập: ' + params.error);
+function completeGoogleOAuthFromExec_(params) {
+  if(params.error) throw new Error('Google không hoàn tất đăng nhập: ' + params.error);
 
-    const code=String(params.code || '').trim();
-    if(!code) throw new Error('Google không trả mã đăng nhập.');
+  const code=String(params.code || '').trim();
+  const state=String(params.state || '').trim();
+  if(!code || !state) throw new Error('Phản hồi đăng nhập Google không hợp lệ.');
 
-    const config=googleOAuthConfig_();
-    if(!config.clientId || !config.clientSecret) {
-      throw new Error('Chưa cấu hình Google OAuth.');
-    }
-
-    const tokenResponse=UrlFetchApp.fetch('https://oauth2.googleapis.com/token',{
-      method:'post',
-      payload:{
-        code:code,
-        client_id:config.clientId,
-        client_secret:config.clientSecret,
-        redirect_uri:googleOAuthCallbackUrl_(),
-        grant_type:'authorization_code'
-      },
-      muteHttpExceptions:true
-    });
-
-    if(tokenResponse.getResponseCode()!==200) {
-      throw new Error('Không đổi được mã đăng nhập Google.');
-    }
-
-    const tokens=JSON.parse(tokenResponse.getContentText() || '{}');
-    const accessToken=String(tokens.access_token || '').trim();
-    if(!accessToken) throw new Error('Google không trả mã truy cập.');
-
-    const profileResponse=UrlFetchApp.fetch(
-      'https://openidconnect.googleapis.com/v1/userinfo',
-      {
-        headers:{Authorization:'Bearer '+accessToken},
-        muteHttpExceptions:true
-      }
-    );
-
-    if(profileResponse.getResponseCode()!==200) {
-      throw new Error('Không đọc được hồ sơ Google.');
-    }
-
-    const profile=JSON.parse(profileResponse.getContentText() || '{}');
-    const email=String(profile.email || '').trim().toLowerCase();
-    const name=String(profile.name || '').trim();
-    const picture=String(profile.picture || '').trim();
-    const sub=String(profile.sub || '').trim();
-
-    if(!email) throw new Error('Google không trả địa chỉ email.');
-    if(!name) throw new Error('Google không trả tên tài khoản.');
-
-    const user={
-      userId:'email:'+email,
-      googleSub:sub,
-      provider:'google',
-      email:email,
-      name:name,
-      displayName:name,
-      picture:picture
-    };
-
-    PropertiesService.getScriptProperties().setProperty(
-      accountIdentityKey_(email),
-      JSON.stringify({
-        email:email,
-        name:name,
-        picture:picture,
-        source:'google'
-      })
-    );
-
-    const session=createAppSession_(user);
-    const handoff=Utilities.getUuid()+Utilities.getUuid();
-    CacheService.getScriptCache().put(
-      'GOOGLE_HANDOFF_'+hashId_(handoff),
-      JSON.stringify(session),
-      120
-    );
-
-    const target=(ScriptApp.getService().getUrl() || '') +
-      '?page=oauthcomplete&handoff=' + encodeURIComponent(handoff);
-
-    return HtmlService.createHtmlOutput(
-      '<!doctype html><html><head><base target="_top"><meta charset="utf-8">'+
-      '<title>Đang đăng nhập...</title></head><body>'+
-      '<p>Đang hoàn tất đăng nhập Google...</p>'+
-      '<script>window.top.location.replace(' + JSON.stringify(target) + ');<\\/script>'+
-      '</body></html>'
-    ).setTitle('Đang đăng nhập - '+APP_TITLE);
-  } catch (err) {
-    const back=(ScriptApp.getService().getUrl() || '')+'?page=login';
-    return HtmlService.createHtmlOutput(
-      '<!doctype html><html><head><base target="_top"><meta charset="utf-8"></head><body>'+
-      '<p>Đăng nhập Google thất bại: '+String(err.message || err).replace(/[<>&]/g,'')+'</p>'+
-      '<p><a target="_top" href="'+back+'">Quay lại đăng nhập</a></p>'+
-      '</body></html>'
-    );
+  const cache=CacheService.getScriptCache();
+  const stateKey='GOOGLE_OAUTH_STATE_'+hashId_(state);
+  if(cache.get(stateKey)!=='1') {
+    throw new Error('Phiên đăng nhập Google đã hết hạn hoặc không hợp lệ. Hãy thử đăng nhập lại.');
   }
+  cache.remove(stateKey);
+
+  const config=googleOAuthConfig_();
+  if(!config.clientId || !config.clientSecret) throw new Error('Chưa cấu hình Google OAuth.');
+
+  const redirectUri=googleOAuthCallbackUrl_();
+  const tokenResponse=UrlFetchApp.fetch('https://oauth2.googleapis.com/token',{
+    method:'post',
+    payload:{
+      code:code,
+      client_id:config.clientId,
+      client_secret:config.clientSecret,
+      redirect_uri:redirectUri,
+      grant_type:'authorization_code'
+    },
+    muteHttpExceptions:true
+  });
+
+  if(tokenResponse.getResponseCode()!==200) {
+    throw new Error('Không đổi được mã đăng nhập Google.');
+  }
+
+  const tokens=JSON.parse(tokenResponse.getContentText() || '{}');
+  const accessToken=String(tokens.access_token || '').trim();
+  if(!accessToken) throw new Error('Google không trả mã truy cập.');
+
+  const profileResponse=UrlFetchApp.fetch(
+    'https://openidconnect.googleapis.com/v1/userinfo',
+    {
+      headers:{Authorization:'Bearer '+accessToken},
+      muteHttpExceptions:true
+    }
+  );
+
+  if(profileResponse.getResponseCode()!==200) {
+    throw new Error('Không đọc được hồ sơ Google.');
+  }
+
+  const profile=JSON.parse(profileResponse.getContentText() || '{}');
+  const email=String(profile.email || '').trim().toLowerCase();
+  const name=String(profile.name || '').trim();
+  const picture=String(profile.picture || '').trim();
+  const sub=String(profile.sub || '').trim();
+
+  if(!email) throw new Error('Google không trả địa chỉ email.');
+  if(!name) throw new Error('Google không trả tên tài khoản.');
+
+  const user={
+    userId:'email:'+email,
+    googleSub:sub,
+    provider:'google',
+    email:email,
+    name:name,
+    displayName:name,
+    picture:picture
+  };
+
+  PropertiesService.getScriptProperties().setProperty(
+    accountIdentityKey_(email),
+    JSON.stringify({email:email,name:name,picture:picture,source:'google'})
+  );
+
+  const session=createAppSession_(user);
+  const handoff=Utilities.getUuid()+Utilities.getUuid();
+  cache.put('GOOGLE_HANDOFF_'+hashId_(handoff),JSON.stringify(session),120);
+
+  const target=(ScriptApp.getService().getUrl() || '') +
+    '?page=oauthcomplete&handoff=' + encodeURIComponent(handoff);
+
+  return HtmlService.createHtmlOutput(
+    '<!doctype html><html><head><base target="_top"><meta charset="utf-8">'+
+    '<title>Đang đăng nhập...</title></head><body>'+
+    '<p>Đang hoàn tất đăng nhập Google...</p>'+
+    '<script>window.top.location.replace(' + JSON.stringify(target) + ');<\\/script>'+
+    '</body></html>'
+  ).setTitle('Đang đăng nhập - '+APP_TITLE);
 }
 
 function renderOAuthHandoff_(handoff) {
