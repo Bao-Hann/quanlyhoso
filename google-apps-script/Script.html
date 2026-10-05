@@ -27,6 +27,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   };
   const date = raw => /^\d{4}-\d{2}-\d{2}$/.test(raw || '') ? raw.split('-').reverse().join('/') : (raw || '');
   const year = raw => /^\d{4}-/.test(raw || '') ? raw.slice(0,4) : (raw || '');
+  function forceTimesNewRoman(run) {
+    let rPr=children(run,'rPr')[0];
+    if(!rPr) {
+      rPr=run.ownerDocument.createElementNS(W,'w:rPr');
+      run.insertBefore(rPr,run.firstChild);
+    }
+    let fonts=children(rPr,'rFonts')[0];
+    if(!fonts) {
+      fonts=run.ownerDocument.createElementNS(W,'w:rFonts');
+      rPr.insertBefore(fonts,rPr.firstChild);
+    }
+    ['ascii','hAnsi','eastAsia','cs'].forEach(key=>fonts.setAttributeNS(W,'w:'+key,'Times New Roman'));
+  }
   function setParagraph(p, text) {
     const run = children(p,'r')[0];
     const style = run && children(run,'rPr')[0]?.cloneNode(true);
@@ -34,6 +47,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     String(text).split(/([\t\n])/).forEach(part => {
       const r=p.ownerDocument.createElementNS(W,'w:r');
       if (style) r.appendChild(style.cloneNode(true));
+      forceTimesNewRoman(r);
       const t=p.ownerDocument.createElementNS(W,part==='\t'?'w:tab':part==='\n'?'w:br':'w:t');
       if (part!=='\t' && part!=='\n') { t.setAttributeNS(XML,'xml:space','preserve'); t.textContent=part; }
       r.appendChild(t); p.appendChild(r);
@@ -44,7 +58,31 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const p=ps[0] || cell.appendChild(cell.ownerDocument.createElementNS(W,'w:p'));
     ps.slice(1).forEach(x=>x.remove()); setParagraph(p,text);
   }
+  function ensureTableBorders(table) {
+    let tblPr=children(table,'tblPr')[0];
+    if(!tblPr) {
+      tblPr=table.ownerDocument.createElementNS(W,'w:tblPr');
+      table.insertBefore(tblPr,table.firstChild);
+    }
+    let borders=children(tblPr,'tblBorders')[0];
+    if(!borders) {
+      borders=table.ownerDocument.createElementNS(W,'w:tblBorders');
+      tblPr.appendChild(borders);
+    }
+    ['top','left','bottom','right','insideH','insideV'].forEach(edge=>{
+      let node=children(borders,edge)[0];
+      if(!node) {
+        node=table.ownerDocument.createElementNS(W,'w:'+edge);
+        borders.appendChild(node);
+      }
+      node.setAttributeNS(W,'w:val','single');
+      node.setAttributeNS(W,'w:sz','4');
+      node.setAttributeNS(W,'w:space','0');
+      node.setAttributeNS(W,'w:color','000000');
+    });
+  }
   function setRows(table, data) {
+    ensureTableBorders(table);
     if (!data.length) return;
     const old=children(table,'tr'), seed=old[1];
     old.slice(1).forEach(x=>x.remove());
@@ -103,7 +141,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     };
     Object.entries(slots).forEach(([i,values])=>fillSlots(p[Number(i)],values));
     if([value('person_office_phone'),value('person_home_phone'),value('person_mobile_phone')].some(Boolean))
-      setParagraph(p[15],'Điện thoại liên hệ:  CQ: '+value('person_office_phone')+'\tNR: '+(value('person_home_phone')||'........................')+' DĐ: '+value('person_mobile_phone')+'\t');
+      fillSlots(p[15],[value('person_office_phone'),value('person_home_phone'),value('person_mobile_phone')]);
     const language=rows('languageBody');
     const languageCells=children(children(tables[0],'tr')[0],'tc');
     if(language.length) {
@@ -153,6 +191,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const signPr=children(signRow,'trPr')[0] || signRow.insertBefore(doc.createElementNS(W,'w:trPr'),signRow.firstChild);
       if(!children(signPr,'cantSplit').length) signPr.appendChild(doc.createElementNS(W,'w:cantSplit'));
     }
+    descendants(body,'r').forEach(forceTimesNewRoman);
+    tables.slice(0,4).forEach(ensureTableBorders);
     zip.file('word/document.xml',new XMLSerializer().serializeToString(doc));
     return {zip,body};
   }
@@ -276,24 +316,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let signingOut = false;
   const signOut = event => {
-    if(signingOut) { event?.preventDefault(); return; }
+    event?.preventDefault();
+    if(signingOut) return;
     signingOut = true;
     const token = window.GAS_AUTH_TOKEN || '';
     try { sessionStorage.removeItem('scientist-local-session'); } catch (_) {}
     window.GAS_AUTH_TOKEN = '';
     const url = window.GAS_WEB_APP_URL + '?page=login';
-    const showSignedOut = () => {
-      // Apps Script runs inside an iframe; a user-clicked top-level link can leave it.
-      const host = document.createElement('div');
-      host.className = 'container py-5';
-      const title = document.createElement('h1');title.textContent = 'Đã đăng xuất';
-      const message = document.createElement('p');message.textContent = 'Bạn đã rời hồ sơ. Nhấn bên dưới để trở về trang đăng nhập.';
-      const link = document.createElement('a');link.href = url;link.target = '_top';
-      link.className = 'btn btn-primary';link.textContent = 'Về trang đăng nhập';
-      host.append(title,message,link);document.body.replaceChildren(host);
-    };
-    setTimeout(showSignedOut, 300);
-    if(token) google.script.run.withSuccessHandler(()=>{}).withFailureHandler(()=>{}).logoutLocal(token);
+    const goLogin = () => { window.top.location.href = url; };
+    if(token && window.google?.script?.run) {
+      google.script.run.withSuccessHandler(goLogin).withFailureHandler(goLogin).logoutLocal(token);
+    } else {
+      goLogin();
+    }
   };
   document.querySelectorAll('#logoutBtn, [data-oneform-logout]').forEach(link=>{
     link.href = window.GAS_WEB_APP_URL + '?page=login';
