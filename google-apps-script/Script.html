@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const syncAccountIdentity = user => {
     const session = user || window.GAS_USER || window.OneFormAuth?.getSession?.() || {};
     const email = String(session.email || '').trim();
-    const name = String(session.name || session.displayName || session.username || email.split('@')[0] || '').trim();
+    const name = String(session.name || session.displayName || session.username || email || '').trim();
     ['authUsername', 'welcomeName', 'dashboardWelcomeName'].forEach(id => {
       const node = document.getElementById(id);
       if (node) { node.textContent = name; node.title = name; }
