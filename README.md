@@ -102,6 +102,25 @@ Ghi chú:
 - Các file phục hồi logic auth: `Code.gs`, `Auth.gs`, `Login.html`, bootstrap auth trong `Index.html`, `appsscript.json`.
 - Giữ yêu cầu mới: tên tài khoản **không** lấy từ trường `person_name` của hồ sơ khoa học.
 - Không revert các phần UI/Word export/theme trong `Script.html`.
-- Trạng thái hiện tại: **PENDING TEST** — chỉ đổi thành PASS sau khi người dùng xác nhận vào được app thực tế.
+- Trạng thái hiện tại: **PASS** — người dùng đã xác nhận vào được app thực tế sau rollback.
 - Deployment cần dùng mô hình native: **Execute as: User accessing the web app** và quyền truy cập dành cho tài khoản Google phù hợp.
 
+
+
+### LAST KNOWN GOOD — Google login
+
+- Ngày xác nhận: **2026-10-05**
+- Trạng thái: **PASS**
+- Baseline đăng nhập Google: kiến trúc native Google Apps Script phục hồi từ commit `e97347cb648f6a88beea3a995856515fac72f1f0`.
+- Các commit rollback đang dùng:
+  - `70e519a` — `Code.gs`
+  - `9fb3d3a` — `Auth.gs`
+  - `fc8e08c` — `Login.html`
+  - `e2b6b82` — bootstrap auth trong `Index.html`
+  - `4a7637a` — `appsscript.json`
+- Cấu hình deployment đã dùng để vào được app:
+  - **Execute as: User accessing the web app**
+  - Dùng đăng nhập native của Apps Script, không dùng OAuth Client ID/Client Secret tự dựng.
+- Xác nhận hiện tại: **đã vào được ứng dụng sau đăng nhập**.
+- Chưa đánh dấu đã kiểm thử đầy đủ các tình huống sau cho đến khi test riêng: tài khoản Google ngoài domain, đổi qua lại nhiều tài khoản, reload, logout/login lại, avatar/tên/email đúng mọi tài khoản.
+- Quy tắc: nếu sửa auth về sau và phát sinh lỗi, rollback về baseline này trước khi thử hướng mới.
