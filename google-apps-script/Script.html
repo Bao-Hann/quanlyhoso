@@ -381,6 +381,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const node = document.getElementById(id);
       if (node) { node.textContent = email; node.title = email; }
     });
+
+    const picture = String(session.picture || session.photoURL || '').trim();
+    const avatar = document.getElementById('authAvatar');
+    const fallback = document.getElementById('authAvatarFallback');
+    if (avatar) {
+      if (picture) {
+        avatar.src = picture;
+        avatar.style.display = 'block';
+        if (fallback) fallback.style.display = 'none';
+      } else {
+        avatar.removeAttribute('src');
+        avatar.style.display = 'none';
+        if (fallback) fallback.style.display = '';
+      }
+    }
   };
   syncAccountIdentity();
 
