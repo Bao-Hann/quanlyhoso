@@ -23,51 +23,20 @@ function normalizedEmail_(value) {
   if(email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email không hợp lệ.');
   return email;
 }
-function registerLocal(email,password,displayName) {
-  email=normalizedEmail_(email);
-  password=String(password||'');
-  displayName=String(displayName||'').trim().replace(/\s+/g,' ');
-
-  if(displayName.length<2 || displayName.length>100) throw new Error('Tên tài khoản cần từ 2 đến 100 ký tự.');
+function registerLocal(email,password) {
+  email=normalizedEmail_(email);password=String(password||'');
+  const googleUser=getCurrentUser();
+  if(googleUser.email!==email) throw new Error('Để đăng ký, hãy đăng nhập Google bằng đúng email này để xác nhận quyền sở hữu email.');
   if(password.length<12 || password.length>128) throw new Error('Mật khẩu cần từ 12 đến 128 ký tự.');
-
   const key='AUTH_USER_'+hashId_(email),props=PropertiesService.getScriptProperties();
   const lock=LockService.getScriptLock();lock.waitLock(10000);
   try {
     if(props.getProperty(key)) throw new Error('Tài khoản đã tồn tại. Hãy đăng nhập.');
     const salt=Utilities.getUuid()+Utilities.getUuid();
-    props.setProperty(key,JSON.stringify({
-      salt:salt,
-      hash:passwordHash_(password,salt),
-      email:email,
-      name:displayName
-    }));
+    props.setProperty(key,JSON.stringify({salt:salt,hash:passwordHash_(password,salt),email:email,name:googleUser.name}));
   } finally {lock.releaseLock();}
   return {ok:true};
 }
-
-function createAppSession_(user) {
-  if(!user || !user.email) throw new Error('Không thể tạo phiên đăng nhập.');
-  const props=PropertiesService.getScriptProperties();
-  const token=Utilities.getUuid()+Utilities.getUuid();
-  const now=Date.now();
-  props.setProperty(
-    'AUTH_SESSION_'+hashId_(token),
-    JSON.stringify({user:user,expires:now+24*60*60*1000})
-  );
-
-  // Dọn các phiên đã hết hạn.
-  const all=props.getProperties();
-  Object.keys(all).filter(k=>k.indexOf('AUTH_SESSION_')===0).forEach(k=>{
-    try {
-      if(JSON.parse(all[k]).expires<now) props.deleteProperty(k);
-    } catch (_) {
-      props.deleteProperty(k);
-    }
-  });
-  return {ok:true,token:token,user:user};
-}
-
 function loginLocal(email,password) {
   email=normalizedEmail_(email);password=String(password||'');
   if(password.length>128) throw new Error('Email hoặc mật khẩu không đúng.');
@@ -85,25 +54,56 @@ function loginLocal(email,password) {
     if(!raw || !sameHash_(computed,record.hash)) throw new Error('Email hoặc mật khẩu không đúng.');
     props.deleteProperty(rateKey);
 
-    let safeName=String(record.name || '').trim();
-    if(!safeName || safeName.toLowerCase()===email) {
-      try {
-        const saved=JSON.parse(PropertiesService.getScriptProperties().getProperty(accountIdentityKey_(email)) || '{}');
-        if(saved.email===email && saved.name) safeName=String(saved.name).trim();
-      } catch (_) {}
-    }
+    // Tự sửa tài khoản cũ từng lưu email làm tên: nếu Google hiện tại trùng email,
+    // lấy lại đúng display name và cập nhật luôn bản ghi tài khoản.
+    try {
+      const googleUser=getCurrentUser();
+      const googleName=String(googleUser && googleUser.name || '').trim();
+      if(googleUser.email===email && googleName && googleName.toLowerCase()!==email) {
+        if(record.name!==googleName) {
+          record.name=googleName;
+          props.setProperty('AUTH_USER_'+key,JSON.stringify(record));
+        }
+      }
+    } catch (_) {}
+
+    const token=Utilities.getUuid()+Utilities.getUuid();
+    const safeName=String(record.name || '').trim();
     const user={userId:'email:'+email,email:email,name:(safeName && safeName.toLowerCase()!==email) ? safeName : '',provider:'password'};
-    return createAppSession_(user);
+    props.setProperty('AUTH_SESSION_'+hashId_(token),JSON.stringify({user:user,expires:now+24*60*60*1000}));
+    // Xóa phiên hết hạn, tránh đầy dung lượng lưu trữ.
+    const all=props.getProperties();Object.keys(all).filter(k=>k.indexOf('AUTH_SESSION_')===0).forEach(k=>{if(JSON.parse(all[k]).expires<now) props.deleteProperty(k);});
+    return {ok:true,token:token,user:user};
   } finally {lock.releaseLock();}
 }
 function localSession_(token) {
   if(typeof token!=='string' || token.length>100) throw new Error('Phiên đăng nhập không hợp lệ.');
   const props=PropertiesService.getScriptProperties(),key='AUTH_SESSION_'+hashId_(token),raw=props.getProperty(key);
   if(!raw) throw new Error('Hãy đăng nhập lại.');
-  const session=JSON.parse(raw);
-  if(session.expires<Date.now()) {props.deleteProperty(key);throw new Error('Phiên đăng nhập đã hết hạn.');}
+  const session=JSON.parse(raw);if(session.expires<Date.now()) {props.deleteProperty(key);throw new Error('Phiên đăng nhập đã hết hạn.');}
 
-  // Tên phiên thuộc đúng tài khoản đã đăng nhập; không cập nhật từ hồ sơ hay tài khoản Google khác.
+  // Phiên cũ có thể còn tên = email. Đồng bộ lại ngay từ Google mà không bắt đăng nhập lại.
+  try {
+    const googleUser=getCurrentUser();
+    const googleName=String(googleUser && googleUser.name || '').trim();
+    if(googleUser.email===session.user.email && googleName && googleName.toLowerCase()!==session.user.email.toLowerCase()) {
+      if(session.user.name!==googleName) {
+        session.user.name=googleName;
+        props.setProperty(key,JSON.stringify(session));
+        const accountKey='AUTH_USER_'+hashId_(session.user.email);
+        const accountRaw=props.getProperty(accountKey);
+        if(accountRaw) {
+          const account=JSON.parse(accountRaw);
+          account.name=googleName;
+          props.setProperty(accountKey,JSON.stringify(account));
+        }
+      }
+    }
+  } catch (_) {}
+
+  if(String(session.user.name || '').trim().toLowerCase()===String(session.user.email || '').trim().toLowerCase()) {
+    session.user.name='';
+  }
   return session.user;
 }
 function logoutLocal(token) {
