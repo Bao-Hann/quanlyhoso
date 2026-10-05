@@ -371,7 +371,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const syncAccountIdentity = user => {
     const session = user || window.GAS_USER || window.OneFormAuth?.getSession?.() || {};
     const email = String(session.email || '').trim();
-    const name = String(session.name || session.displayName || session.username || email || '').trim();
+    const rawName = String(session.name || session.displayName || session.username || '').trim();
+    const name = rawName && rawName.toLowerCase() !== email.toLowerCase() ? rawName : '';
     ['authUsername', 'welcomeName', 'dashboardWelcomeName'].forEach(id => {
       const node = document.getElementById(id);
       if (node) { node.textContent = name; node.title = name; }
@@ -382,6 +383,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
   syncAccountIdentity();
+
+  // Với đăng nhập Google, làm mới danh tính một lần để lấy đúng tên hồ sơ Google.
+  if(window.google?.script?.run && window.GAS_USER?.provider === 'google') {
+    google.script.run
+      .withSuccessHandler(user => {
+        if (!user) return;
+        window.GAS_USER = user;
+        syncAccountIdentity(user);
+      })
+      .withFailureHandler(() => {})
+      .refreshGoogleIdentity();
+  }
 
   let signingOut = false;
   const signOut = event => {
