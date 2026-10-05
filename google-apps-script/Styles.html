@@ -2618,6 +2618,42 @@ body[data-theme="tiktok"] .dropdown-menu{
   color:#f5f5f5!important;
 }
 
+
+/* Dark theme component contrast: tabs and Bootstrap controls that otherwise keep black text. */
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .nav-tabs{
+  border-bottom-color:#454545!important;
+}
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .nav-tabs .nav-link{
+  color:#d9d9d9!important;
+  background:transparent!important;
+  border-color:transparent!important;
+}
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .nav-tabs .nav-link:hover,
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .nav-tabs .nav-link:focus{
+  color:#fff!important;
+  border-color:#454545 #454545 transparent!important;
+  background:#ffffff0a!important;
+}
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .nav-tabs .nav-link.active{
+  color:#fff!important;
+  background:var(--theme-card-alt)!important;
+  border-color:#454545 #454545 var(--theme-card-alt)!important;
+}
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .form-check-label,
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .accordion-button,
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .list-group-item{
+  color:#f5f5f5!important;
+}
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .accordion-button,
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) .list-group-item{
+  background:var(--theme-card)!important;
+  border-color:var(--theme-border)!important;
+}
+:is(body[data-theme="chatgpt"],body[data-theme="github"],body[data-theme="tiktok"]) option{
+  background:var(--theme-card-alt);
+  color:#f5f5f5;
+}
+
 /* Keep the ministry paper independent of application themes. */
 #exportPreview .ministry-document,
 #exportPreview .ministry-document *{font-family:"Times New Roman",Times,serif!important;color:#000!important;letter-spacing:normal!important;}
