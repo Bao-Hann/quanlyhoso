@@ -23,17 +23,25 @@ function normalizedEmail_(value) {
   if(email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email không hợp lệ.');
   return email;
 }
-function registerLocal(email,password) {
-  email=normalizedEmail_(email);password=String(password||'');
+function registerLocal(email,password,displayName) {
+  email=normalizedEmail_(email);
+  password=String(password||'');
+  displayName=String(displayName||'').trim().replace(/\s+/g,' ');
   const googleUser=getCurrentUser();
   if(googleUser.email!==email) throw new Error('Để đăng ký, hãy đăng nhập Google bằng đúng email này để xác nhận quyền sở hữu email.');
+  if(displayName.length<2 || displayName.length>100) throw new Error('Tên tài khoản cần từ 2 đến 100 ký tự.');
   if(password.length<12 || password.length>128) throw new Error('Mật khẩu cần từ 12 đến 128 ký tự.');
   const key='AUTH_USER_'+hashId_(email),props=PropertiesService.getScriptProperties();
   const lock=LockService.getScriptLock();lock.waitLock(10000);
   try {
     if(props.getProperty(key)) throw new Error('Tài khoản đã tồn tại. Hãy đăng nhập.');
     const salt=Utilities.getUuid()+Utilities.getUuid();
-    props.setProperty(key,JSON.stringify({salt:salt,hash:passwordHash_(password,salt),email:email,name:googleUser.name}));
+    props.setProperty(key,JSON.stringify({salt:salt,hash:passwordHash_(password,salt),email:email,name:displayName}));
+    props.setProperty(accountIdentityKey_(email),JSON.stringify({
+      email:email,
+      name:displayName,
+      picture:String(googleUser.picture||'').trim()
+    }));
   } finally {lock.releaseLock();}
   return {ok:true};
 }
