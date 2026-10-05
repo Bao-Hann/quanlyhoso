@@ -49,7 +49,10 @@
       <div class="d-flex flex-column p-3">
         <a class="text-dark text-center text-decoration-none mb-3" href="#top"><h3>Hồ sơ cá nhân</h3></a>
         <div class="session-card mb-3">
-          <div class="session-avatar"><i class="bi bi-person-fill"></i></div>
+          <div class="session-avatar">
+            <img id="authAvatar" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
+            <i id="authAvatarFallback" class="bi bi-person-fill"></i>
+          </div>
           <div class="session-info">
             <strong id="authUsername"></strong>
             <small id="authEmail"></small>
