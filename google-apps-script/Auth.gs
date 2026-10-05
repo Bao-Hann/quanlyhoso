@@ -40,7 +40,8 @@ function registerLocal(email,password,displayName) {
     props.setProperty(accountIdentityKey_(email),JSON.stringify({
       email:email,
       name:displayName,
-      picture:String(googleUser.picture||'').trim()
+      picture:String(googleUser.picture||'').trim(),
+      source:'local'
     }));
   } finally {lock.releaseLock();}
   return {ok:true};
