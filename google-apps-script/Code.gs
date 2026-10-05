@@ -1,8 +1,10 @@
 /**
  * Scientist Profile - Google Apps Script edition
  * Deploy as a Web App:
- *   Execute as: User accessing the web app
- *   Who has access: Anyone with a Google account
+ *   Execute as: User deploying the web app
+ *   Who has access: Anyone
+ *
+ * User identity is handled by Google Identity Services, not Apps Script Session.
  */
 
 const APP_TITLE = 'Scientist Profile';
@@ -12,10 +14,10 @@ function doGet(e) {
 
   if (page === 'app' || page === 'home') {
     const localMode = e && e.parameter && e.parameter.mode === "local";
-    const fromGoogleChooser = e && e.parameter && e.parameter.google === "1";
-    const user = localMode ? {provider:"local"} : getCurrentUser(fromGoogleChooser);
+    if (!localMode) return renderLogin_('Hãy đăng nhập để mở hồ sơ.');
+
     const t = HtmlService.createTemplateFromFile('Index');
-    t.userJson = JSON.stringify(user).replace(/</g, '\\u003c');
+    t.userJson = JSON.stringify({provider:'local'}).replace(/</g, '\\u003c');
     return t.evaluate()
       .setTitle(APP_TITLE)
       .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
@@ -28,12 +30,8 @@ function renderLogin_(message) {
   const t = HtmlService.createTemplateFromFile('Login');
   t.message = message || '';
   t.webAppUrl = ScriptApp.getService().getUrl() || '';
-
-  const googleTarget = t.webAppUrl + '?page=app&google=1';
-  t.googleAccountChooserUrl =
-    'https://accounts.google.com/AccountChooser?service=lso&continue=' +
-    encodeURIComponent(googleTarget);
-
+  t.googleLoginClientId = googleLoginClientId_();
+  t.googleLoginReady = Boolean(t.googleLoginClientId);
   return t.evaluate().setTitle('Đăng nhập - ' + APP_TITLE);
 }
 
@@ -45,151 +43,91 @@ function getWebAppUrl() {
   return ScriptApp.getService().getUrl() || '';
 }
 
-// Identity comes from the Apps Script OpenID token of the effective user.
-// This mirrors the original source architecture: the login session already carries
-// name + email instead of trying to derive a display name from the email address.
-function decodeIdentityToken_() {
-  try {
-    const token = ScriptApp.getIdentityToken();
-    if (!token) return {};
-    const parts = String(token).split('.');
-    if (parts.length < 2) return {};
-    const decoded = Utilities.newBlob(
-      Utilities.base64DecodeWebSafe(parts[1]),
-      'application/json'
-    ).getDataAsString();
-    return JSON.parse(decoded || '{}');
-  } catch (_) {
-    return {};
-  }
-}
-
 function accountIdentityKey_(email) {
   return 'ACCOUNT_IDENTITY_' + hashId_(String(email || '').trim().toLowerCase());
 }
 
-function stableAccountIdentity_(email, googleName, googlePicture) {
-  email = String(email || '').trim().toLowerCase();
-  googleName = String(googleName || '').trim();
-  googlePicture = String(googlePicture || '').trim();
-
-  const props = PropertiesService.getScriptProperties();
-  const key = accountIdentityKey_(email);
-  let saved = {};
-  try { saved = JSON.parse(props.getProperty(key) || '{}'); } catch (_) {}
-
-  // Google là nguồn chuẩn cho tài khoản Google. Nếu lấy được tên thật,
-  // luôn dùng nó và sửa mọi giá trị cũ từng bị lưu nhầm từ hồ sơ/manual.
-  if (googleName) {
-    const identity = {
-      email: email,
-      name: googleName,
-      picture: googlePicture || String(saved.picture || '').trim(),
-      source: 'google'
-    };
-    props.setProperty(key, JSON.stringify(identity));
-    return {name:identity.name, picture:identity.picture};
-  }
-
-  // Chỉ tái sử dụng tên đã được xác nhận là đến từ Google.
-  if (saved && saved.email === email && saved.source === 'google' && String(saved.name || '').trim()) {
-    return {
-      name: String(saved.name || '').trim(),
-      picture: String(saved.picture || '').trim()
-    };
-  }
-
-  return {name:'', picture:''};
+function googleLoginClientId_() {
+  return String(
+    PropertiesService.getScriptProperties().getProperty('GOOGLE_LOGIN_CLIENT_ID') || ''
+  ).trim();
 }
 
-function googleProfileForActiveUser_(email) {
-  email = String(email || '').trim().toLowerCase();
-  const effectiveEmail = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
+function verifyGoogleIdToken_(credential) {
+  credential=String(credential || '').trim();
+  if(!credential || credential.length>10000) throw new Error('Thông tin đăng nhập Google không hợp lệ.');
 
-  // ScriptApp.getOAuthToken() thuộc effective user.
-  // Chỉ gọi userinfo khi effective user chính là người đang truy cập,
-  // tránh lấy nhầm tên của chủ project.
-  if (!email || effectiveEmail !== email) return {};
+  const clientId=googleLoginClientId_();
+  if(!clientId) throw new Error('Chưa cấu hình Google Login Client ID.');
 
-  try {
-    const response = UrlFetchApp.fetch('https://openidconnect.googleapis.com/v1/userinfo', {
-      headers: {Authorization:'Bearer ' + ScriptApp.getOAuthToken()},
-      muteHttpExceptions:true
-    });
-    if (response.getResponseCode() !== 200) return {};
+  const response=UrlFetchApp.fetch(
+    'https://oauth2.googleapis.com/tokeninfo?id_token='+encodeURIComponent(credential),
+    {muteHttpExceptions:true}
+  );
+  if(response.getResponseCode()!==200) throw new Error('Không xác minh được tài khoản Google.');
 
-    const profile = JSON.parse(response.getContentText() || '{}');
-    const profileEmail = String(profile.email || '').trim().toLowerCase();
-    if (profileEmail && profileEmail !== email) return {};
+  const claims=JSON.parse(response.getContentText() || '{}');
+  if(String(claims.aud || '')!==clientId) throw new Error('Google token không thuộc ứng dụng này.');
 
-    return {
-      email: profileEmail || email,
-      name: String(profile.name || '').trim(),
-      picture: String(profile.picture || '').trim()
-    };
-  } catch (_) {
-    return {};
-  }
-}
-
-function getCurrentUser(forceGoogleRefresh) {
-  const sessionEmail = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
-  const effectiveEmail = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
-
-  const identity = decodeIdentityToken_();
-  const tokenEmail = String(identity.email || '').trim().toLowerCase();
-  const email = sessionEmail || tokenEmail;
-
-  if (!email) {
-    const temporaryKey = String(Session.getTemporaryActiveUserKey() || '').trim();
-    return {
-      userId:'temp:' + temporaryKey,
-      provider:'google',
-      email:'',
-      name:'',
-      displayName:'',
-      picture:''
-    };
+  const issuer=String(claims.iss || '');
+  if(issuer!=='accounts.google.com' && issuer!=='https://accounts.google.com') {
+    throw new Error('Nguồn đăng nhập Google không hợp lệ.');
   }
 
-  // Nguồn 1: OpenID identity token của người dùng.
-  let googleName = '';
-  let googlePicture = '';
-  if (!tokenEmail || tokenEmail === email) {
-    googleName = String(identity.name || '').trim();
-    googlePicture = String(identity.picture || '').trim();
-  }
+  const exp=Number(claims.exp || 0);
+  if(!exp || exp<Math.floor(Date.now()/1000)-30) throw new Error('Phiên Google đã hết hạn.');
 
-  // Nguồn 2: userinfo bằng OAuth token, nhưng chỉ khi deployment thực thi
-  // dưới quyền chính người truy cập.
-  if (!googleName) {
-    const profile = googleProfileForActiveUser_(email);
-    googleName = String(profile.name || '').trim();
-    googlePicture = String(profile.picture || '').trim();
-  }
+  const verified=claims.email_verified===true || String(claims.email_verified || '').toLowerCase()==='true';
+  const email=String(claims.email || '').trim().toLowerCase();
+  if(!verified || !email) throw new Error('Email Google chưa được xác minh.');
 
-  // Sau khi đi qua AccountChooser, ưu tiên hồ sơ Google vừa chọn.
-  // Nếu đã lấy được tên thật từ Google, stableAccountIdentity_ sẽ ghi đè dữ liệu cũ của đúng email này.
-  const accountIdentity = stableAccountIdentity_(email, googleName, googlePicture);
+  const name=String(
+    claims.name ||
+    [claims.given_name,claims.family_name].filter(Boolean).join(' ')
+  ).trim();
+  if(!name) throw new Error('Google không trả tên tài khoản.');
 
   return {
-    userId:'email:' + email,
-    provider:'google',
+    sub:String(claims.sub || '').trim(),
     email:email,
-    name:accountIdentity.name,
-    displayName:accountIdentity.name,
-    picture:accountIdentity.picture,
-    identitySource: googleName ? 'google-live' : (accountIdentity.name ? 'google-cache' : ''),
-    executionEmail:effectiveEmail
+    name:name,
+    picture:String(claims.picture || '').trim()
   };
 }
 
-function refreshGoogleIdentity() {
-  return getCurrentUser(true);
+function inspectGoogleCredential(credential) {
+  const profile=verifyGoogleIdToken_(credential);
+  return {email:profile.email,name:profile.name,picture:profile.picture};
+}
+
+function loginGoogleCredential(credential) {
+  const profile=verifyGoogleIdToken_(credential);
+  const user={
+    userId:'email:'+profile.email,
+    googleSub:profile.sub,
+    provider:'google',
+    email:profile.email,
+    name:profile.name,
+    displayName:profile.name,
+    picture:profile.picture
+  };
+
+  PropertiesService.getScriptProperties().setProperty(
+    accountIdentityKey_(profile.email),
+    JSON.stringify({
+      email:profile.email,
+      name:profile.name,
+      picture:profile.picture,
+      source:'google'
+    })
+  );
+
+  return createAppSession_(user);
 }
 
 function profileKey_(token) {
-  const user = token ? localSession_(token) : getCurrentUser();
+  if(!token) throw new Error('Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại.');
+  const user=localSession_(token);
   return 'PROFILE_V3_' + hashId_(user.userId);
 }
 
@@ -210,7 +148,7 @@ function loadGeneral(token) {
   const key = profileKey_(token);
   const raw = PropertiesService.getScriptProperties().getProperty(key);
   const data = raw ? JSON.parse(raw) : {};
-  const user = token ? localSession_(token) : getCurrentUser();
+  const user = localSession_(token);
 
   // Tuyệt đối không dùng person_name để sửa tên tài khoản.
   return {ok:true, user:user, data:data};
@@ -311,13 +249,6 @@ function normalizeDoi_(raw) {
     .replace(/^doi:\s*/i, '')
     .trim();
   return /^10\.\d{4,9}\/.+$/i.test(cleaned) ? cleaned : '';
-}
-
-function assertSignedIn_() {
-  const user = getCurrentUser();
-  if (!user.email && !user.temporaryKey) {
-    throw new Error('Không xác định được phiên người dùng Google.');
-  }
 }
 
 function saveTables(data,token) {
