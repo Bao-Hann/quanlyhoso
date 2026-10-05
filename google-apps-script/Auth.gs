@@ -54,21 +54,14 @@ function loginLocal(email,password) {
     if(!raw || !sameHash_(computed,record.hash)) throw new Error('Email hoặc mật khẩu không đúng.');
     props.deleteProperty(rateKey);
 
-    // Tự sửa tài khoản cũ từng lưu email làm tên: nếu Google hiện tại trùng email,
-    // lấy lại đúng display name và cập nhật luôn bản ghi tài khoản.
-    try {
-      const googleUser=getCurrentUser();
-      const googleName=String(googleUser && googleUser.name || '').trim();
-      if(googleUser.email===email && googleName && googleName.toLowerCase()!==email) {
-        if(record.name!==googleName) {
-          record.name=googleName;
-          props.setProperty('AUTH_USER_'+key,JSON.stringify(record));
-        }
-      }
-    } catch (_) {}
-
     const token=Utilities.getUuid()+Utilities.getUuid();
-    const safeName=String(record.name || '').trim();
+    let safeName=String(record.name || '').trim();
+    if(!safeName || safeName.toLowerCase()===email) {
+      try {
+        const saved=JSON.parse(PropertiesService.getScriptProperties().getProperty(accountIdentityKey_(email)) || '{}');
+        if(saved.email===email && saved.name) safeName=String(saved.name).trim();
+      } catch (_) {}
+    }
     const user={userId:'email:'+email,email:email,name:(safeName && safeName.toLowerCase()!==email) ? safeName : '',provider:'password'};
     props.setProperty('AUTH_SESSION_'+hashId_(token),JSON.stringify({user:user,expires:now+24*60*60*1000}));
     // Xóa phiên hết hạn, tránh đầy dung lượng lưu trữ.
@@ -80,30 +73,10 @@ function localSession_(token) {
   if(typeof token!=='string' || token.length>100) throw new Error('Phiên đăng nhập không hợp lệ.');
   const props=PropertiesService.getScriptProperties(),key='AUTH_SESSION_'+hashId_(token),raw=props.getProperty(key);
   if(!raw) throw new Error('Hãy đăng nhập lại.');
-  const session=JSON.parse(raw);if(session.expires<Date.now()) {props.deleteProperty(key);throw new Error('Phiên đăng nhập đã hết hạn.');}
+  const session=JSON.parse(raw);
+  if(session.expires<Date.now()) {props.deleteProperty(key);throw new Error('Phiên đăng nhập đã hết hạn.');}
 
-  // Phiên cũ có thể còn tên = email. Đồng bộ lại ngay từ Google mà không bắt đăng nhập lại.
-  try {
-    const googleUser=getCurrentUser();
-    const googleName=String(googleUser && googleUser.name || '').trim();
-    if(googleUser.email===session.user.email && googleName && googleName.toLowerCase()!==session.user.email.toLowerCase()) {
-      if(session.user.name!==googleName) {
-        session.user.name=googleName;
-        props.setProperty(key,JSON.stringify(session));
-        const accountKey='AUTH_USER_'+hashId_(session.user.email);
-        const accountRaw=props.getProperty(accountKey);
-        if(accountRaw) {
-          const account=JSON.parse(accountRaw);
-          account.name=googleName;
-          props.setProperty(accountKey,JSON.stringify(account));
-        }
-      }
-    }
-  } catch (_) {}
-
-  if(String(session.user.name || '').trim().toLowerCase()===String(session.user.email || '').trim().toLowerCase()) {
-    session.user.name='';
-  }
+  // Tên phiên thuộc đúng tài khoản đã đăng nhập; không cập nhật từ hồ sơ hay tài khoản Google khác.
   return session.user;
 }
 function logoutLocal(token) {
