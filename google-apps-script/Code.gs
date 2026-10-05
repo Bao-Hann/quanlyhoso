@@ -23,6 +23,8 @@ function doGet(e) {
 
   const page = String(params.page || 'login').toLowerCase();
 
+  if (page === 'oauthdebug') return renderOAuthDebug_();
+
   if (page === 'oauthcomplete') {
     return renderOAuthHandoff_(String(params.handoff || ''));
   }
@@ -91,6 +93,26 @@ function googleOAuthStartUrl_() {
     Object.keys(params)
       .map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k]))
       .join('&');
+}
+
+function renderOAuthDebug_() {
+  const config=googleOAuthConfig_();
+  const callback=googleOAuthCallbackUrl_();
+  const serviceUrl=ScriptApp.getService().getUrl() || '';
+  const safeClientId=String(config.clientId || '');
+  const html=[
+    '<!doctype html><html><head><meta charset="utf-8"><title>OAuth Debug</title>',
+    '<style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.6}code{word-break:break-all;background:#f4f4f4;padding:2px 6px;border-radius:4px}.ok{color:#087a38}.bad{color:#b42318}</style>',
+    '</head><body>',
+    '<h2>Kiểm tra Google OAuth</h2>',
+    '<p><b>Callback đang gửi:</b><br><code>'+callback+'</code></p>',
+    '<p><b>Web App URL Apps Script trả về:</b><br><code>'+serviceUrl+'</code></p>',
+    '<p><b>Client ID đang dùng:</b><br><code>'+safeClientId+'</code></p>',
+    '<p><b>Client Secret:</b> '+(config.clientSecret?'<span class="ok">đã cấu hình</span>':'<span class="bad">chưa cấu hình</span>')+'</p>',
+    '<p>Hãy so sánh Client ID ở đây với Client ID trong Google Cloud → Google Auth Platform → Clients.</p>',
+    '</body></html>'
+  ].join('');
+  return HtmlService.createHtmlOutput(html).setTitle('OAuth Debug - '+APP_TITLE);
 }
 
 function renderLogin_(message) {
