@@ -50,7 +50,18 @@ function googleOAuthConfig_() {
 }
 
 function googleOAuthCallbackUrl_() {
-  return ScriptApp.getService().getUrl() || '';
+  // Dùng đúng URL Web App đã khai báo trong Google Cloud để tránh redirect_uri_mismatch.
+  return 'https://script.google.com/macros/s/AKfycbwdHS77PfHP8CHtLk2eCULLoEPFD7YfHBQkUEI_bnt6QQeD_9gPYog9vUGj58XZltS33w/exec';
+}
+
+function getOAuthDebugInfo() {
+  const config=googleOAuthConfig_();
+  return {
+    callbackUrl:googleOAuthCallbackUrl_(),
+    clientIdConfigured:Boolean(config.clientId),
+    clientSecretConfigured:Boolean(config.clientSecret),
+    startUrl:googleOAuthStartUrl_()
+  };
 }
 
 function googleOAuthStartUrl_() {
