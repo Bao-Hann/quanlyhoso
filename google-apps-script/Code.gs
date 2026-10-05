@@ -57,27 +57,42 @@ function decodeIdentityToken_() {
 }
 
 function getCurrentUser() {
+  // ActiveUser mới là người đang mở Web App. EffectiveUser có thể là chủ project
+  // nếu deployment chạy "Execute as me", vì vậy tuyệt đối không chặn app chỉ vì hai email khác nhau.
   const sessionEmail = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
   const effectiveEmail = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
-  if (!sessionEmail || sessionEmail !== effectiveEmail) {
-    throw new Error('Hãy triển khai Web App với quyền Người dùng truy cập ứng dụng (User accessing the web app).');
-  }
 
   const identity = decodeIdentityToken_();
   const tokenEmail = String(identity.email || '').trim().toLowerCase();
   const name = String(identity.name || '').trim();
   const picture = String(identity.picture || '').trim();
 
-  // Chỉ chấp nhận dữ liệu hồ sơ nếu token đúng tài khoản đang sử dụng.
-  const sameAccount = !tokenEmail || tokenEmail === sessionEmail;
+  // Ưu tiên email của người truy cập. Chỉ khi Google không trả ActiveUser mới dùng email từ token.
+  const email = sessionEmail || tokenEmail;
+  if (!email) {
+    // Không làm app chết. Dùng khóa tạm riêng theo người truy cập để tránh trộn hồ sơ.
+    const temporaryKey = String(Session.getTemporaryActiveUserKey() || '').trim();
+    return {
+      userId: 'temp:' + temporaryKey,
+      provider: 'google',
+      email: '',
+      name: '',
+      displayName: '',
+      picture: ''
+    };
+  }
+
+  // Chỉ nhận tên/ảnh nếu token thuộc đúng người đang truy cập.
+  const sameAccount = !tokenEmail || tokenEmail === email;
 
   return {
-    userId: 'email:' + sessionEmail,
+    userId: 'email:' + email,
     provider: 'google',
-    email: sessionEmail,
+    email: email,
     name: sameAccount ? name : '',
     displayName: sameAccount ? name : '',
-    picture: sameAccount ? picture : ''
+    picture: sameAccount ? picture : '',
+    executionEmail: effectiveEmail
   };
 }
 
