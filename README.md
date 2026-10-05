@@ -93,3 +93,15 @@ Rollback về:
 Ghi chú:
 ```
 
+
+### Rollback login — 2026-10-05
+
+- **ROLLBACK-01**
+- Mục tiêu: bỏ toàn bộ luồng OAuth Client ID/Client Secret + callback `/exec` đang fail và quay lại kiến trúc đăng nhập Google native của Apps Script tại commit `e97347cb648f6a88beea3a995856515fac72f1f0`.
+- Luồng phục hồi: `Login.html → ?page=app → Session.getActiveUser()/ScriptApp.getIdentityToken() → Index.html`.
+- Các file phục hồi logic auth: `Code.gs`, `Auth.gs`, `Login.html`, bootstrap auth trong `Index.html`, `appsscript.json`.
+- Giữ yêu cầu mới: tên tài khoản **không** lấy từ trường `person_name` của hồ sơ khoa học.
+- Không revert các phần UI/Word export/theme trong `Script.html`.
+- Trạng thái hiện tại: **PENDING TEST** — chỉ đổi thành PASS sau khi người dùng xác nhận vào được app thực tế.
+- Deployment cần dùng mô hình native: **Execute as: User accessing the web app** và quyền truy cập dành cho tài khoản Google phù hợp.
+
