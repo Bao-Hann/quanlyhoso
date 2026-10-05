@@ -164,10 +164,36 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     [26,28,30].forEach(i=>setParagraphIndent(p[i],720,360));
     [27,29,31,32].forEach(i=>setParagraphIndent(p[i],720,0));
 
+    // Đồng bộ khoảng cách dọc của 3 dòng "Tên luận án".
+    // Dòng đầu đang có khoảng cách đúng theo mẫu, nên sao chép đúng thuộc tính spacing sang dòng chấm kế tiếp.
+    const copyParagraphSpacing = (source,target) => {
+      if(!source || !target) return;
+      const sourcePr=children(source,'pPr')[0];
+      const targetPr=children(target,'pPr')[0] || target.insertBefore(target.ownerDocument.createElementNS(W,'w:pPr'),target.firstChild);
+      children(targetPr,'spacing').forEach(x=>x.remove());
+      const spacing=sourcePr && children(sourcePr,'spacing')[0];
+      if(spacing) targetPr.appendChild(spacing.cloneNode(true));
+    };
+    copyParagraphSpacing(p[30],p[31]);
+
+    // Giữ hai dòng đầu của cụm luận án đi cùng nhau để Word không ép dòng cuối sát lên trên.
+    [30,31].forEach(i=>{
+      const pr=children(p[i],'pPr')[0] || p[i].insertBefore(doc.createElementNS(W,'w:pPr'),p[i].firstChild);
+      if(!children(pr,'keepNext').length) pr.appendChild(doc.createElementNS(W,'w:keepNext'));
+    });
+
     if([value('person_office_phone'),value('person_home_phone'),value('person_mobile_phone')].some(Boolean))
       fillSlots(p[15],[value('person_office_phone'),value('person_home_phone'),value('person_mobile_phone')]);
     const language=rows('languageBody');
     const languageCells=children(children(tables[0],'tr')[0],'tc');
+
+    // Mẫu Bộ bắt đầu mục "3. Ngoại ngữ" ở trang kế tiếp.
+    // Đặt ngắt trang ngay tại đoạn đầu của ô đầu tiên để cả hàng bảng được đẩy sang trang mới.
+    const languageFirstParagraph=languageCells[0] && children(languageCells[0],'p')[0];
+    if(languageFirstParagraph) {
+      const pr=children(languageFirstParagraph,'pPr')[0] || languageFirstParagraph.insertBefore(doc.createElementNS(W,'w:pPr'),languageFirstParagraph.firstChild);
+      if(!children(pr,'pageBreakBefore').length) pr.appendChild(doc.createElementNS(W,'w:pageBreakBefore'));
+    }
     if(language.length) {
       [languageCells[1],languageCells[2]].forEach((cell,column)=>{
         const seeds=children(cell,'p');seeds.forEach(x=>x.remove());
