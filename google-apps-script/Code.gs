@@ -55,7 +55,28 @@ function googleDisplayName_(email) {
 
   const token = ScriptApp.getOAuthToken();
 
-  // Ưu tiên People API vì đây là nguồn hồ sơ tài khoản Google chính xác hơn.
+  // Ưu tiên Advanced People Service của Apps Script.
+  try {
+    if (typeof People !== 'undefined' && People.People) {
+      const profile = People.People.get('people/me', {personFields:'names,emailAddresses'});
+      const names = profile && Array.isArray(profile.names) ? profile.names : [];
+      const primary = names.find(x => x && x.metadata && x.metadata.primary) || names[0] || {};
+      const name = String(primary.displayName || '').trim();
+      const emails = profile && Array.isArray(profile.emailAddresses) ? profile.emailAddresses : [];
+      const primaryEmailObj = emails.find(x => x && x.metadata && x.metadata.primary) || emails[0] || {};
+      const profileEmail = String(primaryEmailObj.value || '').trim().toLowerCase();
+      if (name && (!profileEmail || profileEmail === email)) {
+        userProps.setProperty('GOOGLE_DISPLAY_NAME', name);
+        userProps.setProperty('GOOGLE_DISPLAY_EMAIL', email);
+        googleNames_[email] = name;
+        return name;
+      }
+    }
+  } catch (_) {
+    // Nếu Advanced People Service chưa sẵn sàng, tiếp tục thử REST.
+  }
+
+  // REST People API là lớp dự phòng tiếp theo.
   try {
     const response = UrlFetchApp.fetch(
       'https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses',
@@ -156,7 +177,18 @@ function saveGeneral(data, token) {
 function loadGeneral(token) {
   const key = profileKey_(token);
   const raw = PropertiesService.getScriptProperties().getProperty(key);
-  return {ok:true, user:token ? localSession_(token) : getCurrentUser(), data:raw ? JSON.parse(raw) : {}};
+  const data = raw ? JSON.parse(raw) : {};
+  const user = token ? localSession_(token) : getCurrentUser();
+
+  // Không bao giờ dùng email làm tên hiển thị.
+  const currentName = String(user.name || '').trim();
+  const email = String(user.email || '').trim();
+  if (!currentName || currentName.toLowerCase() === email.toLowerCase()) {
+    const profileName = String(data.person_name || '').trim();
+    user.name = profileName || '';
+  }
+
+  return {ok:true, user:user, data:data};
 }
 
 /**
