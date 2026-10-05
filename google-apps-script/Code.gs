@@ -37,21 +37,54 @@ function getWebAppUrl() {
   return ScriptApp.getService().getUrl() || '';
 }
 
-function getCurrentUser() {
-  const email = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
-  const effective = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
-  if (!email || email !== effective) throw new Error('Hãy triển khai với quyền Người dùng truy cập ứng dụng (User accessing the web app). Không thể lưu hồ sơ dưới quyền chủ dự án.');
-  return {userId: 'email:' + email, provider:'google', email:email, name:googleDisplayName_(email)};
-}
-
-
 // Identity comes from Google, never from editable profile fields.
 var googleNames_ = {};
 function googleDisplayName_(email) {
   email = String(email || '').trim().toLowerCase();
+  if (!email) return '';
   if (googleNames_[email]) return googleNames_[email];
 
+  // Cache theo đúng người dùng Google đang chạy Web App.
+  const userProps = PropertiesService.getUserProperties();
+  const cached = String(userProps.getProperty('GOOGLE_DISPLAY_NAME') || '').trim();
+  const cachedEmail = String(userProps.getProperty('GOOGLE_DISPLAY_EMAIL') || '').trim().toLowerCase();
+  if (cached && cachedEmail === email && cached.toLowerCase() !== email) {
+    googleNames_[email] = cached;
+    return cached;
+  }
+
   const token = ScriptApp.getOAuthToken();
+
+  // Ưu tiên People API vì đây là nguồn hồ sơ tài khoản Google chính xác hơn.
+  try {
+    const response = UrlFetchApp.fetch(
+      'https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses',
+      {
+        headers: {Authorization: 'Bearer ' + token},
+        muteHttpExceptions: true
+      }
+    );
+    if (response.getResponseCode() === 200) {
+      const profile = JSON.parse(response.getContentText());
+      const names = Array.isArray(profile.names) ? profile.names : [];
+      const primary = names.find(x => x && x.metadata && x.metadata.primary) || names[0] || {};
+      const name = String(primary.displayName || '').trim();
+
+      const emails = Array.isArray(profile.emailAddresses) ? profile.emailAddresses : [];
+      const primaryEmailObj = emails.find(x => x && x.metadata && x.metadata.primary) || emails[0] || {};
+      const profileEmail = String(primaryEmailObj.value || '').trim().toLowerCase();
+
+      if (name && (!profileEmail || profileEmail === email)) {
+        userProps.setProperty('GOOGLE_DISPLAY_NAME', name);
+        userProps.setProperty('GOOGLE_DISPLAY_EMAIL', email);
+        googleNames_[email] = name;
+        return name;
+      }
+    }
+  } catch (_) {
+    // Nếu People API chưa sẵn sàng, thử các endpoint OAuth chuẩn bên dưới.
+  }
+
   const endpoints = [
     'https://www.googleapis.com/oauth2/v3/userinfo',
     'https://openidconnect.googleapis.com/v1/userinfo'
@@ -77,18 +110,29 @@ function googleDisplayName_(email) {
       const name = fullName || composedName;
 
       if (name) {
+        userProps.setProperty('GOOGLE_DISPLAY_NAME', name);
+        userProps.setProperty('GOOGLE_DISPLAY_EMAIL', email);
         googleNames_[email] = name;
         return name;
       }
     } catch (_) {
-      // Thử endpoint tiếp theo.
+      // Thử nguồn tiếp theo.
     }
   }
 
-  // Không tự cắt phần trước dấu @ làm tên. Nếu Google không trả tên,
-  // giữ nguyên email để tránh hiển thị một tên sai.
-  googleNames_[email] = email;
-  return email;
+  // Tuyệt đối không dùng địa chỉ email hoặc phần trước @ làm tên hiển thị.
+  return '';
+}
+
+function getCurrentUser() {
+  const email = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
+  const effective = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
+  if (!email || email !== effective) throw new Error('Hãy triển khai với quyền Người dùng truy cập ứng dụng (User accessing the web app). Không thể lưu hồ sơ dưới quyền chủ dự án.');
+  return {userId: 'email:' + email, provider:'google', email:email, name:googleDisplayName_(email)};
+}
+
+function refreshGoogleIdentity() {
+  return getCurrentUser();
 }
 
 function profileKey_(token) {
