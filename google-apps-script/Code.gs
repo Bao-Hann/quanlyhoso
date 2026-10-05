@@ -60,36 +60,68 @@ function accountIdentityKey_(email) {
   return 'ACCOUNT_IDENTITY_' + hashId_(String(email || '').trim().toLowerCase());
 }
 
-function stableAccountIdentity_(email, tokenName, tokenPicture) {
+function stableAccountIdentity_(email, googleName, googlePicture) {
   email = String(email || '').trim().toLowerCase();
-  tokenName = String(tokenName || '').trim();
-  tokenPicture = String(tokenPicture || '').trim();
+  googleName = String(googleName || '').trim();
+  googlePicture = String(googlePicture || '').trim();
 
   const props = PropertiesService.getScriptProperties();
   const key = accountIdentityKey_(email);
   let saved = {};
   try { saved = JSON.parse(props.getProperty(key) || '{}'); } catch (_) {}
 
-  // Tên tài khoản là dữ liệu riêng của tài khoản, không liên quan person_name.
-  // Nếu đã có tên cho email này thì giữ nguyên, không tự đổi theo hồ sơ khoa học.
-  if (saved && saved.email === email && String(saved.name || '').trim()) {
+  // Google là nguồn chuẩn cho tài khoản Google. Nếu lấy được tên thật,
+  // luôn dùng nó và sửa mọi giá trị cũ từng bị lưu nhầm từ hồ sơ/manual.
+  if (googleName) {
+    const identity = {
+      email: email,
+      name: googleName,
+      picture: googlePicture || String(saved.picture || '').trim(),
+      source: 'google'
+    };
+    props.setProperty(key, JSON.stringify(identity));
+    return {name:identity.name, picture:identity.picture};
+  }
+
+  // Chỉ tái sử dụng tên đã được xác nhận là đến từ Google.
+  if (saved && saved.email === email && saved.source === 'google' && String(saved.name || '').trim()) {
     return {
       name: String(saved.name || '').trim(),
       picture: String(saved.picture || '').trim()
     };
   }
 
-  // Chỉ khởi tạo một lần từ danh tính Google thật của chính email này.
-  if (tokenName) {
-    const identity = {email:email, name:tokenName, picture:tokenPicture};
-    props.setProperty(key, JSON.stringify(identity));
-    return {name:tokenName, picture:tokenPicture};
-  }
+  return {name:'', picture:''};
+}
 
-  return {
-    name: '',
-    picture: saved && saved.email === email ? String(saved.picture || '').trim() : ''
-  };
+function googleProfileForActiveUser_(email) {
+  email = String(email || '').trim().toLowerCase();
+  const effectiveEmail = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
+
+  // ScriptApp.getOAuthToken() thuộc effective user.
+  // Chỉ gọi userinfo khi effective user chính là người đang truy cập,
+  // tránh lấy nhầm tên của chủ project.
+  if (!email || effectiveEmail !== email) return {};
+
+  try {
+    const response = UrlFetchApp.fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: {Authorization:'Bearer ' + ScriptApp.getOAuthToken()},
+      muteHttpExceptions:true
+    });
+    if (response.getResponseCode() !== 200) return {};
+
+    const profile = JSON.parse(response.getContentText() || '{}');
+    const profileEmail = String(profile.email || '').trim().toLowerCase();
+    if (profileEmail && profileEmail !== email) return {};
+
+    return {
+      email: profileEmail || email,
+      name: String(profile.name || '').trim(),
+      picture: String(profile.picture || '').trim()
+    };
+  } catch (_) {
+    return {};
+  }
 }
 
 function getCurrentUser() {
@@ -98,10 +130,8 @@ function getCurrentUser() {
 
   const identity = decodeIdentityToken_();
   const tokenEmail = String(identity.email || '').trim().toLowerCase();
-  const tokenName = String(identity.name || '').trim();
-  const tokenPicture = String(identity.picture || '').trim();
-
   const email = sessionEmail || tokenEmail;
+
   if (!email) {
     const temporaryKey = String(Session.getTemporaryActiveUserKey() || '').trim();
     return {
@@ -114,13 +144,23 @@ function getCurrentUser() {
     };
   }
 
-  // Chỉ dùng tên/ảnh từ token nếu token đúng email đang truy cập.
-  const sameAccount = !tokenEmail || tokenEmail === email;
-  const accountIdentity = stableAccountIdentity_(
-    email,
-    sameAccount ? tokenName : '',
-    sameAccount ? tokenPicture : ''
-  );
+  // Nguồn 1: OpenID identity token của người dùng.
+  let googleName = '';
+  let googlePicture = '';
+  if (!tokenEmail || tokenEmail === email) {
+    googleName = String(identity.name || '').trim();
+    googlePicture = String(identity.picture || '').trim();
+  }
+
+  // Nguồn 2: userinfo bằng OAuth token, nhưng chỉ khi deployment thực thi
+  // dưới quyền chính người truy cập.
+  if (!googleName) {
+    const profile = googleProfileForActiveUser_(email);
+    googleName = String(profile.name || '').trim();
+    googlePicture = String(profile.picture || '').trim();
+  }
+
+  const accountIdentity = stableAccountIdentity_(email, googleName, googlePicture);
 
   return {
     userId:'email:' + email,
@@ -135,54 +175,6 @@ function getCurrentUser() {
 
 function refreshGoogleIdentity() {
   return getCurrentUser();
-}
-
-function setAccountDisplayName(name, token) {
-  name = String(name || '').trim().replace(/\s+/g, ' ');
-  if (name.length < 2 || name.length > 100) {
-    throw new Error('Tên tài khoản cần từ 2 đến 100 ký tự.');
-  }
-
-  const user = token ? localSession_(token) : getCurrentUser();
-  const email = String(user.email || '').trim().toLowerCase();
-  if (!email) throw new Error('Không xác định được email của tài khoản.');
-
-  const props = PropertiesService.getScriptProperties();
-  const identityKey = accountIdentityKey_(email);
-  let oldIdentity = {};
-  try { oldIdentity = JSON.parse(props.getProperty(identityKey) || '{}'); } catch (_) {}
-
-  const identity = {
-    email: email,
-    name: name,
-    picture: String(oldIdentity.picture || user.picture || '').trim()
-  };
-  props.setProperty(identityKey, JSON.stringify(identity));
-
-  // Nếu là phiên email/mật khẩu, cập nhật đúng phiên và đúng bản ghi của email này.
-  if (token) {
-    const sessionKey = 'AUTH_SESSION_' + hashId_(token);
-    const rawSession = props.getProperty(sessionKey);
-    if (rawSession) {
-      const session = JSON.parse(rawSession);
-      if (session.user && String(session.user.email || '').toLowerCase() === email) {
-        session.user.name = name;
-        props.setProperty(sessionKey, JSON.stringify(session));
-      }
-    }
-
-    const accountKey = 'AUTH_USER_' + hashId_(email);
-    const rawAccount = props.getProperty(accountKey);
-    if (rawAccount) {
-      const account = JSON.parse(rawAccount);
-      account.name = name;
-      props.setProperty(accountKey, JSON.stringify(account));
-    }
-  }
-
-  user.name = name;
-  user.displayName = name;
-  return user;
 }
 
 function profileKey_(token) {
