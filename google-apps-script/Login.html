@@ -6,22 +6,190 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Đăng nhập - Scientist Profile</title>
   <style>
+    :root{
+      --orange-50:#fffaf6;
+      --orange-100:#fff1e7;
+      --orange-200:#fbdcc6;
+      --orange-300:#f3bc94;
+      --orange-500:#dc7a37;
+      --orange-600:#c8682a;
+      --orange-700:#9f4f1d;
+      --ink:#231f1c;
+      --muted:#746d67;
+      --line:#e9e4df;
+      --surface:#ffffff;
+      --shadow:0 30px 80px rgba(111,63,29,.18),0 8px 24px rgba(111,63,29,.08);
+    }
     *{box-sizing:border-box}
-    html,body{margin:0;min-height:100%;font-family:Arial,"Helvetica Neue",sans-serif}
-    body{background:linear-gradient(135deg,#ff956f 0%,#ffc18d 100%);color:#171717}
-    .shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:36px 28px}
-    .card{width:min(1050px,100%);min-height:688px;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;background:#fff;border-radius:24px;box-shadow:0 2px 12px rgba(68,36,16,.08)}
-    .brand{display:flex;align-items:center;justify-content:center;padding:48px 54px;background:#f7f8f9}
+    html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+    body{
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 12% 16%,rgba(255,255,255,.48) 0 12%,transparent 32%),
+        radial-gradient(circle at 88% 82%,rgba(255,255,255,.28) 0 10%,transparent 30%),
+        linear-gradient(135deg,#ef9a62 0%,#f4b079 48%,#f8c899 100%);
+    }
+    button,input,a{font:inherit}
+    button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid rgba(220,122,55,.24);outline-offset:2px}
+    .shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 28px}
+    .card{
+      width:min(1060px,100%);
+      min-height:680px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      overflow:hidden;
+      background:var(--surface);
+      border:1px solid rgba(255,255,255,.72);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+    }
+    .brand{
+      position:relative;
+      isolation:isolate;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:48px 54px;
+      overflow:hidden;
+      background:linear-gradient(160deg,#fffdfa 0%,#fff8f2 62%,#fdf2e9 100%);
+      border-right:1px solid #f0e7df;
+    }
+    .brand::before,.brand::after{
+      content:"";
+      position:absolute;
+      z-index:-1;
+      border-radius:50%;
+      filter:blur(1px);
+      pointer-events:none;
+    }
+    .brand::before{width:260px;height:260px;left:-120px;top:-110px;background:rgba(225,126,58,.11)}
+    .brand::after{width:220px;height:220px;right:-110px;bottom:-95px;background:rgba(225,126,58,.08)}
     .brand-content{width:100%;max-width:390px;text-align:center}
-    .tree{display:block;width:300px;max-width:100%;margin:0 auto 28px}
-    .brand h1{margin:0;color:#282828;font-size:2rem;font-weight:700}.brand p{margin:16px 0 0;color:#5c5c5c;font-size:1.18rem}
-    .form-panel{display:flex;align-items:center;justify-content:center;padding:42px 38px}.wrap{width:100%;max-width:452px}
-    .wrap h2{text-align:center;margin:0 0 42px;font-size:2.9rem;font-weight:500}
-    .notice{padding:12px 14px;border-radius:8px;background:#fff3cd;color:#664d03;margin-bottom:22px}
-    .google{width:100%;min-height:69px;display:flex;align-items:center;justify-content:center;gap:14px;border:1px solid #dadada;border-radius:8px;background:#fff;color:#484848;font-size:1.2rem;font-weight:700;cursor:pointer;text-decoration:none}
-    .google:hover{background:#fafafa}.g{font-size:1.65rem;font-weight:800;color:#4285f4}
-    .field{margin-bottom:28px}.field label{display:block;font-size:1.35rem;margin-bottom:14px}.field input{width:100%;height:56px;border:1px solid #d8dee4;border-radius:8px;padding:14px 18px;font-size:1.3rem}.primary{width:100%;min-height:66px;border:0;border-radius:8px;background:#aa2828;color:#fff;font-size:1.4rem;cursor:pointer}.primary:disabled{opacity:.6;cursor:wait}.separator{border:0;border-top:1px solid #ccc;margin:24px 0}.register{text-align:center;font-size:1.15rem;margin:30px 0 0}.register button{background:none;border:0;color:#aa2828;font-size:inherit;cursor:pointer}.desc{text-align:center;color:#555;line-height:1.6;margin:0 0 28px}.privacy{text-align:center;color:#777;font-size:.9rem;margin-top:24px}
-    @media(max-width:850px){.card{grid-template-columns:1fr}.brand{padding:34px 24px}.tree{width:220px}.form-panel{padding:34px 24px}.wrap h2{font-size:2.15rem;margin-bottom:28px}}
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      margin:0 0 20px;
+      padding:8px 13px;
+      border:1px solid var(--orange-200);
+      border-radius:999px;
+      background:rgba(255,255,255,.8);
+      color:var(--orange-700);
+      font-size:.78rem;
+      font-weight:800;
+      letter-spacing:.13em;
+      text-transform:uppercase;
+    }
+    .eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--orange-500);box-shadow:0 0 0 4px rgba(220,122,55,.12)}
+    .tree{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:300px;
+      height:258px;
+      max-width:100%;
+      margin:0 auto 18px;
+      overflow:hidden;
+      border:1px solid rgba(200,104,42,.12);
+      border-radius:22px;
+      background:#fff;
+      box-shadow:0 14px 34px rgba(111,63,29,.10);
+    }
+    .tree svg{display:block;width:100%;height:100%;object-fit:cover}
+    .latin{
+      margin:0 0 8px;
+      color:#8f7b6d;
+      font-family:Georgia,"Times New Roman",serif;
+      font-size:.74rem;
+      font-weight:700;
+      letter-spacing:.28em;
+    }
+    .brand h1{margin:0;color:#2c2520;font-size:2.08rem;font-weight:760;letter-spacing:-.035em}
+    .brand p{max-width:310px;margin:12px auto 0;color:#746b64;font-size:1.02rem;line-height:1.65}
+    .form-panel{display:flex;align-items:center;justify-content:center;padding:52px 48px;background:#fff}
+    .wrap{width:100%;max-width:430px}
+    .form-head{text-align:center;margin-bottom:30px}
+    .wrap h2{margin:0;font-size:2.35rem;line-height:1.15;font-weight:730;letter-spacing:-.035em}
+    .form-subtitle{margin:10px 0 0;color:var(--muted);font-size:.96rem;line-height:1.55}
+    .notice{padding:12px 14px;border:1px solid #f0d6a8;border-radius:10px;background:#fff8e8;color:#6f511d;margin-bottom:20px;font-size:.93rem;line-height:1.5}
+    .field{margin-bottom:20px}
+    .field label{display:block;margin-bottom:8px;color:#37312d;font-size:.94rem;font-weight:650}
+    .field input{
+      width:100%;
+      height:54px;
+      border:1px solid #ddd8d3;
+      border-radius:11px;
+      padding:0 16px;
+      background:#fff;
+      color:#241f1c;
+      font-size:1rem;
+      transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+    }
+    .field input::placeholder{color:#aaa39d}
+    .field input:hover{border-color:#cfc7c0}
+    .field input:focus{border-color:var(--orange-500);box-shadow:0 0 0 4px rgba(220,122,55,.10);background:#fffdfb;outline:0}
+    .primary{
+      width:100%;
+      min-height:56px;
+      border:0;
+      border-radius:11px;
+      background:linear-gradient(135deg,var(--orange-600),#d97835);
+      color:#fff;
+      font-size:1rem;
+      font-weight:750;
+      cursor:pointer;
+      box-shadow:0 10px 22px rgba(200,104,42,.20);
+      transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+    }
+    .primary:hover:not(:disabled){transform:translateY(-1px);filter:saturate(1.04);box-shadow:0 14px 28px rgba(200,104,42,.25)}
+    .primary:active:not(:disabled){transform:translateY(0)}
+    .primary:disabled{opacity:.62;cursor:wait}
+    .separator{position:relative;border:0;border-top:1px solid var(--line);margin:24px 0}
+    .google{
+      width:100%;
+      min-height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      border:1px solid #ddd8d3;
+      border-radius:11px;
+      background:#fff;
+      color:#403a36;
+      font-size:.98rem;
+      font-weight:680;
+      cursor:pointer;
+      text-decoration:none;
+      transition:border-color .18s ease,background .18s ease,transform .18s ease;
+    }
+    .google:hover{border-color:#c9c1ba;background:#fcfbfa;transform:translateY(-1px)}
+    .register{text-align:center;color:#716a64;font-size:.94rem;margin:24px 0 0}
+    .register button{padding:0 3px;background:none;border:0;color:var(--orange-700);font-size:inherit;font-weight:750;cursor:pointer}
+    .register button:hover{text-decoration:underline}
+    .privacy{
+      max-width:390px;
+      margin:18px auto 0;
+      color:#98918b;
+      font-size:.78rem;
+      line-height:1.55;
+      text-align:center;
+    }
+    @media(max-width:850px){
+      .shell{padding:20px 14px}
+      .card{grid-template-columns:1fr;min-height:auto;border-radius:22px}
+      .brand{padding:30px 24px;border-right:0;border-bottom:1px solid #f0e7df}
+      .eyebrow{margin-bottom:14px}
+      .tree{width:220px;height:190px;margin-bottom:14px;border-radius:18px}
+      .brand h1{font-size:1.7rem}
+      .brand p{font-size:.92rem}
+      .form-panel{padding:34px 24px 38px}
+      .wrap h2{font-size:2rem}
+    }
+    @media(max-width:480px){
+      .brand{padding:24px 18px}.form-panel{padding:28px 18px 32px}
+      .tree{width:190px;height:164px}
+      .form-subtitle{font-size:.9rem}
+    }
   </style>
 </head>
 <body>
@@ -29,6 +197,7 @@
     <section class="card">
       <div class="brand">
         <div class="brand-content">
+          <div class="eyebrow">Hồ sơ khoa học</div>
           <div class="tree"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 516">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -75,13 +244,17 @@
   </g>
   <ellipse cx="307" cy="470" rx="120" ry="18" fill="#7a4b2d" opacity=".18"/>
 </svg></div>
+          <div class="latin">NON SOLUS</div>
           <h1>Scientist Profile</h1>
           <p>Kết nối các nhà nghiên cứu Việt Nam</p>
         </div>
       </div>
       <div class="form-panel">
         <div class="wrap">
-          <h2>Đăng nhập</h2>
+          <div class="form-head">
+            <h2>Đăng nhập</h2>
+            <p class="form-subtitle">Quản lý hồ sơ khoa học, minh chứng và biểu mẫu của bạn tại một nơi.</p>
+          </div>
           <? if (message) { ?><div class="notice"><?= message ?></div><? } ?>
           <div id="authMessage" class="notice" role="status" hidden></div>
           <form id="loginForm">
