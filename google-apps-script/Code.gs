@@ -56,43 +56,80 @@ function decodeIdentityToken_() {
   }
 }
 
+function accountIdentityKey_(email) {
+  return 'ACCOUNT_IDENTITY_' + hashId_(String(email || '').trim().toLowerCase());
+}
+
+function stableAccountIdentity_(email, tokenName, tokenPicture) {
+  email = String(email || '').trim().toLowerCase();
+  tokenName = String(tokenName || '').trim();
+  tokenPicture = String(tokenPicture || '').trim();
+
+  const props = PropertiesService.getScriptProperties();
+  const key = accountIdentityKey_(email);
+  let saved = {};
+  try { saved = JSON.parse(props.getProperty(key) || '{}'); } catch (_) {}
+
+  // Tên tài khoản là dữ liệu riêng của tài khoản, không liên quan person_name.
+  // Nếu đã có tên cho email này thì giữ nguyên, không tự đổi theo hồ sơ khoa học.
+  if (saved && saved.email === email && String(saved.name || '').trim()) {
+    return {
+      name: String(saved.name || '').trim(),
+      picture: String(saved.picture || '').trim()
+    };
+  }
+
+  // Chỉ khởi tạo một lần từ danh tính Google thật của chính email này.
+  if (tokenName) {
+    const identity = {email:email, name:tokenName, picture:tokenPicture};
+    props.setProperty(key, JSON.stringify(identity));
+    return {name:tokenName, picture:tokenPicture};
+  }
+
+  return {
+    name: '',
+    picture: saved && saved.email === email ? String(saved.picture || '').trim() : ''
+  };
+}
+
 function getCurrentUser() {
-  // ActiveUser mới là người đang mở Web App. EffectiveUser có thể là chủ project
-  // nếu deployment chạy "Execute as me", vì vậy tuyệt đối không chặn app chỉ vì hai email khác nhau.
   const sessionEmail = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
   const effectiveEmail = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
 
   const identity = decodeIdentityToken_();
   const tokenEmail = String(identity.email || '').trim().toLowerCase();
-  const name = String(identity.name || '').trim();
-  const picture = String(identity.picture || '').trim();
+  const tokenName = String(identity.name || '').trim();
+  const tokenPicture = String(identity.picture || '').trim();
 
-  // Ưu tiên email của người truy cập. Chỉ khi Google không trả ActiveUser mới dùng email từ token.
   const email = sessionEmail || tokenEmail;
   if (!email) {
-    // Không làm app chết. Dùng khóa tạm riêng theo người truy cập để tránh trộn hồ sơ.
     const temporaryKey = String(Session.getTemporaryActiveUserKey() || '').trim();
     return {
-      userId: 'temp:' + temporaryKey,
-      provider: 'google',
-      email: '',
-      name: '',
-      displayName: '',
-      picture: ''
+      userId:'temp:' + temporaryKey,
+      provider:'google',
+      email:'',
+      name:'',
+      displayName:'',
+      picture:''
     };
   }
 
-  // Chỉ nhận tên/ảnh nếu token thuộc đúng người đang truy cập.
+  // Chỉ dùng tên/ảnh từ token nếu token đúng email đang truy cập.
   const sameAccount = !tokenEmail || tokenEmail === email;
+  const accountIdentity = stableAccountIdentity_(
+    email,
+    sameAccount ? tokenName : '',
+    sameAccount ? tokenPicture : ''
+  );
 
   return {
-    userId: 'email:' + email,
-    provider: 'google',
-    email: email,
-    name: sameAccount ? name : '',
-    displayName: sameAccount ? name : '',
-    picture: sameAccount ? picture : '',
-    executionEmail: effectiveEmail
+    userId:'email:' + email,
+    provider:'google',
+    email:email,
+    name:accountIdentity.name,
+    displayName:accountIdentity.name,
+    picture:accountIdentity.picture,
+    executionEmail:effectiveEmail
   };
 }
 
@@ -124,14 +161,7 @@ function loadGeneral(token) {
   const data = raw ? JSON.parse(raw) : {};
   const user = token ? localSession_(token) : getCurrentUser();
 
-  // Không bao giờ dùng email làm tên hiển thị.
-  const currentName = String(user.name || '').trim();
-  const email = String(user.email || '').trim();
-  if (!currentName || currentName.toLowerCase() === email.toLowerCase()) {
-    const profileName = String(data.person_name || '').trim();
-    user.name = profileName || '';
-  }
-
+  // Tuyệt đối không dùng person_name để sửa tên tài khoản.
   return {ok:true, user:user, data:data};
 }
 
