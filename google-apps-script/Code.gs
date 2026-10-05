@@ -53,7 +53,7 @@ function googleOAuthConfig_() {
 
 function googleOAuthCallbackUrl_() {
   // Dùng đúng URL Web App đã khai báo trong Google Cloud để tránh redirect_uri_mismatch.
-  return 'https://script.google.com/macros/s/AKfycbwdHS77PfHP8CHtLk2eCULLoEPFD7YfHBQkUEI_bnt6QQeD_9gPYog9vUGj58XZltS33w/exec';
+  return 'https://script.google.com/macros/s/AKfycbywjwlxpaPEBtoGOWBBvL8Vcst1IHyqbliQD8Jo8HC_80BGvOHnqCJoNH5cYNZsqd8XQQ/exec';
 }
 
 function getOAuthDebugInfo() {
