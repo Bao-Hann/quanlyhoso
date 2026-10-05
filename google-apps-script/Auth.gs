@@ -23,14 +23,12 @@ function normalizedEmail_(value) {
   if(email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email không hợp lệ.');
   return email;
 }
-function registerLocal(email,password,googleCredential) {
+function registerLocal(email,password,displayName) {
   email=normalizedEmail_(email);
   password=String(password||'');
-  const googleUser=verifyGoogleIdToken_(googleCredential);
+  displayName=String(displayName||'').trim().replace(/\s+/g,' ');
 
-  if(googleUser.email!==email) {
-    throw new Error('Email đăng ký phải trùng tài khoản Google vừa xác minh.');
-  }
+  if(displayName.length<2 || displayName.length>100) throw new Error('Tên tài khoản cần từ 2 đến 100 ký tự.');
   if(password.length<12 || password.length>128) throw new Error('Mật khẩu cần từ 12 đến 128 ký tự.');
 
   const key='AUTH_USER_'+hashId_(email),props=PropertiesService.getScriptProperties();
@@ -42,13 +40,7 @@ function registerLocal(email,password,googleCredential) {
       salt:salt,
       hash:passwordHash_(password,salt),
       email:email,
-      name:googleUser.name
-    }));
-    props.setProperty(accountIdentityKey_(email),JSON.stringify({
-      email:email,
-      name:googleUser.name,
-      picture:googleUser.picture,
-      source:'google'
+      name:displayName
     }));
   } finally {lock.releaseLock();}
   return {ok:true};
