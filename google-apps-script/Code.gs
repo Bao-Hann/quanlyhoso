@@ -26,6 +26,14 @@ function renderLogin_(message) {
   const t = HtmlService.createTemplateFromFile('Login');
   t.message = message || '';
   t.webAppUrl = ScriptApp.getService().getUrl() || '';
+
+  // Luôn cho người dùng chọn tài khoản Google trước khi vào Web App.
+  // Điều này tránh trường hợp trình duyệt đang đăng nhập nhiều Gmail và tự dùng sai tài khoản.
+  const googleTarget = t.webAppUrl + '?page=app&google=1';
+  t.googleAccountChooserUrl =
+    'https://accounts.google.com/AccountChooser?service=lso&continue=' +
+    encodeURIComponent(googleTarget);
+
   return t.evaluate().setTitle('Đăng nhập - ' + APP_TITLE);
 }
 
