@@ -191,7 +191,6 @@
       .form-subtitle{font-size:.9rem}
     }
   </style>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <main class="shell">
@@ -213,127 +212,114 @@
           <? if (message) { ?><div class="notice"><?= message ?></div><? } ?>
           <div id="authMessage" class="notice" role="status" hidden></div>
           <form id="loginForm">
+            <div class="field" id="accountNameField" hidden><label for="accountName">Tên tài khoản</label><input id="accountName" type="text" autocomplete="name" placeholder="Ví dụ: Huỳnh Bảo Hân" maxlength="100" disabled></div>
             <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="username" placeholder="Email" required maxlength="254"></div>
             <div class="field"><label for="password">Mật khẩu</label><input id="password" type="password" autocomplete="current-password" placeholder="Mật khẩu" required maxlength="128"></div>
             <div class="field" id="confirmField" hidden><label for="confirmPassword">Xác nhận mật khẩu</label><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Nhập lại mật khẩu" maxlength="128" disabled></div>
             <button class="primary" id="submitLogin" type="submit">Đăng nhập</button>
           </form>
           <hr class="separator">
-          <div id="googleSignInHost" style="display:flex;justify-content:center;min-height:56px"></div>
-          <button class="google" id="googleUnavailableBtn" type="button" hidden>
+          <a class="google" id="googleOAuthBtn" href="<?= googleOAuthReady ? googleOAuthUrl : '#' ?>" target="_top" rel="noopener">
             <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M22 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.4 3.1-7.6"/><path fill="#34a853" d="M12 22c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1-2.7 0-5-1.8-5.8-4.3H2.7v2.7A10.4 10.4 0 0 0 12 22"/><path fill="#fbbc05" d="M6.2 13.6a6.2 6.2 0 0 1 0-3.2V7.7H2.7a10.3 10.3 0 0 0 0 8.6z"/><path fill="#ea4335" d="M12 6.1c1.5 0 2.9.5 4 1.6l3-3A10 10 0 0 0 2.7 7.7l3.5 2.7C7 7.9 9.3 6.1 12 6.1"/></svg>
             <span>Đăng nhập bằng tài khoản Google</span>
-          </button>
+          </a>
           <p class="register"><span id="accountPrompt">Chưa có tài khoản?</span> <button id="registerToggle" type="button">Đăng ký</button></p>
-          <p class="privacy">Bạn có thể chọn bất kỳ tài khoản Google nào. Tên, email và ảnh đại diện được lấy trực tiếp từ tài khoản đã chọn.</p>
+          <p class="privacy"><?= googleOAuthReady ? 'Bạn có thể chọn bất kỳ tài khoản Google nào. Tên, email và ảnh đại diện được lấy trực tiếp từ tài khoản đã chọn.' : 'Quản trị viên cần cấu hình Google OAuth một lần trước khi bật đăng nhập Google.' ?></p>
         </div>
       </div>
     </section>
   </main>
 <script>
   const appUrl = <?!= JSON.stringify(webAppUrl) ?>;
-  const googleClientId = <?!= JSON.stringify(googleLoginClientId || '') ?>;
+  const googleOAuthReady = <?!= JSON.stringify(Boolean(googleOAuthReady)) ?>;
   let registering=false;
-  let pendingGoogleCredential='';
 
-  const saveSessionAndEnter = result => {
-    try { sessionStorage.setItem('scientist-local-session',JSON.stringify(result)); }
-    catch(_){ show('Trình duyệt không cho lưu phiên đăng nhập. Hãy cho phép lưu dữ liệu của trang.'); return; }
-    window.top.location.href=appUrl+'?page=app&mode=local';
-  };
-
-  const handleGoogleCredential = response => {
-    const credential=String(response?.credential || '').trim();
-    if(!credential){show('Google không trả thông tin đăng nhập. Hãy thử lại.');return;}
-
-    if(registering){
-      pendingGoogleCredential=credential;
-      google.script.run
-        .withSuccessHandler(profile=>{
-          const emailInput=document.getElementById('email');
-          if(profile?.email) emailInput.value=profile.email;
-          show('Đã xác minh Google: '+(profile?.name || profile?.email || '')+'. Hãy đặt mật khẩu để hoàn tất đăng ký.');
-        })
-        .withFailureHandler(err=>show(err.message || String(err)))
-        .inspectGoogleCredential(credential);
-      return;
-    }
-
-    show('Đang xác minh tài khoản Google…');
-    google.script.run
-      .withSuccessHandler(result=>saveSessionAndEnter(result))
-      .withFailureHandler(err=>show(err.message || String(err)))
-      .loginGoogleCredential(credential);
-  };
-
-  const initGoogleSignIn = () => {
-    const host=document.getElementById('googleSignInHost');
-    const fallback=document.getElementById('googleUnavailableBtn');
-    if(!googleClientId){
-      host.hidden=true;fallback.hidden=false;
-      fallback.addEventListener('click',()=>show('Chưa cấu hình GOOGLE_LOGIN_CLIENT_ID trong Script Properties.'));
-      return;
-    }
-    if(!window.google?.accounts?.id){setTimeout(initGoogleSignIn,120);return;}
-    google.accounts.id.initialize({
-      client_id:googleClientId,
-      callback:handleGoogleCredential,
-      auto_select:false,
-      cancel_on_tap_outside:true,
-      use_fedcm_for_prompt:false
-    });
-    host.innerHTML='';
-    google.accounts.id.renderButton(host,{
-      type:'standard',
-      theme:'outline',
-      size:'large',
-      text:'signin_with',
-      shape:'rectangular',
-      logo_alignment:'left',
-      width:390
-    });
-  };
-  window.addEventListener('load',initGoogleSignIn);
-  const form=document.getElementById('loginForm'),button=document.getElementById('submitLogin'),message=document.getElementById('authMessage');
+  const form=document.getElementById('loginForm');
+  const button=document.getElementById('submitLogin');
+  const message=document.getElementById('authMessage');
   const show=text=>{message.textContent=text;message.hidden=false;};
+
+  if(!googleOAuthReady){
+    document.getElementById('googleOAuthBtn')?.addEventListener('click',event=>{
+      event.preventDefault();
+      show('Đăng nhập Google chưa được cấu hình. Quản trị viên cần thêm GOOGLE_OAUTH_CLIENT_ID và GOOGLE_OAUTH_CLIENT_SECRET trong Script Properties.');
+    });
+  }
+
   const setRegistration=enabled=>{
     registering=enabled;
     button.textContent=enabled?'Đăng ký':'Đăng nhập';
     document.querySelector('.wrap h2').textContent=enabled?'Đăng ký tài khoản':'Đăng nhập';
     document.getElementById('accountPrompt').textContent=enabled?'Đã có tài khoản?':'Chưa có tài khoản?';
     document.getElementById('registerToggle').textContent=enabled?'Đăng nhập':'Đăng ký';
-    pendingGoogleCredential='';
+
+    const nameField=document.getElementById('accountNameField');
+    const nameInput=document.getElementById('accountName');
+    nameField.hidden=!enabled;
+    nameInput.disabled=!enabled;
+    nameInput.required=enabled;
+    if(!enabled)nameInput.value='';
+
     document.getElementById('password').autocomplete=enabled?'new-password':'current-password';
     document.getElementById('password').minLength=enabled?12:1;
     document.getElementById('password').value='';
+
     document.getElementById('confirmField').hidden=!enabled;
-    const confirm=document.getElementById('confirmPassword');confirm.disabled=!enabled;confirm.required=enabled;confirm.value='';
+    const confirm=document.getElementById('confirmPassword');
+    confirm.disabled=!enabled;
+    confirm.required=enabled;
+    confirm.value='';
+
     message.hidden=true;
-    if(enabled)show('Bước 1: chọn tài khoản Google bên dưới. Bước 2: đặt mật khẩu từ 12 ký tự để hoàn tất đăng ký.');
+    if(enabled)show('Đăng ký tài khoản email/mật khẩu. Tên tài khoản này độc lập với tên hồ sơ khoa học.');
   };
-  document.getElementById('registerToggle').addEventListener('click',()=>{if(!button.disabled){setRegistration(!registering);initGoogleSignIn();}});
+
+  document.getElementById('registerToggle').addEventListener('click',()=>{
+    if(!button.disabled)setRegistration(!registering);
+  });
+
   form.addEventListener('submit',event=>{
-    event.preventDefault();if(!form.reportValidity())return;
-    if(registering && document.getElementById('password').value!==document.getElementById('confirmPassword').value){show('Mật khẩu xác nhận chưa khớp. Hãy nhập lại.');return;}
-    button.disabled=true;show('Đang kiểm tra, vui lòng chờ…');
+    event.preventDefault();
+    if(!form.reportValidity())return;
+
+    if(registering && document.getElementById('password').value!==document.getElementById('confirmPassword').value){
+      show('Mật khẩu xác nhận chưa khớp. Hãy nhập lại.');
+      return;
+    }
+
+    button.disabled=true;
+    show('Đang kiểm tra, vui lòng chờ…');
+
     const done=result=>{
-      button.disabled=false;document.getElementById('password').value='';
-      if(registering){setRegistration(false);show('Đăng ký thành công. Bạn có thể đăng nhập bằng tài khoản vừa tạo.');return;}
-      try {sessionStorage.setItem('scientist-local-session',JSON.stringify(result));}
-      catch(_){show('Trình duyệt không cho lưu phiên đăng nhập. Hãy cho phép lưu dữ liệu của trang.');return;}
-      window.top.location.href=appUrl+'?page=app&mode=local';
-    };
-    const fail=error=>{button.disabled=false;document.getElementById('password').value='';show(error.message);};
-    const runner=google.script.run.withSuccessHandler(done).withFailureHandler(fail);
-    const email=document.getElementById('email').value,password=document.getElementById('password').value;
-    if(registering){
-      if(!pendingGoogleCredential){
-        button.disabled=false;
-        show('Hãy chọn tài khoản Google bên dưới trước khi hoàn tất đăng ký.');
+      button.disabled=false;
+      document.getElementById('password').value='';
+      if(registering){
+        setRegistration(false);
+        show('Đăng ký thành công. Bạn có thể đăng nhập bằng tài khoản vừa tạo.');
         return;
       }
-      runner.registerLocal(email,password,pendingGoogleCredential);
-    } else {
+      try{
+        sessionStorage.setItem('scientist-local-session',JSON.stringify(result));
+      }catch(_){
+        show('Trình duyệt không cho lưu phiên đăng nhập. Hãy cho phép lưu dữ liệu của trang.');
+        return;
+      }
+      window.top.location.href=appUrl+'?page=app&mode=local';
+    };
+
+    const fail=error=>{
+      button.disabled=false;
+      document.getElementById('password').value='';
+      show(error.message || String(error));
+    };
+
+    const runner=google.script.run.withSuccessHandler(done).withFailureHandler(fail);
+    const email=document.getElementById('email').value;
+    const password=document.getElementById('password').value;
+
+    if(registering){
+      runner.registerLocal(email,password,document.getElementById('accountName').value);
+    }else{
       runner.loginLocal(email,password);
     }
   });
