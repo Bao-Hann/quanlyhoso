@@ -35,6 +35,8 @@ function doGet(e) {
 
     const t = HtmlService.createTemplateFromFile('Index');
     t.userJson = JSON.stringify({provider:'local'}).replace(/</g, '\\u003c');
+    t.authTokenJson = JSON.stringify('');
+    t.webAppUrlJson = JSON.stringify(googleOAuthCallbackUrl_());
     return t.evaluate()
       .setTitle(APP_TITLE)
       .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
@@ -203,19 +205,16 @@ function completeGoogleOAuthFromExec_(params) {
   );
 
   const session=createAppSession_(user);
-  const handoff=Utilities.getUuid()+Utilities.getUuid();
-  cache.put('GOOGLE_HANDOFF_'+hashId_(handoff),JSON.stringify(session),120);
 
-  const target=googleOAuthCallbackUrl_() +
-    '?page=oauthcomplete&handoff=' + encodeURIComponent(handoff);
+  // Render thẳng ứng dụng sau OAuth, tránh redirect trung gian bị Apps Script sandbox chặn.
+  const t=HtmlService.createTemplateFromFile('Index');
+  t.userJson=JSON.stringify(session.user).replace(/</g,'\\u003c');
+  t.authTokenJson=JSON.stringify(session.token);
+  t.webAppUrlJson=JSON.stringify(googleOAuthCallbackUrl_());
 
-  return HtmlService.createHtmlOutput(
-    '<!doctype html><html><head><base target="_top"><meta charset="utf-8">'+
-    '<title>Đang đăng nhập...</title></head><body>'+
-    '<p>Đang hoàn tất đăng nhập Google...</p>'+
-    '<script>window.top.location.replace(' + JSON.stringify(target) + ');<\\/script>'+
-    '</body></html>'
-  ).setTitle('Đang đăng nhập - '+APP_TITLE);
+  return t.evaluate()
+    .setTitle(APP_TITLE)
+    .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
 }
 
 function renderOAuthHandoff_(handoff) {
