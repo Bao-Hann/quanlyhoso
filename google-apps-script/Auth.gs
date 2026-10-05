@@ -53,8 +53,23 @@ function loginLocal(email,password) {
     const computed=passwordHash_(password,record.salt);
     if(!raw || !sameHash_(computed,record.hash)) throw new Error('Email hoặc mật khẩu không đúng.');
     props.deleteProperty(rateKey);
+
+    // Tự sửa tài khoản cũ từng lưu email làm tên: nếu Google hiện tại trùng email,
+    // lấy lại đúng display name và cập nhật luôn bản ghi tài khoản.
+    try {
+      const googleUser=getCurrentUser();
+      const googleName=String(googleUser && googleUser.name || '').trim();
+      if(googleUser.email===email && googleName && googleName.toLowerCase()!==email) {
+        if(record.name!==googleName) {
+          record.name=googleName;
+          props.setProperty('AUTH_USER_'+key,JSON.stringify(record));
+        }
+      }
+    } catch (_) {}
+
     const token=Utilities.getUuid()+Utilities.getUuid();
-    const user={userId:'email:'+email,email:email,name:record.name || email,provider:'password'};
+    const safeName=String(record.name || '').trim();
+    const user={userId:'email:'+email,email:email,name:(safeName && safeName.toLowerCase()!==email) ? safeName : '',provider:'password'};
     props.setProperty('AUTH_SESSION_'+hashId_(token),JSON.stringify({user:user,expires:now+24*60*60*1000}));
     // Xóa phiên hết hạn, tránh đầy dung lượng lưu trữ.
     const all=props.getProperties();Object.keys(all).filter(k=>k.indexOf('AUTH_SESSION_')===0).forEach(k=>{if(JSON.parse(all[k]).expires<now) props.deleteProperty(k);});
@@ -66,6 +81,29 @@ function localSession_(token) {
   const props=PropertiesService.getScriptProperties(),key='AUTH_SESSION_'+hashId_(token),raw=props.getProperty(key);
   if(!raw) throw new Error('Hãy đăng nhập lại.');
   const session=JSON.parse(raw);if(session.expires<Date.now()) {props.deleteProperty(key);throw new Error('Phiên đăng nhập đã hết hạn.');}
+
+  // Phiên cũ có thể còn tên = email. Đồng bộ lại ngay từ Google mà không bắt đăng nhập lại.
+  try {
+    const googleUser=getCurrentUser();
+    const googleName=String(googleUser && googleUser.name || '').trim();
+    if(googleUser.email===session.user.email && googleName && googleName.toLowerCase()!==session.user.email.toLowerCase()) {
+      if(session.user.name!==googleName) {
+        session.user.name=googleName;
+        props.setProperty(key,JSON.stringify(session));
+        const accountKey='AUTH_USER_'+hashId_(session.user.email);
+        const accountRaw=props.getProperty(accountKey);
+        if(accountRaw) {
+          const account=JSON.parse(accountRaw);
+          account.name=googleName;
+          props.setProperty(accountKey,JSON.stringify(account));
+        }
+      }
+    }
+  } catch (_) {}
+
+  if(String(session.user.name || '').trim().toLowerCase()===String(session.user.email || '').trim().toLowerCase()) {
+    session.user.name='';
+  }
   return session.user;
 }
 function logoutLocal(token) {
