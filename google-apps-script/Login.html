@@ -212,6 +212,7 @@
           <? if (message) { ?><div class="notice"><?= message ?></div><? } ?>
           <div id="authMessage" class="notice" role="status" hidden></div>
           <form id="loginForm">
+            <div class="field" id="accountNameField" hidden><label for="accountName">Tên tài khoản</label><input id="accountName" type="text" autocomplete="name" placeholder="Ví dụ: Huỳnh Bảo Hân" maxlength="100" disabled></div>
             <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="username" placeholder="Email" required maxlength="254"></div>
             <div class="field"><label for="password">Mật khẩu</label><input id="password" type="password" autocomplete="current-password" placeholder="Mật khẩu" required maxlength="128"></div>
             <div class="field" id="confirmField" hidden><label for="confirmPassword">Xác nhận mật khẩu</label><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Nhập lại mật khẩu" maxlength="128" disabled></div>
@@ -239,6 +240,10 @@
     document.querySelector('.wrap h2').textContent=enabled?'Đăng ký tài khoản':'Đăng nhập';
     document.getElementById('accountPrompt').textContent=enabled?'Đã có tài khoản?':'Chưa có tài khoản?';
     document.getElementById('registerToggle').textContent=enabled?'Đăng nhập':'Đăng ký';
+    const accountNameField=document.getElementById('accountNameField');
+    const accountName=document.getElementById('accountName');
+    accountNameField.hidden=!enabled;accountName.disabled=!enabled;accountName.required=enabled;
+    if(!enabled)accountName.value='';
     document.getElementById('password').autocomplete=enabled?'new-password':'current-password';
     document.getElementById('password').minLength=enabled?12:1;
     document.getElementById('password').value='';
@@ -262,7 +267,8 @@
     const fail=error=>{button.disabled=false;document.getElementById('password').value='';show(error.message);};
     const runner=google.script.run.withSuccessHandler(done).withFailureHandler(fail);
     const email=document.getElementById('email').value,password=document.getElementById('password').value;
-    if(registering)runner.registerLocal(email,password);else runner.loginLocal(email,password);
+    const accountName=document.getElementById('accountName').value;
+    if(registering)runner.registerLocal(email,password,accountName);else runner.loginLocal(email,password);
   });
 </script>
 </body>
