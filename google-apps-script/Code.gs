@@ -137,6 +137,54 @@ function refreshGoogleIdentity() {
   return getCurrentUser();
 }
 
+function setAccountDisplayName(name, token) {
+  name = String(name || '').trim().replace(/\s+/g, ' ');
+  if (name.length < 2 || name.length > 100) {
+    throw new Error('Tên tài khoản cần từ 2 đến 100 ký tự.');
+  }
+
+  const user = token ? localSession_(token) : getCurrentUser();
+  const email = String(user.email || '').trim().toLowerCase();
+  if (!email) throw new Error('Không xác định được email của tài khoản.');
+
+  const props = PropertiesService.getScriptProperties();
+  const identityKey = accountIdentityKey_(email);
+  let oldIdentity = {};
+  try { oldIdentity = JSON.parse(props.getProperty(identityKey) || '{}'); } catch (_) {}
+
+  const identity = {
+    email: email,
+    name: name,
+    picture: String(oldIdentity.picture || user.picture || '').trim()
+  };
+  props.setProperty(identityKey, JSON.stringify(identity));
+
+  // Nếu là phiên email/mật khẩu, cập nhật đúng phiên và đúng bản ghi của email này.
+  if (token) {
+    const sessionKey = 'AUTH_SESSION_' + hashId_(token);
+    const rawSession = props.getProperty(sessionKey);
+    if (rawSession) {
+      const session = JSON.parse(rawSession);
+      if (session.user && String(session.user.email || '').toLowerCase() === email) {
+        session.user.name = name;
+        props.setProperty(sessionKey, JSON.stringify(session));
+      }
+    }
+
+    const accountKey = 'AUTH_USER_' + hashId_(email);
+    const rawAccount = props.getProperty(accountKey);
+    if (rawAccount) {
+      const account = JSON.parse(rawAccount);
+      account.name = name;
+      props.setProperty(accountKey, JSON.stringify(account));
+    }
+  }
+
+  user.name = name;
+  user.displayName = name;
+  return user;
+}
+
 function profileKey_(token) {
   const user = token ? localSession_(token) : getCurrentUser();
   return 'PROFILE_V3_' + hashId_(user.userId);
