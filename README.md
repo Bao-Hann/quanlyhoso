@@ -169,3 +169,22 @@ Ghi chú:
 - Các property `GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET` không còn được dùng bởi baseline native Apps Script hiện tại; có thể giữ tạm nhưng không nên dựa vào chúng.
 - Nếu tài khoản ngoài domain vẫn lỗi sau khi deploy code mới và `WEB_APP_URL` đúng, nguyên nhân còn lại nhiều khả năng nằm ở quyền truy cập của deployment / chính sách Google Workspace, không phải logic login trong HTML.
 - Trạng thái: **PENDING TEST**.
+
+
+### AUTH-ADMIN-05 — External account access + stop dynamic Script Properties — 2026-10-08
+
+- Xác nhận cấu hình người dùng cung cấp:
+  - `ADMIN_EMAILS`: cấu hình tĩnh.
+  - `UPLOAD_FOLDER_ID`: vị trí database/storage đã có.
+  - `WEB_APP_URL`: URL deployment hiện tại.
+- Sửa lỗi truy cập tài khoản khác:
+  - manifest web app ép `access: ANYONE`;
+  - `executeAs: USER_ACCESSING`;
+  - mục tiêu là cho mọi tài khoản Google đã đăng nhập được quyền mở Web App, thay vì vô tình bị giới hạn DOMAIN.
+- Sửa lưu trữ:
+  - dừng hoàn toàn việc tự tạo/cập nhật `USER_REGISTRY_*` trong Script Properties;
+  - Script Properties chỉ dùng cho cấu hình tĩnh;
+  - registry cũ chỉ được đọc tạm để dashboard không mất dữ liệu lịch sử.
+- `Index.html` dùng `WEB_APP_URL` chuẩn qua `getWebAppUrl()`.
+- Trạng thái: **PENDING TEST**.
+- Nếu tài khoản ngoài domain vẫn nhận trang Google Drive trước khi giao diện app tải, lỗi nằm ở deployment/Workspace policy ngoài logic HTML; kiểm tra deployment phải hiển thị quyền tương đương **Anyone / bất kỳ người dùng đã đăng nhập**.
