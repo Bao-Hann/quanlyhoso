@@ -1,95 +1,51 @@
 /**
  * Scientist Profile - Google Apps Script edition
- * Deploy as a Web App:
- *   Execute as: User accessing the web app
- *   Who has access: Anyone with a Google account
+ *
+ * Multi-account safe architecture:
+ * - Web app executes as deployer and is publicly reachable.
+ * - Google account selection is handled by OAuth 2.0 with prompt=select_account.
+ * - User session is a signed stateless token (no dynamic Script Properties).
+ * - User/profile data is stored in the configured Drive folder (UPLOAD_FOLDER_ID).
  */
 
 const APP_TITLE = 'Scientist Profile';
 
-function canonicalWebAppUrl_() {
+function appConfig_() {
   const props = PropertiesService.getScriptProperties();
-  const configured = String(props.getProperty('WEB_APP_URL') || '').trim();
-  const fallback = String(ScriptApp.getService().getUrl() || '').trim();
-
-  // Ưu tiên URL /macros/s/.../exec cố định để tránh Google Workspace tự biến
-  // thành /a/macros/<domain>/... khiến tài khoản ngoài domain mở ra trang lỗi Drive.
-  const isPublicExec = url =>
-    /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url);
-
-  if (isPublicExec(configured)) return configured;
-  if (isPublicExec(fallback)) return fallback;
-
-  // Nếu Apps Script trả URL theo domain (/a/macros/...), vẫn trả về để app không chết,
-  // nhưng admin nên sửa WEB_APP_URL thành URL /macros/s/.../exec chuẩn.
-  return configured || fallback;
-}
-
-
-function htmlFileExists_(name) {
-  try {
-    HtmlService.createHtmlOutputFromFile(name);
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-
-function debugDeployment() {
-  const info = {
-    build: 'AUTH-ADMIN-08-20261008',
-    scriptId: String(ScriptApp.getScriptId() || ''),
-    serviceUrl: String(ScriptApp.getService().getUrl() || ''),
-    configuredWebAppUrl: String(
-      PropertiesService.getScriptProperties().getProperty('WEB_APP_URL') || ''
-    ),
-    files: {
-      Login: htmlFileExists_('Login'),
-      Index: htmlFileExists_('Index'),
-      Admin: htmlFileExists_('Admin'),
-      Styles: htmlFileExists_('Styles'),
-      Script: htmlFileExists_('Script')
-    }
+  return {
+    webAppUrl: String(props.getProperty('WEB_APP_URL') || '').trim(),
+    uploadFolderId: String(props.getProperty('UPLOAD_FOLDER_ID') || '').trim(),
+    googleClientId: String(props.getProperty('GOOGLE_CLIENT_ID') || '').trim(),
+    googleClientSecret: String(props.getProperty('GOOGLE_CLIENT_SECRET') || '').trim(),
+    adminEmails: String(props.getProperty('ADMIN_EMAILS') || '').trim()
   };
-  console.log(JSON.stringify(info, null, 2));
-  return info;
 }
 
-function renderDeploymentDiagnostic_() {
-  const props = PropertiesService.getScriptProperties();
-  const serviceUrl = String(ScriptApp.getService().getUrl() || '').trim();
-  const configuredUrl = String(props.getProperty('WEB_APP_URL') || '').trim();
-  const scriptId = String(ScriptApp.getScriptId() || '').trim();
-
-  const html = [
-    '<!doctype html><html><head><meta charset="utf-8"><title>Deployment Diagnostic</title>',
-    '<style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.6}code{word-break:break-all;background:#f4f4f4;padding:3px 6px;border-radius:4px}</style>',
-    '</head><body>',
-    '<h2>Deployment Diagnostic</h2>',
-    '<p><b>Script ID</b><br><code>'+scriptId+'</code></p>',
-    '<p><b>ScriptApp.getService().getUrl()</b><br><code>'+serviceUrl+'</code></p>',
-    '<p><b>WEB_APP_URL</b><br><code>'+configuredUrl+'</code></p>',
-    '<p><b>Build marker</b><br><code>AUTH-ADMIN-07-20261008</code></p>',
-    '</body></html>'
-  ].join('');
-
-  return HtmlService.createHtmlOutput(html).setTitle('Deployment Diagnostic');
+function canonicalWebAppUrl_() {
+  const config = appConfig_();
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(config.webAppUrl)) {
+    throw new Error('WEB_APP_URL chưa đúng định dạng deployment /macros/s/.../exec.');
+  }
+  return config.webAppUrl;
 }
 
 function doGet(e) {
-  const page = String((e && e.parameter && e.parameter.page) || 'login').toLowerCase();
+  const params = (e && e.parameter) || {};
+
+  if (params.code || params.error) {
+    try {
+      return completeGoogleOAuth_(params);
+    } catch (err) {
+      return renderLogin_('Đăng nhập Google thất bại: ' + String(err.message || err));
+    }
+  }
+
+  const page = String(params.page || 'login').toLowerCase();
 
   if (page === 'diag') return renderDeploymentDiagnostic_();
 
   if (page === 'admin') {
-    const admin = getCurrentUser();
-    if (!isAdminUser_(admin)) {
-      // Không để lộ việc có trang quản trị cho tài khoản thường.
-      return renderLogin_('');
-    }
-    registerUserVisit_(admin);
     const t = HtmlService.createTemplateFromFile('Admin');
-    t.adminJson = JSON.stringify(admin).replace(/</g, '\\u003c');
     t.webAppUrl = canonicalWebAppUrl_();
     return t.evaluate()
       .setTitle('Admin Dashboard - ' + APP_TITLE)
@@ -97,10 +53,10 @@ function doGet(e) {
   }
 
   if (page === 'app' || page === 'home') {
-    const user = getCurrentUser();
-    registerUserVisit_(user);
     const t = HtmlService.createTemplateFromFile('Index');
-    t.userJson = JSON.stringify(user).replace(/</g, '\\u003c');
+    t.userJson = JSON.stringify({provider:'local'}).replace(/</g, '\\u003c');
+    t.authTokenJson = JSON.stringify('');
+    t.webAppUrlJson = JSON.stringify(canonicalWebAppUrl_());
     return t.evaluate()
       .setTitle(APP_TITLE)
       .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
@@ -108,15 +64,12 @@ function doGet(e) {
 
   return renderLogin_('');
 }
+
 function renderLogin_(message) {
   const t = HtmlService.createTemplateFromFile('Login');
   t.message = message || '';
   t.webAppUrl = canonicalWebAppUrl_();
-
-  // Dùng thẳng native Apps Script login. Không ép AccountChooser vì Apps Script
-  // không hỗ trợ ổn định multi-login trong cùng một phiên trình duyệt.
-  t.googleAccountChooserUrl = t.webAppUrl + '?page=app';
-
+  t.googleOAuthUrl = googleOAuthStartUrl_();
   return t.evaluate().setTitle('Đăng nhập - ' + APP_TITLE);
 }
 
@@ -128,122 +81,291 @@ function getWebAppUrl() {
   return canonicalWebAppUrl_();
 }
 
-// Identity comes from the Apps Script OpenID token of the effective user.
-// This mirrors the original source architecture: the login session already carries
-// name + email instead of trying to derive a display name from the email address.
-function getWebAppDiagnostics() {
-  const props = PropertiesService.getScriptProperties();
-  const configured = String(props.getProperty('WEB_APP_URL') || '').trim();
-  const serviceUrl = String(ScriptApp.getService().getUrl() || '').trim();
-  return {
-    configuredWebAppUrl: configured,
-    serviceUrl: serviceUrl,
-    canonicalWebAppUrl: canonicalWebAppUrl_(),
-    configuredLooksPublic:
-      /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(configured),
-    activeEmail: String(Session.getActiveUser().getEmail() || '').trim().toLowerCase(),
-    effectiveEmail: String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase()
+function googleOAuthStartUrl_() {
+  const config = appConfig_();
+  if (!config.googleClientId || !config.googleClientSecret) {
+    throw new Error('Chưa cấu hình GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.');
+  }
+
+  const state = createOAuthState_();
+  const params = {
+    client_id: config.googleClientId,
+    redirect_uri: canonicalWebAppUrl_(),
+    response_type: 'code',
+    scope: 'openid email profile',
+    prompt: 'select_account',
+    access_type: 'online',
+    include_granted_scopes: 'true',
+    state: state
   };
+
+  return 'https://accounts.google.com/o/oauth2/v2/auth?' +
+    Object.keys(params)
+      .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
+      .join('&');
 }
 
-function decodeIdentityToken_() {
-  try {
-    const token = ScriptApp.getIdentityToken();
-    if (!token) return {};
-    const parts = String(token).split('.');
-    if (parts.length < 2) return {};
-    const decoded = Utilities.newBlob(
-      Utilities.base64DecodeWebSafe(parts[1]),
-      'application/json'
-    ).getDataAsString();
-    return JSON.parse(decoded || '{}');
-  } catch (_) {
-    return {};
-  }
-}
+function completeGoogleOAuth_(params) {
+  if (params.error) throw new Error('Google không hoàn tất đăng nhập: ' + params.error);
 
-function getCurrentUser() {
-  // ActiveUser mới là người đang mở Web App. EffectiveUser có thể là chủ project
-  // nếu deployment chạy "Execute as me", vì vậy tuyệt đối không chặn app chỉ vì hai email khác nhau.
-  const sessionEmail = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
-  const effectiveEmail = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
+  const code = String(params.code || '').trim();
+  const state = String(params.state || '').trim();
+  if (!code || !state) throw new Error('Phản hồi OAuth không hợp lệ.');
+  verifyOAuthState_(state);
 
-  const identity = decodeIdentityToken_();
-  const tokenEmail = String(identity.email || '').trim().toLowerCase();
-  const name = String(identity.name || '').trim();
-  const picture = String(identity.picture || '').trim();
+  const config = appConfig_();
+  const tokenResponse = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+    method: 'post',
+    payload: {
+      code: code,
+      client_id: config.googleClientId,
+      client_secret: config.googleClientSecret,
+      redirect_uri: canonicalWebAppUrl_(),
+      grant_type: 'authorization_code'
+    },
+    muteHttpExceptions: true
+  });
 
-  // Ưu tiên email của người truy cập. Chỉ khi Google không trả ActiveUser mới dùng email từ token.
-  const email = sessionEmail || tokenEmail;
-  if (!email) {
-    // Không làm app chết. Dùng khóa tạm riêng theo người truy cập để tránh trộn hồ sơ.
-    const temporaryKey = String(Session.getTemporaryActiveUserKey() || '').trim();
-    return {
-      userId: 'temp:' + temporaryKey,
-      provider: 'google',
-      email: '',
-      name: '',
-      displayName: '',
-      picture: ''
-    };
+  if (tokenResponse.getResponseCode() !== 200) {
+    throw new Error('Không đổi được mã đăng nhập Google.');
   }
 
-  // Chỉ nhận tên/ảnh nếu token thuộc đúng người đang truy cập.
-  const sameAccount = !tokenEmail || tokenEmail === email;
+  const tokens = JSON.parse(tokenResponse.getContentText() || '{}');
+  const accessToken = String(tokens.access_token || '').trim();
+  if (!accessToken) throw new Error('Google không trả access token.');
 
-  return {
+  const profileResponse = UrlFetchApp.fetch(
+    'https://openidconnect.googleapis.com/v1/userinfo',
+    {
+      headers: {Authorization: 'Bearer ' + accessToken},
+      muteHttpExceptions: true
+    }
+  );
+
+  if (profileResponse.getResponseCode() !== 200) {
+    throw new Error('Không đọc được hồ sơ Google.');
+  }
+
+  const profile = JSON.parse(profileResponse.getContentText() || '{}');
+  const email = String(profile.email || '').trim().toLowerCase();
+  const name = String(profile.name || '').trim();
+  const picture = String(profile.picture || '').trim();
+  const sub = String(profile.sub || '').trim();
+
+  if (!email) throw new Error('Google không trả email.');
+
+  const user = {
     userId: 'email:' + email,
+    googleSub: sub,
     provider: 'google',
     email: email,
-    name: sameAccount ? name : '',
-    displayName: sameAccount ? name : '',
-    picture: sameAccount ? picture : '',
-    executionEmail: effectiveEmail
+    name: name,
+    displayName: name,
+    picture: picture
+  };
+
+  upsertUserLogin_(user);
+
+  const session = createAppSession_(user);
+  const t = HtmlService.createTemplateFromFile('Index');
+  t.userJson = JSON.stringify(session.user).replace(/</g, '\\u003c');
+  t.authTokenJson = JSON.stringify(session.token);
+  t.webAppUrlJson = JSON.stringify(canonicalWebAppUrl_());
+
+  return t.evaluate()
+    .setTitle(APP_TITLE)
+    .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
+}
+
+// ===== DRIVE STORAGE =====
+
+function dataFolder_() {
+  const id = appConfig_().uploadFolderId;
+  if (!id) throw new Error('Chưa cấu hình UPLOAD_FOLDER_ID.');
+  return DriveApp.getFolderById(id);
+}
+
+function userFileName_(email) {
+  return 'scientist_user_' + hashId_(String(email || '').trim().toLowerCase()) + '.json';
+}
+
+function readUserDocByEmail_(email) {
+  const folder = dataFolder_();
+  const name = userFileName_(email);
+  const files = folder.getFilesByName(name);
+  if (!files.hasNext()) return null;
+
+  const file = files.next();
+  try {
+    return JSON.parse(file.getBlob().getDataAsString() || '{}');
+  } catch (_) {
+    throw new Error('Dữ liệu người dùng bị lỗi định dạng.');
+  }
+}
+
+function writeUserDoc_(doc) {
+  const email = String(doc && doc.identity && doc.identity.email || '').trim().toLowerCase();
+  if (!email) throw new Error('Không xác định được email người dùng.');
+
+  const folder = dataFolder_();
+  const name = userFileName_(email);
+  const json = JSON.stringify(doc);
+  const files = folder.getFilesByName(name);
+
+  if (files.hasNext()) {
+    files.next().setContent(json);
+  } else {
+    folder.createFile(name, json, MimeType.PLAIN_TEXT);
+  }
+}
+
+function emptyUserDoc_(user) {
+  const now = new Date().toISOString();
+  return {
+    version: 1,
+    identity: {
+      email: String(user.email || '').trim().toLowerCase(),
+      name: String(user.name || user.displayName || '').trim(),
+      picture: String(user.picture || '').trim(),
+      googleSub: String(user.googleSub || '').trim()
+    },
+    meta: {
+      firstSeen: now,
+      lastSeen: now,
+      visits: 0
+    },
+    general: {},
+    tables: {}
   };
 }
 
-function refreshGoogleIdentity() {
-  return getCurrentUser();
+function upsertUserLogin_(user) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    let doc = readUserDocByEmail_(user.email) || emptyUserDoc_(user);
+    const now = new Date().toISOString();
+
+    doc.identity = doc.identity || {};
+    doc.identity.email = String(user.email || '').trim().toLowerCase();
+    doc.identity.name = String(user.name || user.displayName || doc.identity.name || '').trim();
+    doc.identity.picture = String(user.picture || doc.identity.picture || '').trim();
+    doc.identity.googleSub = String(user.googleSub || doc.identity.googleSub || '').trim();
+
+    doc.meta = doc.meta || {};
+    doc.meta.firstSeen = doc.meta.firstSeen || now;
+    doc.meta.lastSeen = now;
+    doc.meta.visits = Math.max(0, Number(doc.meta.visits || 0)) + 1;
+
+    doc.general = doc.general || {};
+    doc.tables = doc.tables || {};
+
+    writeUserDoc_(doc);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
+function sessionUser_(token) {
+  return localSession_(token);
+}
 
-// ===== ADMIN / USER REGISTRY =====
-// Quyền admin KHÔNG dựa vào đường dẫn bí mật. Đường dẫn chỉ để giấu giao diện;
-// kiểm tra thật sự luôn nằm ở server-side bằng ADMIN_EMAILS trong Script Properties.
+function saveGeneral(data, token) {
+  const user = sessionUser_(token);
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Hồ sơ không hợp lệ.');
+
+  const clean = {};
+  Object.keys(data).forEach(key => {
+    if (/^person_[a-z_]+$/.test(key)) clean[key] = String(data[key] == null ? '' : data[key]);
+  });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const doc = readUserDocByEmail_(user.email) || emptyUserDoc_(user);
+    doc.identity = doc.identity || {};
+    doc.identity.email = user.email;
+    doc.identity.name = user.name || doc.identity.name || '';
+    doc.identity.picture = user.picture || doc.identity.picture || '';
+    doc.general = clean;
+    doc.meta = doc.meta || {};
+    doc.meta.lastSeen = new Date().toISOString();
+    doc.tables = doc.tables || {};
+    writeUserDoc_(doc);
+  } finally {
+    lock.releaseLock();
+  }
+
+  return {ok:true};
+}
+
+function loadGeneral(token) {
+  const user = sessionUser_(token);
+  const doc = readUserDocByEmail_(user.email) || emptyUserDoc_(user);
+  return {ok:true, user:user, data:doc.general || {}};
+}
+
+function saveTables(data, token) {
+  const user = sessionUser_(token);
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Các mục hồ sơ không hợp lệ.');
+  }
+
+  const allowed = [
+    'teachingBody','researchBody','credentialBody','languageBody','workBody',
+    'projectBody','articleBody','seminarBody','textbookBody','awardBody'
+  ];
+  const clean = {};
+  allowed.forEach(k => { if (Array.isArray(data[k])) clean[k] = data[k]; });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const doc = readUserDocByEmail_(user.email) || emptyUserDoc_(user);
+    doc.tables = clean;
+    doc.general = doc.general || {};
+    doc.meta = doc.meta || {};
+    doc.meta.lastSeen = new Date().toISOString();
+    writeUserDoc_(doc);
+  } finally {
+    lock.releaseLock();
+  }
+
+  return {ok:true};
+}
+
+function loadTables(token) {
+  const user = sessionUser_(token);
+  const doc = readUserDocByEmail_(user.email) || emptyUserDoc_(user);
+  return {ok:true, data:doc.tables || {}};
+}
+
+// ===== ADMIN =====
+
 function adminEmails_() {
-  const raw = String(
-    PropertiesService.getScriptProperties().getProperty('ADMIN_EMAILS') || ''
-  ).toLowerCase();
-  return raw.split(/[;,\n\r\s]+/).map(s => s.trim()).filter(Boolean);
+  return appConfig_().adminEmails
+    .toLowerCase()
+    .split(/[;,\n\r\s]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
 }
 
-function isAdminUser_(user) {
-  const email = String(user && user.email || '').trim().toLowerCase();
-  return Boolean(email) && adminEmails_().indexOf(email) !== -1;
-}
-
-function assertAdmin_() {
-  const user = getCurrentUser();
-  if (!isAdminUser_(user)) throw new Error('Không có quyền truy cập.');
+function assertAdmin_(token) {
+  const user = sessionUser_(token);
+  const email = String(user.email || '').trim().toLowerCase();
+  if (!email || adminEmails_().indexOf(email) === -1) {
+    throw new Error('Không có quyền truy cập.');
+  }
   return user;
 }
 
-function userRegistryKey_(email) {
-  return 'USER_REGISTRY_' + hashId_(String(email || '').trim().toLowerCase());
-}
-
-function registerUserVisit_(user) {
-  // Không lưu dữ liệu user động vào Script Properties.
-  // Script Properties chỉ giữ cấu hình tĩnh như ADMIN_EMAILS, UPLOAD_FOLDER_ID, WEB_APP_URL.
-  // Registry cũ (USER_REGISTRY_*) chỉ được đọc tạm để dashboard không mất dữ liệu lịch sử.
-  return;
-}
-
-function getAdminDashboard() {
-  const admin = assertAdmin_();
-  const props = PropertiesService.getScriptProperties();
-  const all = props.getProperties();
+function getAdminDashboard(token) {
+  const admin = assertAdmin_(token);
+  const folder = dataFolder_();
+  const files = folder.getFiles();
+  const users = [];
   const now = Date.now();
+
   const PROFILE_FIELDS = [
     'person_name','person_gender','person_dob','person_pob','person_hometown',
     'person_ethnicity','person_position','person_work_unit','person_address',
@@ -251,43 +373,24 @@ function getAdminDashboard() {
     'person_email','person_citizen_id','person_date_issue','person_place_issue'
   ];
 
-  const byEmail = {};
+  while (files.hasNext()) {
+    const file = files.next();
+    if (!/^scientist_user_[a-f0-9]+\.json$/i.test(file.getName())) continue;
 
-  // Chỉ đọc registry cũ; code mới không tạo thêm USER_REGISTRY_*.
-  Object.keys(all).forEach(key => {
-    if (key.indexOf('USER_REGISTRY_') !== 0) return;
+    let doc;
     try {
-      const record = JSON.parse(all[key] || '{}');
-      const email = String(record.email || '').trim().toLowerCase();
-      if (email) byEmail[email] = record;
-    } catch (_) {}
-  });
+      doc = JSON.parse(file.getBlob().getDataAsString() || '{}');
+    } catch (_) {
+      continue;
+    }
 
-  // Backfill những tài khoản local cũ còn lưu email để dashboard không mất dấu.
-  Object.keys(all).forEach(key => {
-    if (key.indexOf('AUTH_USER_') !== 0) return;
-    try {
-      const record = JSON.parse(all[key] || '{}');
-      const email = String(record.email || '').trim().toLowerCase();
-      if (!email) return;
-      if (!byEmail[email]) {
-        byEmail[email] = {
-          email: email,
-          name: String(record.name || ''),
-          picture: '',
-          firstSeen: '',
-          lastSeen: '',
-          visits: 0
-        };
-      }
-    } catch (_) {}
-  });
+    const identity = doc.identity || {};
+    const meta = doc.meta || {};
+    const general = doc.general || {};
+    const tables = doc.tables || {};
 
-  const users = Object.keys(byEmail).map(email => {
-    const record = byEmail[email];
-    const profileBase = 'PROFILE_V3_' + hashId_('email:' + email);
-    let general = {};
-    try { general = JSON.parse(all[profileBase] || '{}'); } catch (_) {}
+    const email = String(identity.email || '').trim().toLowerCase();
+    if (!email) continue;
 
     const filled = PROFILE_FIELDS.reduce((count, field) => {
       const value = general[field];
@@ -295,83 +398,50 @@ function getAdminDashboard() {
       return String(value == null ? '' : value).trim() ? count + 1 : count;
     }, 0);
 
-    const completion = Math.round((filled / PROFILE_FIELDS.length) * 100);
-    const tablesMeta = all[profileBase + '_TABLES'];
-    const lastSeenMs = record.lastSeen ? new Date(record.lastSeen).getTime() : 0;
+    const lastSeenMs = meta.lastSeen ? new Date(meta.lastSeen).getTime() : 0;
+    const hasAcademicData = Object.keys(tables).some(k => Array.isArray(tables[k]) && tables[k].length);
 
-    return {
+    users.push({
       email: email,
-      accountName: String(record.name || ''),
+      accountName: String(identity.name || ''),
       profileName: String(general.person_name || ''),
-      firstSeen: String(record.firstSeen || ''),
-      lastSeen: String(record.lastSeen || ''),
-      visits: Number(record.visits || 0),
-      completion: completion,
+      firstSeen: String(meta.firstSeen || ''),
+      lastSeen: String(meta.lastSeen || ''),
+      visits: Number(meta.visits || 0),
+      completion: Math.round((filled / PROFILE_FIELDS.length) * 100),
       filledFields: filled,
       totalFields: PROFILE_FIELDS.length,
-      hasProfile: Boolean(all[profileBase]),
-      hasAcademicData: Boolean(tablesMeta),
+      hasProfile: Object.keys(general).length > 0,
+      hasAcademicData: hasAcademicData,
       active7d: Boolean(lastSeenMs && now - lastSeenMs <= 7 * 24 * 60 * 60 * 1000),
       active30d: Boolean(lastSeenMs && now - lastSeenMs <= 30 * 24 * 60 * 60 * 1000)
-    };
-  }).sort((a,b) => String(b.lastSeen).localeCompare(String(a.lastSeen)));
+    });
+  }
+
+  users.sort((a,b) => String(b.lastSeen).localeCompare(String(a.lastSeen)));
 
   return {
-    ok: true,
-    admin: {
-      email: String(admin.email || ''),
-      name: String(admin.name || admin.displayName || '')
+    ok:true,
+    admin:{email:admin.email,name:admin.name || admin.displayName || ''},
+    generatedAt:new Date().toISOString(),
+    stats:{
+      totalUsers:users.length,
+      active7d:users.filter(u=>u.active7d).length,
+      active30d:users.filter(u=>u.active30d).length,
+      profilesCreated:users.filter(u=>u.hasProfile).length,
+      academicDataUsers:users.filter(u=>u.hasAcademicData).length
     },
-    generatedAt: new Date().toISOString(),
-    stats: {
-      totalUsers: users.length,
-      active7d: users.filter(u => u.active7d).length,
-      active30d: users.filter(u => u.active30d).length,
-      profilesCreated: users.filter(u => u.hasProfile).length,
-      academicDataUsers: users.filter(u => u.hasAcademicData).length
-    },
-    users: users
+    users:users
   };
 }
 
-function profileKey_(token) {
-  const user = token ? localSession_(token) : getCurrentUser();
-  return 'PROFILE_V3_' + hashId_(user.userId);
-}
+// ===== PUBLICATION SEARCH =====
 
-// Hồ sơ cá nhân được lưu theo người dùng trong ứng dụng, không đồng bộ Drive/Sheets.
-function saveGeneral(data, token) {
-  const key = profileKey_(token);
-  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Hồ sơ không hợp lệ.');
-  const clean = {};
-  Object.keys(data).forEach(key => {
-    if (/^person_[a-z_]+$/.test(key)) clean[key] = String(data[key] == null ? '' : data[key]);
-  });
-  const json = JSON.stringify(clean);
-  if (Utilities.newBlob(json).getBytes().length > 8500) throw new Error('Thông tin cá nhân quá dài.');
-  PropertiesService.getScriptProperties().setProperty(key, json);
-  return {ok:true};
-}
-function loadGeneral(token) {
-  const key = profileKey_(token);
-  const raw = PropertiesService.getScriptProperties().getProperty(key);
-  const data = raw ? JSON.parse(raw) : {};
-  const user = token ? localSession_(token) : getCurrentUser();
-
-  registerUserVisit_(user);
-
-  // Tên tài khoản độc lập với trường Họ và tên trong hồ sơ khoa học.
-  return {ok:true, user:user, data:data};
-}
-
-/**
- * Tìm metadata bài báo ở phía Apps Script để tránh lỗi CORS trên trình duyệt.
- */
 function searchPublications(query, page, rows, token) {
-  profileKey_(token);
+  sessionUser_(token);
 
   query = String(query || '').trim();
-  if (!query) return { items: [], total: 0, page: 1 };
+  if (!query) return {items:[],total:0,page:1};
 
   page = Math.max(1, Number(page || 1));
   rows = Math.max(1, Math.min(20, Number(rows || 5)));
@@ -388,32 +458,32 @@ function searchPublications(query, page, rows, token) {
   }
 
   const response = UrlFetchApp.fetch(url, {
-    muteHttpExceptions: true,
-    headers: { Accept: 'application/json' }
+    muteHttpExceptions:true,
+    headers:{Accept:'application/json'}
   });
 
-  const code = response.getResponseCode();
-  if (code < 200 || code >= 300) {
-    throw new Error('Không lấy được dữ liệu bài báo (HTTP ' + code + ').');
+  const responseCode = response.getResponseCode();
+  if (responseCode < 200 || responseCode >= 300) {
+    throw new Error('Không lấy được dữ liệu bài báo (HTTP ' + responseCode + ').');
   }
 
   const data = JSON.parse(response.getContentText());
 
   if (doi) {
     return {
-      items: data && data.message ? [normalizePublication_(data.message)] : [],
-      total: data && data.message ? 1 : 0,
-      page: 1,
-      exactDoi: true
+      items:data && data.message ? [normalizePublication_(data.message)] : [],
+      total:data && data.message ? 1 : 0,
+      page:1,
+      exactDoi:true
     };
   }
 
   const message = data.message || {};
   return {
-    items: (message.items || []).map(normalizePublication_),
-    total: Number(message['total-results'] || 0),
-    page: page,
-    exactDoi: false
+    items:(message.items || []).map(normalizePublication_),
+    total:Number(message['total-results'] || 0),
+    page:page,
+    exactDoi:false
   };
 }
 
@@ -423,15 +493,12 @@ function normalizePublication_(item) {
   ).filter(Boolean).join(', ');
 
   const dates = [
-    item['published-print'],
-    item['published-online'],
-    item.published,
-    item.issued,
-    item.created
+    item['published-print'], item['published-online'], item.published,
+    item.issued, item.created
   ];
 
   let year = '';
-  for (let i = 0; i < dates.length; i++) {
+  for (let i=0;i<dates.length;i++) {
     const parts = dates[i] && dates[i]['date-parts'];
     if (parts && parts[0] && parts[0][0]) {
       year = parts[0][0];
@@ -440,15 +507,15 @@ function normalizePublication_(item) {
   }
 
   return {
-    title: Array.isArray(item.title) ? (item.title[0] || '') : (item.title || ''),
-    authors: authors,
-    year: year,
-    issn: Array.isArray(item.ISSN) ? item.ISSN.join(', ') : (item.ISSN || ''),
-    journal: Array.isArray(item['container-title']) ? (item['container-title'][0] || '') : (item['container-title'] || ''),
-    doi: item.DOI || '',
-    url: item.URL || (item.DOI ? 'https://doi.org/' + item.DOI : ''),
-    publisher: item.publisher || '',
-    type: item.type || ''
+    title:Array.isArray(item.title) ? (item.title[0] || '') : (item.title || ''),
+    authors:authors,
+    year:year,
+    issn:Array.isArray(item.ISSN) ? item.ISSN.join(', ') : (item.ISSN || ''),
+    journal:Array.isArray(item['container-title']) ? (item['container-title'][0] || '') : (item['container-title'] || ''),
+    doi:item.DOI || '',
+    url:item.URL || (item.DOI ? 'https://doi.org/' + item.DOI : ''),
+    publisher:item.publisher || '',
+    type:item.type || ''
   };
 }
 
@@ -461,37 +528,19 @@ function normalizeDoi_(raw) {
   return /^10\.\d{4,9}\/.+$/i.test(cleaned) ? cleaned : '';
 }
 
-function assertSignedIn_() {
-  const user = getCurrentUser();
-  if (!user.email && !user.temporaryKey) {
-    throw new Error('Không xác định được phiên người dùng Google.');
-  }
-}
+// ===== DIAGNOSTIC =====
 
-function saveTables(data,token) {
-  const key=profileKey_(token)+'_TABLES',props=PropertiesService.getScriptProperties();
-  if(!data || typeof data!=='object' || Array.isArray(data)) throw new Error('Các mục hồ sơ không hợp lệ.');
-  const allowed=['teachingBody','researchBody','credentialBody','languageBody','workBody','projectBody','articleBody','seminarBody','textbookBody','awardBody'];
-  const clean={};allowed.forEach(k=>{if(Array.isArray(data[k])) clean[k]=data[k];});
-  const encoded=Utilities.base64Encode(Utilities.newBlob(JSON.stringify(clean)).getBytes());
-  if(encoded.length>180000) throw new Error('Hồ sơ quá lớn để lưu.');
-  const lock=LockService.getScriptLock();lock.waitLock(10000);
-  try {
-    const version=Utilities.getUuid(),parts=Math.ceil(encoded.length/8000),values={};
-    for(let i=0;i<parts;i++) values[key+'_'+version+'_'+i]=encoded.slice(i*8000,(i+1)*8000);
-    props.setProperties(values);
-    const old=JSON.parse(props.getProperty(key)||'null');
-    props.setProperty(key,JSON.stringify({version:version,parts:parts}));
-    if(old) for(let i=0;i<old.parts;i++) props.deleteProperty(key+'_'+old.version+'_'+i);
-  } finally {lock.releaseLock();}
-  return {ok:true};
-}
-function loadTables(token) {
-  const key=profileKey_(token)+'_TABLES',props=PropertiesService.getScriptProperties();
-  const lock=LockService.getScriptLock();lock.waitLock(10000);
-  try {
-    const meta=JSON.parse(props.getProperty(key)||'null');if(!meta) return {ok:true,data:{}};
-    let raw='';for(let i=0;i<meta.parts;i++) {const part=props.getProperty(key+'_'+meta.version+'_'+i);if(part===null) throw new Error('Dữ liệu hồ sơ chưa đầy đủ.');raw+=part;}
-    return {ok:true,data:JSON.parse(Utilities.newBlob(Utilities.base64Decode(raw)).getDataAsString())};
-  } finally {lock.releaseLock();}
+function renderDeploymentDiagnostic_() {
+  const config = appConfig_();
+  const html = [
+    '<!doctype html><html><head><meta charset="utf-8"><title>Deployment Diagnostic</title></head><body>',
+    '<h2>Deployment Diagnostic</h2>',
+    '<p><b>Build:</b> AUTH-MULTI-ACCOUNT-01-20261008</p>',
+    '<p><b>WEB_APP_URL:</b> '+config.webAppUrl+'</p>',
+    '<p><b>Client ID configured:</b> '+Boolean(config.googleClientId)+'</p>',
+    '<p><b>Client Secret configured:</b> '+Boolean(config.googleClientSecret)+'</p>',
+    '<p><b>UPLOAD_FOLDER_ID configured:</b> '+Boolean(config.uploadFolderId)+'</p>',
+    '</body></html>'
+  ].join('');
+  return HtmlService.createHtmlOutput(html).setTitle('Deployment Diagnostic');
 }
