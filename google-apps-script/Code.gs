@@ -26,8 +26,31 @@ function canonicalWebAppUrl_() {
 }
 
 
+function renderDeploymentDiagnostic_() {
+  const props = PropertiesService.getScriptProperties();
+  const serviceUrl = String(ScriptApp.getService().getUrl() || '').trim();
+  const configuredUrl = String(props.getProperty('WEB_APP_URL') || '').trim();
+  const scriptId = String(ScriptApp.getScriptId() || '').trim();
+
+  const html = [
+    '<!doctype html><html><head><meta charset="utf-8"><title>Deployment Diagnostic</title>',
+    '<style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.6}code{word-break:break-all;background:#f4f4f4;padding:3px 6px;border-radius:4px}</style>',
+    '</head><body>',
+    '<h2>Deployment Diagnostic</h2>',
+    '<p><b>Script ID</b><br><code>'+scriptId+'</code></p>',
+    '<p><b>ScriptApp.getService().getUrl()</b><br><code>'+serviceUrl+'</code></p>',
+    '<p><b>WEB_APP_URL</b><br><code>'+configuredUrl+'</code></p>',
+    '<p><b>Build marker</b><br><code>AUTH-ADMIN-07-20261008</code></p>',
+    '</body></html>'
+  ].join('');
+
+  return HtmlService.createHtmlOutput(html).setTitle('Deployment Diagnostic');
+}
+
 function doGet(e) {
   const page = String((e && e.parameter && e.parameter.page) || 'login').toLowerCase();
+
+  if (page === 'diag') return renderDeploymentDiagnostic_();
 
   if (page === 'admin') {
     const admin = getCurrentUser();
