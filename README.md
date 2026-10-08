@@ -155,3 +155,17 @@ Ghi chú:
 - Cách dùng tài khoản khác: mở **Incognito** hoặc **Chrome Profile** khác và chỉ đăng nhập tài khoản cần dùng.
 - Trạng thái: **PENDING TEST**.
 - Rollback nếu fail: LAST KNOWN GOOD ngày 2026-10-05.
+
+
+### AUTH-ADMIN-04 — Kiểm tra lỗi Google Drive ở tài khoản khác — 2026-10-08
+
+- Hiện tượng: tài khoản khác mở Web App nhận trang Google Drive “Sorry, unable to open the file at this time”.
+- Phát hiện:
+  - Script Properties có `WEB_APP_URL`, nhưng trước đó code chưa ưu tiên dùng URL này ở toàn bộ luồng điều hướng.
+  - Sau lần sửa đầu tiên, hàm `canonicalWebAppUrl_()` bị lỗi đệ quy ngoài ý muốn; đã sửa ngay ở commit `ad7ad20`.
+- Cấu hình cần giữ:
+  - `WEB_APP_URL` = đúng URL deployment hiện tại dạng `https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec`.
+  - `ADMIN_EMAILS` = email quản trị.
+- Các property `GOOGLE_CLIENT_ID` và `GOOGLE_CLIENT_SECRET` không còn được dùng bởi baseline native Apps Script hiện tại; có thể giữ tạm nhưng không nên dựa vào chúng.
+- Nếu tài khoản ngoài domain vẫn lỗi sau khi deploy code mới và `WEB_APP_URL` đúng, nguyên nhân còn lại nhiều khả năng nằm ở quyền truy cập của deployment / chính sách Google Workspace, không phải logic login trong HTML.
+- Trạng thái: **PENDING TEST**.
