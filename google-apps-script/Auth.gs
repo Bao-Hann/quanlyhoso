@@ -23,58 +23,11 @@ function normalizedEmail_(value) {
   if(email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email không hợp lệ.');
   return email;
 }
-function registerLocal(email,password) {
-  email=normalizedEmail_(email);password=String(password||'');
-  const googleUser=getCurrentUser();
-  if(googleUser.email!==email) throw new Error('Để đăng ký, hãy đăng nhập Google bằng đúng email này để xác nhận quyền sở hữu email.');
-  if(password.length<12 || password.length>128) throw new Error('Mật khẩu cần từ 12 đến 128 ký tự.');
-  const key='AUTH_USER_'+hashId_(email),props=PropertiesService.getScriptProperties();
-  const lock=LockService.getScriptLock();lock.waitLock(10000);
-  try {
-    if(props.getProperty(key)) throw new Error('Tài khoản đã tồn tại. Hãy đăng nhập.');
-    const salt=Utilities.getUuid()+Utilities.getUuid();
-    props.setProperty(key,JSON.stringify({salt:salt,hash:passwordHash_(password,salt),email:email,name:googleUser.name}));
-  } finally {lock.releaseLock();}
-  return {ok:true};
+function registerLocal() {
+  throw new Error('Đăng ký bằng email/mật khẩu đã tắt. Hãy chọn tài khoản Google để đăng nhập.');
 }
-function loginLocal(email,password) {
-  email=normalizedEmail_(email);password=String(password||'');
-  if(password.length>128) throw new Error('Email hoặc mật khẩu không đúng.');
-  const key=hashId_(email),props=PropertiesService.getScriptProperties();
-  const lock=LockService.getScriptLock();lock.waitLock(10000);
-  try {
-    const rateKey='AUTH_RATE_'+key,now=Date.now();
-    let rate=JSON.parse(props.getProperty(rateKey)||'{"count":0,"until":0}');
-    if(rate.until<now) rate={count:0,until:now+15*60*1000};
-    if(rate.count>=5) throw new Error('Đã thử quá nhiều lần. Hãy thử lại sau 15 phút.');
-    rate.count++;props.setProperty(rateKey,JSON.stringify(rate));
-    const raw=props.getProperty('AUTH_USER_'+key);
-    const record=raw ? JSON.parse(raw) : {salt:'unknown-account',hash:''};
-    const computed=passwordHash_(password,record.salt);
-    if(!raw || !sameHash_(computed,record.hash)) throw new Error('Email hoặc mật khẩu không đúng.');
-    props.deleteProperty(rateKey);
-
-    // Tự sửa tài khoản cũ từng lưu email làm tên: nếu Google hiện tại trùng email,
-    // lấy lại đúng display name và cập nhật luôn bản ghi tài khoản.
-    try {
-      const googleUser=getCurrentUser();
-      const googleName=String(googleUser && googleUser.name || '').trim();
-      if(googleUser.email===email && googleName && googleName.toLowerCase()!==email) {
-        if(record.name!==googleName) {
-          record.name=googleName;
-          props.setProperty('AUTH_USER_'+key,JSON.stringify(record));
-        }
-      }
-    } catch (_) {}
-
-    const token=Utilities.getUuid()+Utilities.getUuid();
-    const safeName=String(record.name || '').trim();
-    const user={userId:'email:'+email,email:email,name:(safeName && safeName.toLowerCase()!==email) ? safeName : '',provider:'password'};
-    props.setProperty('AUTH_SESSION_'+hashId_(token),JSON.stringify({user:user,expires:now+24*60*60*1000}));
-    // Xóa phiên hết hạn, tránh đầy dung lượng lưu trữ.
-    const all=props.getProperties();Object.keys(all).filter(k=>k.indexOf('AUTH_SESSION_')===0).forEach(k=>{if(JSON.parse(all[k]).expires<now) props.deleteProperty(k);});
-    return {ok:true,token:token,user:user};
-  } finally {lock.releaseLock();}
+function loginLocal() {
+  throw new Error('Đăng nhập bằng email/mật khẩu đã tắt. Hãy chọn tài khoản Google để đăng nhập.');
 }
 function localSession_(token) {
   if(typeof token!=='string' || token.length>100) throw new Error('Phiên đăng nhập không hợp lệ.');
