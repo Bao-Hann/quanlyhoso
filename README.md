@@ -141,4 +141,17 @@ Ghi chú:
 - Cấu hình cần thêm trong Apps Script Script Properties:
   - `ADMIN_EMAILS` = email Google của admin; nhiều admin cách nhau bằng dấu phẩy.
 - Deployment vẫn phải giữ **Execute as: User accessing the web app**.
-- Trạng thái: **PENDING TEST**. Nếu fail, rollback về LAST KNOWN GOOD ngày 2026-10-05 trước khi thử hướng khác.
+- Trạng thái: **FAIL (forced AccountChooser)** — tài khoản khác xuất hiện lỗi Google Drive “Sorry, unable to open the file”. Phần admin dashboard giữ lại; phần ép chọn tài khoản bị rollback.
+
+
+### AUTH-ADMIN-02 — Google-only native login, bỏ forced AccountChooser — 2026-10-08
+
+- Nguyên nhân rollback: Google Apps Script không hỗ trợ ổn định multi-login trong cùng một phiên trình duyệt; forced `AccountChooser` dẫn đến lỗi Google Drive ở tài khoản khác.
+- Thay đổi:
+  - vẫn giữ giao diện **chỉ đăng nhập bằng Google**;
+  - bỏ redirect qua `accounts.google.com/AccountChooser`;
+  - nút Google quay lại luồng native đã PASS: `?page=app`;
+  - giữ nguyên admin dashboard + kiểm tra quyền server-side bằng `ADMIN_EMAILS`.
+- Cách dùng tài khoản khác: mở **Incognito** hoặc **Chrome Profile** khác và chỉ đăng nhập tài khoản cần dùng.
+- Trạng thái: **PENDING TEST**.
+- Rollback nếu fail: LAST KNOWN GOOD ngày 2026-10-05.
