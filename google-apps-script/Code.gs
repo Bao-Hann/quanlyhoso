@@ -10,8 +10,24 @@ const APP_TITLE = 'Scientist Profile';
 function doGet(e) {
   const page = String((e && e.parameter && e.parameter.page) || 'login').toLowerCase();
 
+  if (page === 'admin') {
+    const admin = getCurrentUser();
+    if (!isAdminUser_(admin)) {
+      // Không để lộ việc có trang quản trị cho tài khoản thường.
+      return renderLogin_('');
+    }
+    registerUserVisit_(admin);
+    const t = HtmlService.createTemplateFromFile('Admin');
+    t.adminJson = JSON.stringify(admin).replace(/</g, '\\u003c');
+    t.webAppUrl = ScriptApp.getService().getUrl() || '';
+    return t.evaluate()
+      .setTitle('Admin Dashboard - ' + APP_TITLE)
+      .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
+  }
+
   if (page === 'app' || page === 'home') {
-    const user = e && e.parameter && e.parameter.mode === "local" ? {provider:"local"} : getCurrentUser();
+    const user = getCurrentUser();
+    registerUserVisit_(user);
     const t = HtmlService.createTemplateFromFile('Index');
     t.userJson = JSON.stringify(user).replace(/</g, '\\u003c');
     return t.evaluate()
@@ -21,11 +37,17 @@ function doGet(e) {
 
   return renderLogin_('');
 }
-
 function renderLogin_(message) {
   const t = HtmlService.createTemplateFromFile('Login');
   t.message = message || '';
   t.webAppUrl = ScriptApp.getService().getUrl() || '';
+
+  // Giữ kiến trúc native Apps Script đã PASS, chỉ thêm AccountChooser ở phía trước.
+  const googleTarget = t.webAppUrl + '?page=app&google=1';
+  t.googleAccountChooserUrl =
+    'https://accounts.google.com/AccountChooser?service=lso&continue=' +
+    encodeURIComponent(googleTarget);
+
   return t.evaluate().setTitle('Đăng nhập - ' + APP_TITLE);
 }
 
@@ -100,6 +122,155 @@ function refreshGoogleIdentity() {
   return getCurrentUser();
 }
 
+
+// ===== ADMIN / USER REGISTRY =====
+// Quyền admin KHÔNG dựa vào đường dẫn bí mật. Đường dẫn chỉ để giấu giao diện;
+// kiểm tra thật sự luôn nằm ở server-side bằng ADMIN_EMAILS trong Script Properties.
+function adminEmails_() {
+  const raw = String(
+    PropertiesService.getScriptProperties().getProperty('ADMIN_EMAILS') || ''
+  ).toLowerCase();
+  return raw.split(/[;,\n\r\s]+/).map(s => s.trim()).filter(Boolean);
+}
+
+function isAdminUser_(user) {
+  const email = String(user && user.email || '').trim().toLowerCase();
+  return Boolean(email) && adminEmails_().indexOf(email) !== -1;
+}
+
+function assertAdmin_() {
+  const user = getCurrentUser();
+  if (!isAdminUser_(user)) throw new Error('Không có quyền truy cập.');
+  return user;
+}
+
+function userRegistryKey_(email) {
+  return 'USER_REGISTRY_' + hashId_(String(email || '').trim().toLowerCase());
+}
+
+function registerUserVisit_(user) {
+  const email = String(user && user.email || '').trim().toLowerCase();
+  if (!email) return;
+
+  const props = PropertiesService.getScriptProperties();
+  const key = userRegistryKey_(email);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(5000);
+  try {
+    const now = new Date().toISOString();
+    let saved = {};
+    try { saved = JSON.parse(props.getProperty(key) || '{}'); } catch (_) {}
+
+    const name = String(user.name || user.displayName || '').trim();
+    const picture = String(user.picture || '').trim();
+    const record = {
+      email: email,
+      name: name || String(saved.name || ''),
+      picture: picture || String(saved.picture || ''),
+      firstSeen: saved.firstSeen || now,
+      lastSeen: now,
+      visits: Math.max(0, Number(saved.visits || 0)) + 1
+    };
+    props.setProperty(key, JSON.stringify(record));
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getAdminDashboard() {
+  const admin = assertAdmin_();
+  const props = PropertiesService.getScriptProperties();
+  const all = props.getProperties();
+  const now = Date.now();
+  const PROFILE_FIELDS = [
+    'person_name','person_gender','person_dob','person_pob','person_hometown',
+    'person_ethnicity','person_position','person_work_unit','person_address',
+    'person_office_phone','person_home_phone','person_mobile_phone','person_fax',
+    'person_email','person_citizen_id','person_date_issue','person_place_issue'
+  ];
+
+  const byEmail = {};
+
+  Object.keys(all).forEach(key => {
+    if (key.indexOf('USER_REGISTRY_') !== 0) return;
+    try {
+      const record = JSON.parse(all[key] || '{}');
+      const email = String(record.email || '').trim().toLowerCase();
+      if (email) byEmail[email] = record;
+    } catch (_) {}
+  });
+
+  // Backfill những tài khoản local cũ còn lưu email để dashboard không mất dấu.
+  Object.keys(all).forEach(key => {
+    if (key.indexOf('AUTH_USER_') !== 0) return;
+    try {
+      const record = JSON.parse(all[key] || '{}');
+      const email = String(record.email || '').trim().toLowerCase();
+      if (!email) return;
+      if (!byEmail[email]) {
+        byEmail[email] = {
+          email: email,
+          name: String(record.name || ''),
+          picture: '',
+          firstSeen: '',
+          lastSeen: '',
+          visits: 0
+        };
+      }
+    } catch (_) {}
+  });
+
+  const users = Object.keys(byEmail).map(email => {
+    const record = byEmail[email];
+    const profileBase = 'PROFILE_V3_' + hashId_('email:' + email);
+    let general = {};
+    try { general = JSON.parse(all[profileBase] || '{}'); } catch (_) {}
+
+    const filled = PROFILE_FIELDS.reduce((count, field) => {
+      const value = general[field];
+      if (value === 0 || value === false) return count + 1;
+      return String(value == null ? '' : value).trim() ? count + 1 : count;
+    }, 0);
+
+    const completion = Math.round((filled / PROFILE_FIELDS.length) * 100);
+    const tablesMeta = all[profileBase + '_TABLES'];
+    const lastSeenMs = record.lastSeen ? new Date(record.lastSeen).getTime() : 0;
+
+    return {
+      email: email,
+      accountName: String(record.name || ''),
+      profileName: String(general.person_name || ''),
+      firstSeen: String(record.firstSeen || ''),
+      lastSeen: String(record.lastSeen || ''),
+      visits: Number(record.visits || 0),
+      completion: completion,
+      filledFields: filled,
+      totalFields: PROFILE_FIELDS.length,
+      hasProfile: Boolean(all[profileBase]),
+      hasAcademicData: Boolean(tablesMeta),
+      active7d: Boolean(lastSeenMs && now - lastSeenMs <= 7 * 24 * 60 * 60 * 1000),
+      active30d: Boolean(lastSeenMs && now - lastSeenMs <= 30 * 24 * 60 * 60 * 1000)
+    };
+  }).sort((a,b) => String(b.lastSeen).localeCompare(String(a.lastSeen)));
+
+  return {
+    ok: true,
+    admin: {
+      email: String(admin.email || ''),
+      name: String(admin.name || admin.displayName || '')
+    },
+    generatedAt: new Date().toISOString(),
+    stats: {
+      totalUsers: users.length,
+      active7d: users.filter(u => u.active7d).length,
+      active30d: users.filter(u => u.active30d).length,
+      profilesCreated: users.filter(u => u.hasProfile).length,
+      academicDataUsers: users.filter(u => u.hasAcademicData).length
+    },
+    users: users
+  };
+}
+
 function profileKey_(token) {
   const user = token ? localSession_(token) : getCurrentUser();
   return 'PROFILE_V3_' + hashId_(user.userId);
@@ -123,6 +294,8 @@ function loadGeneral(token) {
   const raw = PropertiesService.getScriptProperties().getProperty(key);
   const data = raw ? JSON.parse(raw) : {};
   const user = token ? localSession_(token) : getCurrentUser();
+
+  registerUserVisit_(user);
 
   // Tên tài khoản độc lập với trường Họ và tên trong hồ sơ khoa học.
   return {ok:true, user:user, data:data};
