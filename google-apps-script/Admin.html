@@ -95,7 +95,16 @@
     });
   };
   const fail=err=>{document.getElementById('errorBox').innerHTML='<div class="error">'+esc(err.message||err)+'</div>';document.getElementById('rows').innerHTML='<tr><td colspan="7" class="empty">Không tải được dữ liệu.</td></tr>';};
-  google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getAdminDashboard();
+  let adminToken='';
+  try {
+    const session=JSON.parse(sessionStorage.getItem('scientist-local-session')||'null');
+    adminToken=session&&session.token||'';
+  } catch (_) {}
+  if(!adminToken){
+    window.top.location.href=<?= JSON.stringify(webAppUrl) ?>+'?page=login';
+  } else {
+    google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getAdminDashboard(adminToken);
+  }
 </script>
 </body>
 </html>
