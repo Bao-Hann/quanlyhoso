@@ -216,3 +216,20 @@ Ghi chú:
   - build marker `AUTH-ADMIN-07-20261008`.
 - Mục tiêu: đối chiếu chính xác URL đang mở có chạy đúng project/version vừa deploy hay không trước khi sửa auth tiếp.
 - Trạng thái: **PENDING TEST**.
+
+
+### AUTH-ADMIN-08 — Runtime đang chạy code khác editor — 2026-10-08
+
+- Lỗi mới hiển thị: `Không tìm thấy tệp HTML có tên Login. (dòng 26, tệp "code")`.
+- Đối chiếu với source GitHub hiện tại:
+  - dòng 26 của `Code.gs` hiện tại chỉ là dấu đóng hàm `canonicalWebAppUrl_()`;
+  - lệnh tạo `Login` nằm khoảng dòng 83.
+- Kết luận: runtime/deployment trong ảnh **không chạy cùng snapshot Code.gs hiện tại**. Đây là bằng chứng trực tiếp của deployment/version/project mismatch, chưa phải bằng chứng rằng repo thiếu `Login.html`.
+- Thêm hàm `debugDeployment()` chạy trực tiếp trong Apps Script editor để log:
+  - build marker;
+  - Script ID;
+  - service URL;
+  - `WEB_APP_URL`;
+  - sự tồn tại của Login/Index/Admin/Styles/Script trong chính project editor đang mở.
+- Không thay đổi logic đăng nhập trong lần thử này.
+- Trạng thái: **PENDING DIAGNOSTIC**.
