@@ -124,3 +124,21 @@ Ghi chú:
 - Xác nhận hiện tại: **đã vào được ứng dụng sau đăng nhập**.
 - Chưa đánh dấu đã kiểm thử đầy đủ các tình huống sau cho đến khi test riêng: tài khoản Google ngoài domain, đổi qua lại nhiều tài khoản, reload, logout/login lại, avatar/tên/email đúng mọi tài khoản.
 - Quy tắc: nếu sửa auth về sau và phát sinh lỗi, rollback về baseline này trước khi thử hướng mới.
+
+
+### AUTH-ADMIN-01 — Google-only login + admin dashboard — 2026-10-08
+
+- Xuất phát từ **LAST KNOWN GOOD** native Apps Script login đã PASS.
+- Thay đổi:
+  - bỏ toàn bộ form email/mật khẩu và nút đăng ký khỏi giao diện;
+  - đăng nhập duy nhất qua **Chọn tài khoản Google** bằng Google AccountChooser rồi quay về native Apps Script;
+  - vô hiệu hóa tạo mới/đăng nhập bằng mật khẩu ở backend;
+  - thêm user registry (email, tên Google, firstSeen, lastSeen, visits);
+  - thêm dashboard quản trị: tổng user, active 7/30 ngày, số hồ sơ, dữ liệu học thuật, bảng user và % hoàn thiện hồ sơ;
+  - cổng admin bí mật: bấm **chấm cam cạnh “Hồ sơ khoa học” 5 lần**;
+  - quyền admin thật sự được kiểm tra server-side bằng Script Property `ADMIN_EMAILS`, không dựa vào việc giấu URL.
+- Bảo mật: không hard-code email admin hoặc secret vào repo.
+- Cấu hình cần thêm trong Apps Script Script Properties:
+  - `ADMIN_EMAILS` = email Google của admin; nhiều admin cách nhau bằng dấu phẩy.
+- Deployment vẫn phải giữ **Execute as: User accessing the web app**.
+- Trạng thái: **PENDING TEST**. Nếu fail, rollback về LAST KNOWN GOOD ngày 2026-10-05 trước khi thử hướng khác.
