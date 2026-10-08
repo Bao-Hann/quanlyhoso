@@ -26,6 +26,35 @@ function canonicalWebAppUrl_() {
 }
 
 
+function htmlFileExists_(name) {
+  try {
+    HtmlService.createHtmlOutputFromFile(name);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function debugDeployment() {
+  const info = {
+    build: 'AUTH-ADMIN-08-20261008',
+    scriptId: String(ScriptApp.getScriptId() || ''),
+    serviceUrl: String(ScriptApp.getService().getUrl() || ''),
+    configuredWebAppUrl: String(
+      PropertiesService.getScriptProperties().getProperty('WEB_APP_URL') || ''
+    ),
+    files: {
+      Login: htmlFileExists_('Login'),
+      Index: htmlFileExists_('Index'),
+      Admin: htmlFileExists_('Admin'),
+      Styles: htmlFileExists_('Styles'),
+      Script: htmlFileExists_('Script')
+    }
+  };
+  console.log(JSON.stringify(info, null, 2));
+  return info;
+}
+
 function renderDeploymentDiagnostic_() {
   const props = PropertiesService.getScriptProperties();
   const serviceUrl = String(ScriptApp.getService().getUrl() || '').trim();
