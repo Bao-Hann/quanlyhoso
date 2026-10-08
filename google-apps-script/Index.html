@@ -9,13 +9,26 @@
   <?!= include('Styles'); ?>
 <script>
     window.GAS_USER = <?!= userJson ?>;
-    if (window.GAS_USER.provider === 'local') {
-      try {
+    window.GAS_AUTH_TOKEN = <?!= authTokenJson ?>;
+    window.GAS_WEB_APP_URL = <?!= webAppUrlJson ?>;
+
+    try {
+      if (window.GAS_AUTH_TOKEN && window.GAS_USER && window.GAS_USER.email) {
+        sessionStorage.setItem('scientist-local-session', JSON.stringify({
+          token: window.GAS_AUTH_TOKEN,
+          user: window.GAS_USER
+        }));
+        if (history && history.replaceState) {
+          history.replaceState(null, '', window.GAS_WEB_APP_URL + '?page=app');
+        }
+      } else {
         const session = JSON.parse(sessionStorage.getItem('scientist-local-session') || 'null');
-        if (session) { window.GAS_USER = session.user; window.GAS_AUTH_TOKEN = session.token; }
-      } catch (_) {}
-    }
-    window.GAS_WEB_APP_URL = <?!= JSON.stringify(getWebAppUrl()) ?>;
+        if (session && session.token && session.user) {
+          window.GAS_AUTH_TOKEN = session.token;
+          window.GAS_USER = session.user;
+        }
+      }
+    } catch (_) {}
   </script>
 </head>
 <body>
