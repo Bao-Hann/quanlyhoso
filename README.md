@@ -188,3 +188,18 @@ Ghi chú:
 - `Index.html` dùng `WEB_APP_URL` chuẩn qua `getWebAppUrl()`.
 - Trạng thái: **PENDING TEST**.
 - Nếu tài khoản ngoài domain vẫn nhận trang Google Drive trước khi giao diện app tải, lỗi nằm ở deployment/Workspace policy ngoài logic HTML; kiểm tra deployment phải hiển thị quyền tương đương **Anyone / bất kỳ người dùng đã đăng nhập**.
+
+
+### AUTH-ADMIN-06 — Phân tách 2 lỗi thực tế khi test nhiều tài khoản — 2026-10-08
+
+- Ảnh test cho thấy **2 lỗi độc lập**:
+  1. Một cửa sổ bị Google Drive “Sorry, unable to open the file at this time” khi dùng nhiều tài khoản Google trong cùng phiên trình duyệt.
+  2. Một cửa sổ Apps Script báo: `Exception: Không tìm thấy tệp HTML có tên Index. (dòng 15, tệp "code")`.
+- Kết luận:
+  - Lỗi (2) không phải lỗi auth: deployment Apps Script đang chạy thiếu file `Index.html` hoặc đang chạy một version/project chưa chứa file đó. Repo GitHub hiện có `google-apps-script/Index.html`.
+  - Lỗi (1) phù hợp với hạn chế multi-login chính thức của Apps Script; không nên tiếp tục cố ép đổi tài khoản trong cùng Chrome session bằng native Apps Script.
+- Cách sửa deployment:
+  - đồng bộ đủ `Code.gs`, `Auth.gs`, `Login.html`, `Index.html`, `Admin.html`, `Styles.html`, `Script.html`, `appsscript.json` vào **cùng một Apps Script project**;
+  - sau đó tạo **New version** trên đúng deployment;
+  - test từng tài khoản bằng Incognito hoặc Chrome Profile riêng.
+- Trạng thái: **FAIL do deployment thiếu file + multi-login limitation**, chưa thay đổi baseline auth.
