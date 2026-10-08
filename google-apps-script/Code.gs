@@ -82,7 +82,7 @@ function getWebAppUrl() {
 function getWebAppDiagnostics() {
   const props = PropertiesService.getScriptProperties();
   const configured = String(props.getProperty('WEB_APP_URL') || '').trim();
-  const serviceUrl = String(ScriptApp.getService().getUrl() || '').trim();
+  const serviceUrl = String(canonicalWebAppUrl_()).trim();
   return {
     configuredWebAppUrl: configured,
     serviceUrl: serviceUrl,
