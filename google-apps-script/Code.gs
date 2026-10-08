@@ -181,32 +181,10 @@ function userRegistryKey_(email) {
 }
 
 function registerUserVisit_(user) {
-  const email = String(user && user.email || '').trim().toLowerCase();
-  if (!email) return;
-
-  const props = PropertiesService.getScriptProperties();
-  const key = userRegistryKey_(email);
-  const lock = LockService.getScriptLock();
-  lock.waitLock(5000);
-  try {
-    const now = new Date().toISOString();
-    let saved = {};
-    try { saved = JSON.parse(props.getProperty(key) || '{}'); } catch (_) {}
-
-    const name = String(user.name || user.displayName || '').trim();
-    const picture = String(user.picture || '').trim();
-    const record = {
-      email: email,
-      name: name || String(saved.name || ''),
-      picture: picture || String(saved.picture || ''),
-      firstSeen: saved.firstSeen || now,
-      lastSeen: now,
-      visits: Math.max(0, Number(saved.visits || 0)) + 1
-    };
-    props.setProperty(key, JSON.stringify(record));
-  } finally {
-    lock.releaseLock();
-  }
+  // Không lưu dữ liệu user động vào Script Properties.
+  // Script Properties chỉ giữ cấu hình tĩnh như ADMIN_EMAILS, UPLOAD_FOLDER_ID, WEB_APP_URL.
+  // Registry cũ (USER_REGISTRY_*) chỉ được đọc tạm để dashboard không mất dữ liệu lịch sử.
+  return;
 }
 
 function getAdminDashboard() {
@@ -223,6 +201,7 @@ function getAdminDashboard() {
 
   const byEmail = {};
 
+  // Chỉ đọc registry cũ; code mới không tạo thêm USER_REGISTRY_*.
   Object.keys(all).forEach(key => {
     if (key.indexOf('USER_REGISTRY_') !== 0) return;
     try {
