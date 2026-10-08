@@ -15,7 +15,7 @@
         if (session) { window.GAS_USER = session.user; window.GAS_AUTH_TOKEN = session.token; }
       } catch (_) {}
     }
-    window.GAS_WEB_APP_URL = <?!= JSON.stringify(ScriptApp.getService().getUrl() || '') ?>;
+    window.GAS_WEB_APP_URL = <?!= JSON.stringify(getWebAppUrl()) ?>;
   </script>
 </head>
 <body>
