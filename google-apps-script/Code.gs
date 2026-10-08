@@ -42,11 +42,9 @@ function renderLogin_(message) {
   t.message = message || '';
   t.webAppUrl = ScriptApp.getService().getUrl() || '';
 
-  // Giữ kiến trúc native Apps Script đã PASS, chỉ thêm AccountChooser ở phía trước.
-  const googleTarget = t.webAppUrl + '?page=app&google=1';
-  t.googleAccountChooserUrl =
-    'https://accounts.google.com/AccountChooser?service=lso&continue=' +
-    encodeURIComponent(googleTarget);
+  // Dùng thẳng native Apps Script login. Không ép AccountChooser vì Apps Script
+  // không hỗ trợ ổn định multi-login trong cùng một phiên trình duyệt.
+  t.googleAccountChooserUrl = t.webAppUrl + '?page=app';
 
   return t.evaluate().setTitle('Đăng nhập - ' + APP_TITLE);
 }
