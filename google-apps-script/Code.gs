@@ -7,6 +7,25 @@
 
 const APP_TITLE = 'Scientist Profile';
 
+function canonicalWebAppUrl_() {
+  const props = PropertiesService.getScriptProperties();
+  const configured = String(props.getProperty('WEB_APP_URL') || '').trim();
+  const fallback = String(canonicalWebAppUrl_()).trim();
+
+  // Ưu tiên URL /macros/s/.../exec cố định để tránh Google Workspace tự biến
+  // thành /a/macros/<domain>/... khiến tài khoản ngoài domain mở ra trang lỗi Drive.
+  const isPublicExec = url =>
+    /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url);
+
+  if (isPublicExec(configured)) return configured;
+  if (isPublicExec(fallback)) return fallback;
+
+  // Nếu Apps Script trả URL theo domain (/a/macros/...), vẫn trả về để app không chết,
+  // nhưng admin nên sửa WEB_APP_URL thành URL /macros/s/.../exec chuẩn.
+  return configured || fallback;
+}
+
+
 function doGet(e) {
   const page = String((e && e.parameter && e.parameter.page) || 'login').toLowerCase();
 
@@ -19,7 +38,7 @@ function doGet(e) {
     registerUserVisit_(admin);
     const t = HtmlService.createTemplateFromFile('Admin');
     t.adminJson = JSON.stringify(admin).replace(/</g, '\\u003c');
-    t.webAppUrl = ScriptApp.getService().getUrl() || '';
+    t.webAppUrl = canonicalWebAppUrl_();
     return t.evaluate()
       .setTitle('Admin Dashboard - ' + APP_TITLE)
       .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
@@ -40,7 +59,7 @@ function doGet(e) {
 function renderLogin_(message) {
   const t = HtmlService.createTemplateFromFile('Login');
   t.message = message || '';
-  t.webAppUrl = ScriptApp.getService().getUrl() || '';
+  t.webAppUrl = canonicalWebAppUrl_();
 
   // Dùng thẳng native Apps Script login. Không ép AccountChooser vì Apps Script
   // không hỗ trợ ổn định multi-login trong cùng một phiên trình duyệt.
@@ -54,12 +73,27 @@ function include(filename) {
 }
 
 function getWebAppUrl() {
-  return ScriptApp.getService().getUrl() || '';
+  return canonicalWebAppUrl_();
 }
 
 // Identity comes from the Apps Script OpenID token of the effective user.
 // This mirrors the original source architecture: the login session already carries
 // name + email instead of trying to derive a display name from the email address.
+function getWebAppDiagnostics() {
+  const props = PropertiesService.getScriptProperties();
+  const configured = String(props.getProperty('WEB_APP_URL') || '').trim();
+  const serviceUrl = String(ScriptApp.getService().getUrl() || '').trim();
+  return {
+    configuredWebAppUrl: configured,
+    serviceUrl: serviceUrl,
+    canonicalWebAppUrl: canonicalWebAppUrl_(),
+    configuredLooksPublic:
+      /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(configured),
+    activeEmail: String(Session.getActiveUser().getEmail() || '').trim().toLowerCase(),
+    effectiveEmail: String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase()
+  };
+}
+
 function decodeIdentityToken_() {
   try {
     const token = ScriptApp.getIdentityToken();
