@@ -233,3 +233,22 @@ Ghi chú:
   - sự tồn tại của Login/Index/Admin/Styles/Script trong chính project editor đang mở.
 - Không thay đổi logic đăng nhập trong lần thử này.
 - Trạng thái: **PENDING DIAGNOSTIC**.
+
+
+### AUTH-MULTI-ACCOUNT-01 — Custom Google OAuth account chooser — 2026-10-08
+
+- Mục tiêu: cho phép người dùng đang đăng nhập nhiều tài khoản Google vẫn **chọn đúng tài khoản** khi vào Scientist Profile.
+- Lý do đổi kiến trúc:
+  - Google xác nhận multi-login không được hỗ trợ ổn định với Apps Script web apps native;
+  - Google OAuth 2.0 hỗ trợ `prompt=select_account`, đúng nhu cầu chọn tài khoản.
+- Kiến trúc mới:
+  - Web App chạy **Execute as: Me / user deploying** và cho phép truy cập công khai;
+  - trang login gọi OAuth Google với `prompt=select_account`;
+  - callback quay về đúng `WEB_APP_URL`;
+  - session được ký stateless, không ghi session/user động vào Script Properties;
+  - dữ liệu user/profile/tables được lưu trong Drive folder `UPLOAD_FOLDER_ID`;
+  - admin dashboard đọc dữ liệu user từ folder này và xác thực bằng signed session token.
+- UI: bỏ khối “Ứng dụng chỉ dùng danh tính Google...” và bỏ cảnh báo dùng Incognito.
+- Script Properties chỉ còn là cấu hình tĩnh: `ADMIN_EMAILS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `UPLOAD_FOLDER_ID`, `WEB_APP_URL`.
+- Google Cloud phải có Authorized redirect URI đúng bằng giá trị `WEB_APP_URL`.
+- Trạng thái: **PENDING TEST**. Nếu fail, rollback về LAST KNOWN GOOD trước khi thử tiếp.
