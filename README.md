@@ -203,3 +203,16 @@ Ghi chú:
   - sau đó tạo **New version** trên đúng deployment;
   - test từng tài khoản bằng Incognito hoặc Chrome Profile riêng.
 - Trạng thái: **FAIL do deployment thiếu file + multi-login limitation**, chưa thay đổi baseline auth.
+
+
+### AUTH-ADMIN-07 — Deployment diagnostic — 2026-10-08
+
+- Người dùng xác nhận Apps Script editor trước đó vẫn có `Index.html` đầy đủ.
+- Vì vậy lỗi `Không tìm thấy tệp HTML có tên Index` được xem là dấu hiệu deployment đang chạy **snapshot/version hoặc deployment/project khác** với editor đang nhìn, không kết luận rằng source hiện tại thiếu `Index.html`.
+- Thêm route `?page=diag` không phụ thuộc file HTML ngoài để hiển thị:
+  - Script ID;
+  - URL mà Apps Script runtime trả về;
+  - `WEB_APP_URL`;
+  - build marker `AUTH-ADMIN-07-20261008`.
+- Mục tiêu: đối chiếu chính xác URL đang mở có chạy đúng project/version vừa deploy hay không trước khi sửa auth tiếp.
+- Trạng thái: **PENDING TEST**.
