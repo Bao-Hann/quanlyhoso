@@ -10,7 +10,7 @@ const APP_TITLE = 'Scientist Profile';
 function canonicalWebAppUrl_() {
   const props = PropertiesService.getScriptProperties();
   const configured = String(props.getProperty('WEB_APP_URL') || '').trim();
-  const fallback = String(canonicalWebAppUrl_()).trim();
+  const fallback = String(ScriptApp.getService().getUrl() || '').trim();
 
   // Ưu tiên URL /macros/s/.../exec cố định để tránh Google Workspace tự biến
   // thành /a/macros/<domain>/... khiến tài khoản ngoài domain mở ra trang lỗi Drive.
@@ -82,7 +82,7 @@ function getWebAppUrl() {
 function getWebAppDiagnostics() {
   const props = PropertiesService.getScriptProperties();
   const configured = String(props.getProperty('WEB_APP_URL') || '').trim();
-  const serviceUrl = String(canonicalWebAppUrl_()).trim();
+  const serviceUrl = String(ScriptApp.getService().getUrl() || '').trim();
   return {
     configuredWebAppUrl: configured,
     serviceUrl: serviceUrl,
