@@ -326,3 +326,20 @@ Ghi chú:
 - Trạng thái: **PENDING TEST**.
 - Nếu `authorizeStorage_()` vẫn báo `Access denied: DriveApp`, nguyên nhân nằm ở quyền Drive/folder hoặc chính sách Workspace, không phải `ADMIN_EMAILS`.
 
+
+### PROFILE-SAVE-03 — Save fallback + ngày lịch sử phải trước hiện tại — 2026-10-10
+
+- Kết quả test trước: **FAIL một phần** — Edit đã mở được nhưng Save hồ sơ không thành công; backend đang có lỗi `DriveApp access denied`.
+- Sửa storage:
+  - đọc/ghi hồ sơ ưu tiên Google Drive;
+  - nếu `DriveApp` bị Workspace chặn, tự động fallback sang Script Properties theo từng user và chia dữ liệu thành nhiều chunk;
+  - `loadGeneral`, `saveGeneral`, preferences và tables đều dùng chung lớp storage này;
+  - Admin Dashboard gộp dữ liệu từ Drive và fallback để vẫn thấy user đã lưu.
+- Sửa ngày:
+  - mọi input `type=date` có max = **ngày hôm qua**;
+  - ngày sinh, ngày cấp CCCD, ngày bắt đầu/kết thúc công tác và ngày bắt đầu/nghiệm thu đề tài không nhận hôm nay hoặc tương lai;
+  - kiểm tra lặp lại cả client và server.
+- Lưu ý kỹ thuật: Script Properties chỉ là fallback khi Drive bị chặn; dung lượng có giới hạn, nên về lâu dài vẫn nên cấp lại quyền Drive hoặc chuyển sang storage bền vững hơn.
+- File sửa: `Code.gs`, `Script.html`.
+- Trạng thái: **PENDING TEST**.
+
