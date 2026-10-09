@@ -83,15 +83,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   function setRows(table, data) {
     ensureTableBorders(table);
-    if (!data.length) return;
-    const old=children(table,'tr'), seed=old[1];
+    const old=children(table,'tr');
+    const seed=old[1];
     old.slice(1).forEach(x=>x.remove());
-    const count=Math.max(data.length,old.length-1);
-    for (let i=0;i<count;i++) {
-      const row=(old[i+1] || seed).cloneNode(true);
-      children(row,'tc').forEach((cell,j)=>setCell(cell,data[i]?.[j] ?? ''));
+
+    // Chỉ giữ đúng số dòng dữ liệu thực tế; không xuất các dòng trống dự phòng của mẫu.
+    if (!data.length || !seed) return;
+    data.forEach(values => {
+      const row=seed.cloneNode(true);
+      children(row,'tc').forEach((cell,j)=>setCell(cell,values?.[j] ?? ''));
       table.appendChild(row);
-    }
+    });
   }
   async function build(variant = "standard") {
     if(!["standard","textbooks","awards","full"].includes(variant)) throw new Error("Mẫu xuất không hợp lệ.");
@@ -230,6 +232,24 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if(variant==='awards'||variant==='full') addSection('V. GIẢI THƯỞNG VÀ THÀNH TÍCH',p[36],
       ['TT','Giải thưởng / Thành tích','Năm','Nơi cấp / Áp dụng'],
       rows('awardBody').map((x,i)=>[i+1,[x.category,x.name,x.description].filter(Boolean).join('\n'),x.year,x.organization]));
+    // Tự động điền ngày/tháng/năm hiện tại vào dòng ký của mẫu Word.
+    const exportNow=new Date();
+    const exportDay=String(exportNow.getDate()).padStart(2,'0');
+    const exportMonth=String(exportNow.getMonth()+1).padStart(2,'0');
+    const exportYear=String(exportNow.getFullYear());
+    const dateParagraph=children(body,'p').find(paragraph => {
+      const plain=descendants(paragraph,'t').map(node=>node.textContent || '').join('');
+      return /ngày[\s.…\.]*tháng[\s.…\.]*năm/i.test(plain);
+    });
+    if(dateParagraph) {
+      const plain=descendants(dateParagraph,'t').map(node=>node.textContent || '').join('');
+      const updated=plain.replace(
+        /ngày\s*[.…\.]*\s*tháng\s*[.…\.]*\s*năm\s*(?:20)?[.…\.]*/i,
+        'ngày '+exportDay+' tháng '+exportMonth+' năm '+exportYear
+      );
+      if(updated !== plain) setParagraph(dateParagraph,updated);
+    }
+
     const signature=children(children(tables[4],'tr')[0],'tc')[1];
     if(value('person_name')) {
       const seed=children(signature,'p')[1];
@@ -666,7 +686,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const removeEmpty = body => body?.querySelector('.empty-row')?.remove();
 
-  const currentYear = new Date().getFullYear();
+  const nowForLimits = new Date();
+  const currentYear = nowForLimits.getFullYear();
+  const currentMonth = nowForLimits.getMonth() + 1;
+  const todayYmd = [
+    currentYear,
+    String(currentMonth).padStart(2,'0'),
+    String(nowForLimits.getDate()).padStart(2,'0')
+  ].join('-');
+
+  document.querySelectorAll('[data-no-future-date]').forEach(input => {
+    input.max = todayYmd;
+  });
+  document.querySelectorAll('[data-no-future-year]').forEach(input => {
+    input.max = String(currentYear);
+  });
+
+  const validateMonthYearNotFuture = (form, label) => {
+    const yearValue = Number(form?.elements?.year?.value || 0);
+    const monthValue = Number(form?.elements?.month?.value || 0);
+    if (!yearValue) return true;
+    if (yearValue > currentYear || (yearValue === currentYear && monthValue > currentMonth)) {
+      toast(label + ' không được ở tương lai.', 'warning');
+      return false;
+    }
+    return true;
+  };
+
   const degreeYear = document.getElementById('degreeYear');
   const degreeNotGraduated = document.getElementById('degreeNotGraduated');
   const degreeThesisLabel = document.getElementById('degreeThesisLabel');
@@ -1067,6 +1113,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (workForm) workForm.addEventListener('submit', e => {
     e.preventDefault();
     const fd=new FormData(workForm);
+    if (fd.get('start') && fd.get('start') > todayYmd) {
+      toast('Ngày "Từ" không được ở tương lai.', 'warning'); return;
+    }
     if (!fd.get('current') && (!fd.get('end') || fd.get('end') <= fd.get('start'))) {
       toast('Ngày kết thúc phải sau ngày bắt đầu; nếu đang làm việc hãy chọn Hiện tại.', 'warning'); return;
     }
@@ -1280,7 +1329,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const seminarForm = document.getElementById('seminarForm');
   if (seminarForm) seminarForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd=new FormData(seminarForm), body=document.getElementById('seminarBody'); removeEmpty(body);
+    const fd=new FormData(seminarForm), body=document.getElementById('seminarBody');
+    if (!validateMonthYearNotFuture(seminarForm, 'Thời gian Seminar/Hội thảo')) return;
+    removeEmpty(body);
     const editKey=fd.get('edit_key')||'', key=editKey||('seminar-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
     const month=fd.get('month')||'', year=fd.get('year')||'', published=[month,year].filter(Boolean).join('/');
     const row=document.createElement('tr');
@@ -1303,7 +1354,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const textbookForm = document.getElementById('textbookForm');
   if (textbookForm) textbookForm.addEventListener('submit', e => {
     e.preventDefault();
-    const fd=new FormData(textbookForm), body=document.getElementById('textbookBody'); removeEmpty(body);
+    const fd=new FormData(textbookForm), body=document.getElementById('textbookBody');
+    if (!validateMonthYearNotFuture(textbookForm, 'Năm xuất bản sách/giáo trình')) return;
+    removeEmpty(body);
     const editKey=fd.get('edit_key')||'', key=editKey||('textbook-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
     const month=fd.get('month')||'', year=fd.get('year')||'', published=[month,year].filter(Boolean).join('/');
     const row=document.createElement('tr');
