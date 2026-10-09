@@ -47,6 +47,7 @@ function doGet(e) {
   if (page === 'admin') {
     const t = HtmlService.createTemplateFromFile('Admin');
     t.webAppUrl = canonicalWebAppUrl_();
+    t.adminSessionJson = JSON.stringify(null);
     return t.evaluate()
       .setTitle('Admin Dashboard - ' + APP_TITLE)
       .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
@@ -69,7 +70,8 @@ function renderLogin_(message) {
   const t = HtmlService.createTemplateFromFile('Login');
   t.message = message || '';
   t.webAppUrl = canonicalWebAppUrl_();
-  t.googleOAuthUrl = googleOAuthStartUrl_();
+  t.googleOAuthUrl = googleOAuthStartUrl_('user');
+  t.adminOAuthUrl = googleOAuthStartUrl_('admin');
   return t.evaluate().setTitle('Đăng nhập - ' + APP_TITLE);
 }
 
@@ -81,13 +83,13 @@ function getWebAppUrl() {
   return canonicalWebAppUrl_();
 }
 
-function googleOAuthStartUrl_() {
+function googleOAuthStartUrl_(purpose) {
   const config = appConfig_();
   if (!config.googleClientId || !config.googleClientSecret) {
     throw new Error('Chưa cấu hình GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.');
   }
 
-  const state = createOAuthState_();
+  const state = createOAuthState_(purpose);
   const params = {
     client_id: config.googleClientId,
     redirect_uri: canonicalWebAppUrl_(),
@@ -111,7 +113,7 @@ function completeGoogleOAuth_(params) {
   const code = String(params.code || '').trim();
   const state = String(params.state || '').trim();
   if (!code || !state) throw new Error('Phản hồi OAuth không hợp lệ.');
-  verifyOAuthState_(state);
+  const oauthState = verifyOAuthState_(state);
 
   const config = appConfig_();
   const tokenResponse = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
@@ -167,6 +169,19 @@ function completeGoogleOAuth_(params) {
   upsertUserLogin_(user);
 
   const session = createAppSession_(user);
+
+  if (oauthState && oauthState.purpose === 'admin') {
+    if (adminEmails_().indexOf(email) === -1) {
+      return renderLogin_('Tài khoản Google này không có quyền quản trị.');
+    }
+    const adminTemplate = HtmlService.createTemplateFromFile('Admin');
+    adminTemplate.webAppUrl = canonicalWebAppUrl_();
+    adminTemplate.adminSessionJson = JSON.stringify(session).replace(/</g, '\\u003c');
+    return adminTemplate.evaluate()
+      .setTitle('Admin Dashboard - ' + APP_TITLE)
+      .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
+  }
+
   const t = HtmlService.createTemplateFromFile('Index');
   t.userJson = JSON.stringify(session.user).replace(/</g, '\\u003c');
   t.authTokenJson = JSON.stringify(session.token);
@@ -305,6 +320,41 @@ function loadGeneral(token) {
   return {ok:true, user:user, data:doc.general || {}};
 }
 
+function savePreferences(data, token) {
+  const user = sessionUser_(token);
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Thông tin mong muốn không hợp lệ.');
+  }
+
+  const allowed = [
+    'person_accept_teaching',
+    'person_accept_researching',
+    'person_accept_committee',
+    'person_accept_instructor',
+    'person_accept_company_projects'
+  ];
+  const clean = {};
+  allowed.forEach(key => {
+    if (Object.prototype.hasOwnProperty.call(data,key)) {
+      clean[key] = String(data[key]) === '1' || data[key] === true ? '1' : '0';
+    }
+  });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const doc = readUserDocByEmail_(user.email) || emptyUserDoc_(user);
+    doc.general = doc.general || {};
+    Object.keys(clean).forEach(key => { doc.general[key] = clean[key]; });
+    doc.meta = doc.meta || {};
+    doc.meta.lastSeen = new Date().toISOString();
+    writeUserDoc_(doc);
+  } finally {
+    lock.releaseLock();
+  }
+  return {ok:true};
+}
+
 function validateTableDates_(data) {
   const tz = Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
   const now = new Date();
@@ -388,6 +438,37 @@ function assertAdmin_(token) {
   return user;
 }
 
+function adminTableRecords_(tables, key) {
+  const list = tables && Array.isArray(tables[key]) ? tables[key] : [];
+  return list.map(item => item && item.data ? item.data : (item || {}));
+}
+
+function degreeRank_(level) {
+  const text = String(level || '').toLowerCase();
+  if (/tiến sĩ|ph\.d|phd/.test(text)) return 40;
+  if (/thạc sĩ|master/.test(text)) return 30;
+  if (/kỹ sư|cử nhân|bachelor/.test(text)) return 20;
+  return text ? 10 : 0;
+}
+
+function titleRank_(level) {
+  const text = String(level || '').toLowerCase();
+  if (/giáo sư/.test(text) && !/phó/.test(text)) return 20;
+  if (/phó giáo sư/.test(text)) return 10;
+  return text ? 1 : 0;
+}
+
+function ageFromDob_(dob) {
+  const m = String(dob || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  const today = new Date();
+  let age = today.getFullYear() - Number(m[1]);
+  const beforeBirthday = (today.getMonth()+1 < Number(m[2])) ||
+    (today.getMonth()+1 === Number(m[2]) && today.getDate() < Number(m[3]));
+  if (beforeBirthday) age--;
+  return age >= 0 && age < 130 ? age : '';
+}
+
 function getAdminDashboard(token) {
   const admin = assertAdmin_(token);
   const folder = dataFolder_();
@@ -399,7 +480,9 @@ function getAdminDashboard(token) {
     'person_name','person_gender','person_dob','person_pob','person_hometown',
     'person_ethnicity','person_position','person_work_unit','person_address',
     'person_office_phone','person_home_phone','person_mobile_phone','person_fax',
-    'person_email','person_citizen_id','person_date_issue','person_place_issue'
+    'person_email','person_citizen_id','person_date_issue','person_place_issue',
+    'person_accept_teaching','person_accept_researching','person_accept_committee',
+    'person_accept_instructor','person_accept_company_projects'
   ];
 
   while (files.hasNext()) {
@@ -417,33 +500,85 @@ function getAdminDashboard(token) {
     const meta = doc.meta || {};
     const general = doc.general || {};
     const tables = doc.tables || {};
-
     const email = String(identity.email || '').trim().toLowerCase();
     if (!email) continue;
 
+    const credentials = adminTableRecords_(tables,'credentialBody');
+    const degrees = credentials
+      .filter(x => String(x.kind || '') === 'degree' && String(x.unfinished || '') !== '1')
+      .sort((a,b) => degreeRank_(b.level)-degreeRank_(a.level) || Number(b.year||0)-Number(a.year||0));
+    const titles = credentials
+      .filter(x => String(x.kind || '') === 'title')
+      .sort((a,b) => titleRank_(b.level)-titleRank_(a.level) || Number(b.year||0)-Number(a.year||0));
+
+    const highestDegree = degrees[0] || {};
+    const highestTitle = titles[0] || {};
     const filled = PROFILE_FIELDS.reduce((count, field) => {
       const value = general[field];
-      if (value === 0 || value === false) return count + 1;
+      if (value === 0 || value === false || value === '0') return count + (field.indexOf('person_accept_')===0 ? 1 : 0);
       return String(value == null ? '' : value).trim() ? count + 1 : count;
     }, 0);
 
     const lastSeenMs = meta.lastSeen ? new Date(meta.lastSeen).getTime() : 0;
     const hasAcademicData = Object.keys(tables).some(k => Array.isArray(tables[k]) && tables[k].length);
+    const gender = String(general.person_gender || '') === '1' ? 'Nam' :
+      String(general.person_gender || '') === '0' ? 'Nữ' : '';
+    const age = ageFromDob_(general.person_dob);
 
-    users.push({
+    const derived = {
+      age: age,
+      gender: gender,
+      highestDegree: String(highestDegree.level || ''),
+      highestDegreeMajor: String(highestDegree.major || ''),
+      highestDegreeYear: String(highestDegree.year || ''),
+      highestTitle: String(highestTitle.level || ''),
+      wantsTeaching: String(general.person_accept_teaching || '') === '1',
+      wantsCompanyProjects: String(general.person_accept_company_projects || '') === '1'
+    };
+
+    const filterData = {
       email: email,
       accountName: String(identity.name || ''),
       profileName: String(general.person_name || ''),
-      firstSeen: String(meta.firstSeen || ''),
-      lastSeen: String(meta.lastSeen || ''),
-      visits: Number(meta.visits || 0),
-      completion: Math.round((filled / PROFILE_FIELDS.length) * 100),
-      filledFields: filled,
-      totalFields: PROFILE_FIELDS.length,
-      hasProfile: Object.keys(general).length > 0,
-      hasAcademicData: hasAcademicData,
-      active7d: Boolean(lastSeenMs && now - lastSeenMs <= 7 * 24 * 60 * 60 * 1000),
-      active30d: Boolean(lastSeenMs && now - lastSeenMs <= 30 * 24 * 60 * 60 * 1000)
+      age: String(age),
+      gender: gender,
+      highestDegree: derived.highestDegree,
+      highestDegreeMajor: derived.highestDegreeMajor,
+      highestTitle: derived.highestTitle,
+      wantsTeaching: derived.wantsTeaching ? 'Có' : 'Không',
+      wantsCompanyProjects: derived.wantsCompanyProjects ? 'Có' : 'Không'
+    };
+    Object.keys(general).forEach(key => { filterData['general.'+key] = String(general[key] == null ? '' : general[key]); });
+    Object.keys(tables).forEach(key => {
+      filterData['tables.'+key] = JSON.stringify(tables[key] || []);
+    });
+
+    const searchText = JSON.stringify({
+      identity:identity,
+      general:general,
+      tables:tables,
+      derived:derived
+    }).toLowerCase();
+
+    users.push({
+      email:email,
+      accountName:String(identity.name || ''),
+      profileName:String(general.person_name || ''),
+      firstSeen:String(meta.firstSeen || ''),
+      lastSeen:String(meta.lastSeen || ''),
+      visits:Number(meta.visits || 0),
+      completion:Math.round((filled / PROFILE_FIELDS.length) * 100),
+      filledFields:filled,
+      totalFields:PROFILE_FIELDS.length,
+      hasProfile:Object.keys(general).length > 0,
+      hasAcademicData:hasAcademicData,
+      active7d:Boolean(lastSeenMs && now - lastSeenMs <= 7 * 24 * 60 * 60 * 1000),
+      active30d:Boolean(lastSeenMs && now - lastSeenMs <= 30 * 24 * 60 * 60 * 1000),
+      general:general,
+      tables:tables,
+      derived:derived,
+      filterData:filterData,
+      searchText:searchText
     });
   }
 
@@ -458,7 +593,9 @@ function getAdminDashboard(token) {
       active7d:users.filter(u=>u.active7d).length,
       active30d:users.filter(u=>u.active30d).length,
       profilesCreated:users.filter(u=>u.hasProfile).length,
-      academicDataUsers:users.filter(u=>u.hasAcademicData).length
+      academicDataUsers:users.filter(u=>u.hasAcademicData).length,
+      wantsTeaching:users.filter(u=>u.derived && u.derived.wantsTeaching).length,
+      wantsCompanyProjects:users.filter(u=>u.derived && u.derived.wantsCompanyProjects).length
     },
     users:users
   };
