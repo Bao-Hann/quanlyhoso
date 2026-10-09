@@ -301,3 +301,16 @@ Ghi chú:
 - File sửa: `google-apps-script/Script.html`.
 - Trạng thái: **PENDING TEST**.
 
+
+### PROFILE-EDIT-02 — Hard fallback cho nút Edit — 2026-10-09
+
+- Kết quả test PROFILE-EDIT-01: **FAIL** — người dùng vẫn không mở được chế độ chỉnh sửa.
+- Giả thuyết mới: luồng JavaScript/server đang lỗi hoặc treo trước/sau khi tải hồ sơ khiến handler chuẩn không hoạt động ổn định.
+- Sửa:
+  - nút **Edit** có fallback trực tiếp ngay trong `Index.html`, không phụ thuộc `google.script.run` hay việc `Script.html` tải dữ liệu thành công;
+  - không còn khóa nút Edit trong lúc gọi `loadGeneral`;
+  - thêm delegated click fallback trong `Script.html`;
+  - khi Edit được bấm, toàn bộ `.general-field` được bật và nút Save hiện ra ngay.
+- Trạng thái: **PENDING TEST**.
+- Nếu vẫn fail, kiểm tra deployment/version mismatch trước khi tiếp tục sửa logic.
+
