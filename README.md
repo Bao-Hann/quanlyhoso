@@ -343,3 +343,13 @@ Ghi chú:
 - File sửa: `Code.gs`, `Script.html`.
 - Trạng thái: **PENDING TEST**.
 
+
+### PROFILE-SAVE-04 — Fix lỗi cú pháp Code.gs dòng 622 — 2026-10-10
+
+- Kết quả test PROFILE-SAVE-03: **FAIL trước khi chạy** vì Apps Script báo `SyntaxError: Illegal continue statement: no surrounding iteration statement` tại dòng 622.
+- Nguyên nhân: vòng lặp Admin Dashboard đã được đổi từ `while` sang `docs.forEach(...)`, nhưng câu `continue` cũ vẫn còn bên trong callback.
+- Sửa: đổi `if (!email) continue;` thành `if (!email) return;` để bỏ qua user hiện tại trong callback `forEach`.
+- Không thay đổi logic storage/date ở lần sửa này.
+- File sửa: `google-apps-script/Code.gs`.
+- Trạng thái: **PENDING TEST**.
+
