@@ -10,20 +10,21 @@
     *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
     .top{position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;padding:18px 28px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
     .top h1{margin:0;font-size:1.1rem}.top a{color:var(--orange2);font-weight:700;text-decoration:none}
-    .shell{max-width:1280px;margin:0 auto;padding:32px 24px 50px}
+    .shell{max-width:1500px;margin:0 auto;padding:32px 24px 50px}
     .hero{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:24px}.hero h2{font-size:2rem;margin:0 0 8px}.hero p{margin:0;color:var(--muted)}
-    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:22px 0 28px}
-    .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 8px 24px rgba(60,45,35,.04)}
-    .stat strong{display:block;font-size:2rem;margin-bottom:5px}.stat span{color:var(--muted);font-size:.86rem}
+    .stats{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin:22px 0 28px}.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 8px 24px rgba(60,45,35,.04)}
+    .stat strong{display:block;font-size:1.7rem;margin-bottom:5px}.stat span{color:var(--muted);font-size:.8rem}
     .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(60,45,35,.05)}
-    .tools{padding:16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center}
-    .tools input{width:min(420px,100%);padding:11px 13px;border:1px solid #d9d1cb;border-radius:10px;font:inherit}
-    table{width:100%;border-collapse:collapse}th,td{padding:13px 14px;border-bottom:1px solid #eee8e3;text-align:left;vertical-align:middle;font-size:.88rem}
-    th{background:#fffaf6;color:#655c56;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
-    .name{font-weight:750}.email{color:var(--muted);font-size:.82rem;margin-top:3px}.pill{display:inline-flex;padding:5px 8px;border-radius:999px;background:#f2eee9;font-size:.76rem;font-weight:700}
-    .bar{width:100px;height:7px;background:#eee8e3;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--orange)}
+    .tools{padding:16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(240px,2fr) repeat(4,minmax(130px,1fr)) auto;gap:10px;align-items:center}
+    .tools input,.tools select,.tools button{padding:10px 12px;border:1px solid #d9d1cb;border-radius:10px;font:inherit;background:#fff;min-width:0}.tools button{cursor:pointer;font-weight:700}
+    table{width:100%;border-collapse:collapse}th,td{padding:12px 12px;border-bottom:1px solid #eee8e3;text-align:left;vertical-align:middle;font-size:.86rem}
+    th{background:#fffaf6;color:#655c56;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+    .name{font-weight:750}.email{color:var(--muted);font-size:.8rem;margin-top:3px}.pill{display:inline-flex;padding:5px 8px;border-radius:999px;background:#f2eee9;font-size:.74rem;font-weight:700;white-space:nowrap}
+    .pill.yes{background:#e9f7ef;color:#176b3a}.pill.no{background:#f4f1ee;color:#766d67}.bar{width:82px;height:7px;background:#eee8e3;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--orange)}
     .muted{color:var(--muted)}.empty{padding:40px;text-align:center;color:var(--muted)}.error{padding:18px;color:#9d2c20;background:#fff1ee;border-radius:12px}
-    @media(max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}.table-wrap{overflow:auto}table{min-width:980px}}
+    .detail-btn{border:1px solid #d8cfc8;border-radius:8px;background:#fff;padding:7px 10px;cursor:pointer}.detail-row td{background:#fcfaf8;padding:18px}.detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .detail-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;overflow:auto}.detail-card h4{margin:0 0 10px;font-size:.9rem}.kv{display:grid;grid-template-columns:150px 1fr;gap:5px 10px;font-size:.8rem}.kv b{color:#6e635c}.json{white-space:pre-wrap;word-break:break-word;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;color:#49423d;max-height:300px;overflow:auto}
+    @media(max-width:1150px){.stats{grid-template-columns:repeat(3,1fr)}.tools{grid-template-columns:1fr 1fr}.table-wrap{overflow:auto}table{min-width:1150px}.detail-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -31,80 +32,136 @@
     <h1>Scientist Profile · Admin</h1>
     <a href="<?= webAppUrl ?>?page=app" target="_top">Về hồ sơ của tôi</a>
   </header>
-
   <main class="shell">
-    <section class="hero">
-      <div><h2>Dashboard người dùng</h2><p id="adminLine">Đang tải dữ liệu...</p></div>
-    </section>
-
+    <section class="hero"><div><h2>Dashboard người dùng</h2><p id="adminLine">Đang tải dữ liệu...</p></div></section>
     <div id="errorBox"></div>
-
     <section class="stats">
-      <div class="stat"><strong id="sTotal">—</strong><span>Tổng người dùng đã ghi nhận</span></div>
+      <div class="stat"><strong id="sTotal">—</strong><span>Tổng người dùng</span></div>
       <div class="stat"><strong id="s7">—</strong><span>Hoạt động 7 ngày</span></div>
       <div class="stat"><strong id="s30">—</strong><span>Hoạt động 30 ngày</span></div>
-      <div class="stat"><strong id="sProfile">—</strong><span>Đã tạo hồ sơ</span></div>
+      <div class="stat"><strong id="sProfile">—</strong><span>Đã có hồ sơ</span></div>
       <div class="stat"><strong id="sAcademic">—</strong><span>Có dữ liệu học thuật</span></div>
+      <div class="stat"><strong id="sTeach">—</strong><span>Mong muốn đi dạy</span></div>
+      <div class="stat"><strong id="sCompany">—</strong><span>Muốn dự án doanh nghiệp</span></div>
     </section>
-
     <section class="panel">
-      <div class="tools"><input id="search" type="search" placeholder="Tìm theo tên hoặc email..." disabled></div>
+      <div class="tools">
+        <input id="search" type="search" placeholder="Tìm trên toàn bộ hồ sơ..." disabled>
+        <select id="fieldFilter" disabled><option value="">Mọi trường thông tin</option></select>
+        <input id="fieldValue" type="search" placeholder="Giá trị cần lọc..." disabled>
+        <select id="genderFilter" disabled><option value="">Mọi giới tính</option><option>Nam</option><option>Nữ</option></select>
+        <select id="needFilter" disabled><option value="">Mọi nhu cầu</option><option value="teach">Muốn đi dạy</option><option value="company">Muốn dự án DN</option><option value="both">Cả hai</option></select>
+        <button id="clearFilter" type="button" disabled>Xóa lọc</button>
+      </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Người dùng</th><th>Họ tên hồ sơ</th><th>Hoàn thiện</th><th>Lượt truy cập</th><th>Lần đầu</th><th>Gần nhất</th><th>Dữ liệu</th></tr></thead>
-          <tbody id="rows"><tr><td colspan="7" class="empty">Đang tải...</td></tr></tbody>
+          <thead><tr><th>Người dùng</th><th>Tuổi</th><th>Giới tính</th><th>Học vị cao nhất</th><th>Giảng dạy</th><th>Dự án DN</th><th>Hoàn thiện</th><th>Gần nhất</th><th>Chi tiết</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="9" class="empty">Đang tải...</td></tr></tbody>
         </table>
       </div>
     </section>
   </main>
-
 <script>
+  const bootstrapSession = <?!= adminSessionJson ?>;
+  if (bootstrapSession && bootstrapSession.token) {
+    try { sessionStorage.setItem('scientist-local-session',JSON.stringify(bootstrapSession)); } catch (_) {}
+  }
+
   let allUsers=[];
-  const fmt=value=>{
-    if(!value)return '—';
-    const d=new Date(value); if(Number.isNaN(d.getTime()))return '—';
-    return new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short'}).format(d);
-  };
+  const fmt=value=>{if(!value)return '—';const d=new Date(value);if(Number.isNaN(d.getTime()))return '—';return new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short'}).format(d);};
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const yes=v=>v?'<span class="pill yes">Có</span>':'<span class="pill no">Không</span>';
+  const FIELD_LABELS={
+    email:'Email',accountName:'Tên tài khoản Google',profileName:'Họ tên hồ sơ',age:'Tuổi',gender:'Giới tính',
+    highestDegree:'Học vị cao nhất',highestDegreeMajor:'Ngành học vị cao nhất',highestTitle:'Học hàm cao nhất',
+    wantsTeaching:'Mong muốn đi dạy',wantsCompanyProjects:'Dự án doanh nghiệp',
+    'general.person_name':'Họ tên','general.person_dob':'Ngày sinh','general.person_pob':'Nơi sinh','general.person_hometown':'Quê quán',
+    'general.person_ethnicity':'Dân tộc','general.person_position':'Chức vụ','general.person_work_unit':'Đơn vị công tác',
+    'general.person_address':'Địa chỉ','general.person_mobile_phone':'Điện thoại','general.person_email':'Email hồ sơ',
+    'general.person_accept_teaching':'Mong muốn đi dạy','general.person_accept_company_projects':'Mong muốn dự án doanh nghiệp',
+    'tables.teachingBody':'Môn có thể giảng dạy','tables.researchBody':'Hướng nghiên cứu','tables.credentialBody':'Học hàm - học vị',
+    'tables.workBody':'Quá trình công tác','tables.projectBody':'Đề tài','tables.articleBody':'Bài báo','tables.seminarBody':'Hội thảo','tables.textbookBody':'Giáo trình','tables.awardBody':'Giải thưởng'
+  };
+
+  const renderDetail=u=>{
+    const g=u.general||{}, d=u.derived||{}, t=u.tables||{};
+    const basic=[
+      ['Họ tên',g.person_name],['Ngày sinh',g.person_dob],['Tuổi',d.age],['Giới tính',d.gender],['Nơi sinh',g.person_pob],['Quê quán',g.person_hometown],
+      ['Dân tộc',g.person_ethnicity],['Chức vụ',g.person_position],['Đơn vị',g.person_work_unit],['Địa chỉ',g.person_address],
+      ['Điện thoại',g.person_mobile_phone],['Email hồ sơ',g.person_email],['Học vị cao nhất',d.highestDegree],['Ngành',d.highestDegreeMajor],['Học hàm cao nhất',d.highestTitle]
+    ];
+    const wishes=[
+      ['Mong muốn đi dạy',d.wantsTeaching?'Có':'Không'],
+      ['Dự án doanh nghiệp',d.wantsCompanyProjects?'Có':'Không'],
+      ['Nghiên cứu chung',String(g.person_accept_researching||'0')==='1'?'Có':'Không'],
+      ['Tham gia hội đồng',String(g.person_accept_committee||'0')==='1'?'Có':'Không'],
+      ['Làm người hướng dẫn',String(g.person_accept_instructor||'0')==='1'?'Có':'Không']
+    ];
+    const kv=list=>'<div class="kv">'+list.map(x=>'<b>'+esc(x[0])+'</b><span>'+esc(x[1]||'—')+'</span>').join('')+'</div>';
+    return '<div class="detail-grid"><div class="detail-card"><h4>Thông tin hồ sơ</h4>'+kv(basic)+'</div>'+
+      '<div class="detail-card"><h4>Mong muốn / kết nối</h4>'+kv(wishes)+'</div>'+
+      '<div class="detail-card"><h4>Toàn bộ dữ liệu học thuật</h4><div class="json">'+esc(JSON.stringify(t,null,2))+'</div></div></div>';
+  };
+
   const render=users=>{
     const body=document.getElementById('rows');
-    if(!users.length){body.innerHTML='<tr><td colspan="7" class="empty">Chưa có người dùng phù hợp.</td></tr>';return;}
-    body.innerHTML=users.map(u=>`
-      <tr>
-        <td><div class="name">${esc(u.accountName||'(chưa có tên Google)')}</div><div class="email">${esc(u.email)}</div></td>
-        <td>${esc(u.profileName||'—')}</td>
-        <td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><i style="width:${Number(u.completion)||0}%"></i></div><span>${Number(u.completion)||0}%</span></div></td>
-        <td>${Number(u.visits)||0}</td>
-        <td class="muted">${fmt(u.firstSeen)}</td>
-        <td class="muted">${fmt(u.lastSeen)}</td>
-        <td><span class="pill">${u.hasAcademicData?'Có học thuật':(u.hasProfile?'Hồ sơ cơ bản':'Chưa có')}</span></td>
-      </tr>`).join('');
+    if(!users.length){body.innerHTML='<tr><td colspan="9" class="empty">Chưa có người dùng phù hợp.</td></tr>';return;}
+    body.innerHTML=users.map((u,i)=>'<tr>'+
+      '<td><div class="name">'+esc(u.profileName||u.accountName||'(chưa có tên)')+'</div><div class="email">'+esc(u.email)+'</div></td>'+
+      '<td>'+esc(u.derived?.age||'—')+'</td><td>'+esc(u.derived?.gender||'—')+'</td>'+
+      '<td><div class="name">'+esc(u.derived?.highestDegree||'—')+'</div><div class="email">'+esc(u.derived?.highestDegreeMajor||'')+'</div></td>'+
+      '<td>'+yes(u.derived?.wantsTeaching)+'</td><td>'+yes(u.derived?.wantsCompanyProjects)+'</td>'+
+      '<td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><i style="width:'+(Number(u.completion)||0)+'%"></i></div><span>'+(Number(u.completion)||0)+'%</span></div></td>'+
+      '<td class="muted">'+fmt(u.lastSeen)+'</td><td><button class="detail-btn" data-detail="'+i+'">Xem</button></td></tr>'+
+      '<tr class="detail-row" data-detail-row="'+i+'" hidden><td colspan="9">'+renderDetail(u)+'</td></tr>'
+    ).join('');
+    body.querySelectorAll('.detail-btn').forEach(btn=>btn.addEventListener('click',()=>{
+      const row=body.querySelector('[data-detail-row="'+btn.dataset.detail+'"]'); if(row) row.hidden=!row.hidden;
+    }));
   };
+
+  const applyFilters=()=>{
+    const q=document.getElementById('search').value.trim().toLowerCase();
+    const field=document.getElementById('fieldFilter').value;
+    const fieldValue=document.getElementById('fieldValue').value.trim().toLowerCase();
+    const gender=document.getElementById('genderFilter').value;
+    const need=document.getElementById('needFilter').value;
+    const filtered=allUsers.filter(u=>{
+      if(q && !String(u.searchText||'').includes(q)) return false;
+      if(field && fieldValue && !String((u.filterData||{})[field]||'').toLowerCase().includes(fieldValue)) return false;
+      if(gender && u.derived?.gender!==gender) return false;
+      if(need==='teach' && !u.derived?.wantsTeaching) return false;
+      if(need==='company' && !u.derived?.wantsCompanyProjects) return false;
+      if(need==='both' && !(u.derived?.wantsTeaching && u.derived?.wantsCompanyProjects)) return false;
+      return true;
+    });
+    render(filtered);
+  };
+
   const ok=data=>{
     document.getElementById('adminLine').textContent='Đăng nhập quản trị: '+(data.admin.name||data.admin.email);
-    document.getElementById('sTotal').textContent=data.stats.totalUsers;
-    document.getElementById('s7').textContent=data.stats.active7d;
-    document.getElementById('s30').textContent=data.stats.active30d;
-    document.getElementById('sProfile').textContent=data.stats.profilesCreated;
-    document.getElementById('sAcademic').textContent=data.stats.academicDataUsers;
-    allUsers=data.users||[];render(allUsers);
-    const search=document.getElementById('search');search.disabled=false;
-    search.addEventListener('input',()=>{
-      const q=search.value.trim().toLowerCase();
-      render(!q?allUsers:allUsers.filter(u=>[u.email,u.accountName,u.profileName].some(v=>String(v||'').toLowerCase().includes(q))));
+    [['sTotal','totalUsers'],['s7','active7d'],['s30','active30d'],['sProfile','profilesCreated'],['sAcademic','academicDataUsers'],['sTeach','wantsTeaching'],['sCompany','wantsCompanyProjects']]
+      .forEach(([id,key])=>document.getElementById(id).textContent=data.stats[key]||0);
+    allUsers=data.users||[];
+    const fieldSet=new Set(); allUsers.forEach(u=>Object.keys(u.filterData||{}).forEach(k=>fieldSet.add(k)));
+    const select=document.getElementById('fieldFilter');
+    [...fieldSet].sort((a,b)=>(FIELD_LABELS[a]||a).localeCompare(FIELD_LABELS[b]||b,'vi')).forEach(key=>{
+      const option=document.createElement('option'); option.value=key; option.textContent=FIELD_LABELS[key]||key; select.appendChild(option);
     });
+    ['search','fieldFilter','fieldValue','genderFilter','needFilter','clearFilter'].forEach(id=>document.getElementById(id).disabled=false);
+    ['search','fieldFilter','fieldValue','genderFilter','needFilter'].forEach(id=>document.getElementById(id).addEventListener(id==='search'||id==='fieldValue'?'input':'change',applyFilters));
+    document.getElementById('clearFilter').addEventListener('click',()=>{
+      ['search','fieldValue'].forEach(id=>document.getElementById(id).value='');
+      ['fieldFilter','genderFilter','needFilter'].forEach(id=>document.getElementById(id).value='');
+      render(allUsers);
+    });
+    render(allUsers);
   };
-  const fail=err=>{document.getElementById('errorBox').innerHTML='<div class="error">'+esc(err.message||err)+'</div>';document.getElementById('rows').innerHTML='<tr><td colspan="7" class="empty">Không tải được dữ liệu.</td></tr>';};
-  let adminToken='';
-  try {
-    const session=JSON.parse(sessionStorage.getItem('scientist-local-session')||'null');
-    adminToken=session&&session.token||'';
-  } catch (_) {}
-  if(!adminToken){
-    window.top.location.href=<?= JSON.stringify(webAppUrl) ?>+'?page=login';
-  } else {
-    google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getAdminDashboard(adminToken);
-  }
+  const fail=err=>{document.getElementById('errorBox').innerHTML='<div class="error">'+esc(err.message||err)+'</div>';document.getElementById('rows').innerHTML='<tr><td colspan="9" class="empty">Không tải được dữ liệu.</td></tr>';};
+  let adminToken=bootstrapSession&&bootstrapSession.token||'';
+  if(!adminToken){try{const session=JSON.parse(sessionStorage.getItem('scientist-local-session')||'null');adminToken=session&&session.token||'';}catch(_){}}
+  if(!adminToken){window.top.location.href=<?= JSON.stringify(webAppUrl) ?>+'?page=login';}
+  else{google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getAdminDashboard(adminToken);}
 </script>
 </body>
 </html>
