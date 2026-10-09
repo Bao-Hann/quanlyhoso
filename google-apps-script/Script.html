@@ -104,8 +104,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const body=doc.getElementsByTagNameNS(W,'body')[0];
     const p=children(body,'p'), tables=children(body,'tbl');
     const education=rows('credentialBody'), degrees=education.filter(x=>x.kind==='degree'&&x.unfinished!=='1');
-    const rank=x=>/tiến sĩ/i.test(x.level)?3:/thạc sĩ/i.test(x.level)?2:1;
-    const highest=[...degrees].sort((a,b)=>rank(b)-rank(a)||Number(b.year)-Number(a.year))[0] || {};
+    const rank=x=>{
+      const level=String(x.level||'').toLowerCase();
+      if(/tiến sĩ|ph\.d|phd/.test(level)) return 40;
+      if(/thạc sĩ|master/.test(level)) return 30;
+      if(/kỹ sư|cử nhân|bachelor/.test(level)) return 20;
+      return level ? 10 : 0;
+    };
+    // Mọi trường "học vị cao nhất" trong bản xuất đều lấy bản ghi có bậc cao nhất;
+    // nếu cùng bậc thì ưu tiên năm gần nhất.
+    const highest=[...degrees].sort((a,b)=>rank(b)-rank(a)||Number(b.year||0)-Number(a.year||0))[0] || {};
     const titles=education.filter(x=>x.kind==='title');
     const title=[...titles].sort((a,b)=>(/phó/i.test(a.level)?0:1)-(/phó/i.test(b.level)?0:1)||Number(a.year)-Number(b.year)).pop() || {};
     const under=degrees.filter(x=>rank(x)===1), first=under[0] || {}, second=under[1] || {};
@@ -478,6 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const editBtn = document.getElementById('editGeneralBtn');
   const saveBtn = document.getElementById('saveGeneralBtn');
   const fields = document.querySelectorAll('.general-field');
+  const preferenceFields = document.querySelectorAll('.preference[name]');
 
   if (editBtn) {
     editBtn.addEventListener('click', () => {
@@ -503,8 +512,46 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (el.type === 'checkbox') el.checked = Boolean(data[el.name]);
       else el.value = data[el.name] ?? '';
     });
+    preferenceFields.forEach(el => {
+      el.checked = String((data || {})[el.name] || '0') === '1';
+    });
     syncAccountIdentity();
   };
+
+  const readPreferences = () => Object.fromEntries(
+    [...preferenceFields].map(el => [el.name, el.checked ? '1' : '0'])
+  );
+
+  const savePreferenceState = () => {
+    if (!ownsCurrentSession()) {
+      toast('Tài khoản đã thay đổi. Hãy tải lại trang trước khi lưu.', 'danger');
+      return;
+    }
+    const payload = readPreferences();
+    if (window.google?.script?.run) {
+      preferenceFields.forEach(el => el.disabled = true);
+      google.script.run
+        .withSuccessHandler(() => {
+          preferenceFields.forEach(el => el.disabled = false);
+          toast('Đã lưu mong muốn của bạn.');
+        })
+        .withFailureHandler(err => {
+          preferenceFields.forEach(el => el.disabled = false);
+          toast('Không lưu được thông tin bổ sung: ' + err.message, 'danger');
+        })
+        .savePreferences(payload, authToken);
+    } else {
+      try {
+        const current = JSON.parse(localStorage.getItem(generalKey) || '{}');
+        localStorage.setItem(generalKey, JSON.stringify({...current, ...payload}));
+        toast('Đã lưu mong muốn của bạn.');
+      } catch (err) {
+        toast('Không lưu được thông tin bổ sung.', 'danger');
+      }
+    }
+  };
+
+  preferenceFields.forEach(el => el.addEventListener('change', savePreferenceState));
   let generalReady = !window.google?.script?.run;
   if (window.google?.script?.run) {
     if (editBtn) editBtn.disabled = true;
