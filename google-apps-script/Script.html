@@ -564,7 +564,12 @@ document.addEventListener('DOMContentLoaded', () => {
       applyGeneral(result.data || {}); generalReady = true;
       if (editBtn) editBtn.disabled = false;
     }).withFailureHandler(err => {
-      toast('Không tải được hồ sơ: ' + err.message, 'danger');
+      // Không khóa nút Edit chỉ vì tải dữ liệu cũ thất bại.
+      // Người dùng vẫn phải có thể mở form để nhập/sửa thông tin;
+      // lỗi lưu (nếu còn) sẽ được báo riêng khi bấm Save.
+      generalReady = true;
+      if (editBtn) editBtn.disabled = false;
+      toast('Không tải được hồ sơ cũ: ' + err.message + '. Bạn vẫn có thể nhập/chỉnh sửa thông tin rồi thử lưu lại.', 'warning');
     }).loadGeneral(authToken);
   } else {
     try { applyGeneral(JSON.parse(localStorage.getItem(generalKey) || '{}')); }
