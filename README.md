@@ -288,3 +288,16 @@ Ghi chú:
 - Trạng thái: **PENDING TEST**.
 - Nếu fail: rollback riêng nhóm commit ADMIN-PROFILE-02 và đối chiếu LAST KNOWN GOOD trước khi sửa tiếp.
 
+
+### PROFILE-EDIT-01 — Mở lại nút Edit khi tải hồ sơ lỗi — 2026-10-09
+
+- Hiện tượng: phần **Thông tin cơ bản** hiển thị nhưng nút **Edit** không sử dụng được.
+- Nguyên nhân trong client: khi `loadGeneral()` lỗi (ví dụ backend/Drive trả lỗi), code đặt `editBtn.disabled = true` nhưng nhánh failure không bật lại.
+- Sửa:
+  - failure handler của `loadGeneral` luôn bật lại nút **Edit**;
+  - đặt `generalReady = true` để người dùng có thể nhập dữ liệu mới;
+  - đổi thông báo thành cảnh báo rõ rằng hồ sơ cũ chưa tải được nhưng vẫn có thể chỉnh sửa.
+- Lưu ý: nếu backend vẫn báo `DriveApp access denied`, người dùng có thể mở form nhưng thao tác **Save** vẫn có thể lỗi cho đến khi quyền Drive của deployment được xử lý.
+- File sửa: `google-apps-script/Script.html`.
+- Trạng thái: **PENDING TEST**.
+
