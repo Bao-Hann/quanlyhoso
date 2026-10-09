@@ -252,3 +252,18 @@ Ghi chú:
 - Script Properties chỉ còn là cấu hình tĩnh: `ADMIN_EMAILS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `UPLOAD_FOLDER_ID`, `WEB_APP_URL`.
 - Google Cloud phải có Authorized redirect URI đúng bằng giá trị `WEB_APP_URL`.
 - Trạng thái: **PENDING TEST**. Nếu fail, rollback về LAST KNOWN GOOD trước khi thử tiếp.
+
+
+### FORM-EXPORT-01 — 2026-10-09
+
+- Mục tiêu: sửa các ràng buộc ngày/tháng/năm và làm sạch dữ liệu khi xuất Word.
+- Thay đổi:
+  - Quá trình công tác: trường **Từ** không cho chọn/lưu ngày tương lai.
+  - Seminar/Hội thảo và Sách giáo trình: tháng/năm không được vượt thời điểm hiện tại.
+  - Kiểm tra lặp lại ở server trước khi `saveTables` để không thể bỏ qua chỉ bằng DevTools.
+  - Xuất Word: bảng chỉ giữ **đúng số dòng có dữ liệu**, xóa các dòng trống dự phòng của template.
+  - Xuất Word: tự điền **ngày / tháng / năm hiện tại** vào dòng ký có mẫu “ngày ... tháng ... năm ...”.
+- File sửa: `google-apps-script/Index.html`, `Script.html`, `Code.gs`.
+- Trạng thái: **PENDING TEST** — chưa đánh dấu PASS cho tới khi kiểm thử trên Web App và file Word thực tế.
+- Nếu fail: rollback riêng các commit FORM-EXPORT-01, không sửa chồng lên luồng đăng nhập.
+
