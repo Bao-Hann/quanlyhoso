@@ -63,6 +63,7 @@
   </main>
 <script>
   const bootstrapSession = <?!= adminSessionJson ?>;
+  const bootstrapStorageWarning = <?!= storageWarningJson ?>;
   if (bootstrapSession && bootstrapSession.token) {
     try { sessionStorage.setItem('scientist-local-session',JSON.stringify(bootstrapSession)); } catch (_) {}
   }
@@ -140,6 +141,13 @@
 
   const ok=data=>{
     document.getElementById('adminLine').textContent='Đăng nhập quản trị: '+(data.admin.name||data.admin.email);
+    const storageError = data.storageError || bootstrapStorageWarning || '';
+    if(storageError){
+      document.getElementById('errorBox').innerHTML =
+        '<div class="error"><b>Admin đã đăng nhập thành công.</b><br>Dashboard chưa đọc được kho dữ liệu Drive: '+
+        esc(storageError)+
+        '<br><small>Chạy hàm authorizeStorage_() một lần trong Apps Script bằng tài khoản đang deploy. Nếu vẫn Access denied: DriveApp thì kiểm tra quyền/thư mục Drive hoặc chính sách Google Workspace.</small></div>';
+    }
     [['sTotal','totalUsers'],['s7','active7d'],['s30','active30d'],['sProfile','profilesCreated'],['sAcademic','academicDataUsers'],['sTeach','wantsTeaching'],['sCompany','wantsCompanyProjects']]
       .forEach(([id,key])=>document.getElementById(id).textContent=data.stats[key]||0);
     allUsers=data.users||[];
