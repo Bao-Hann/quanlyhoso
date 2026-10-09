@@ -511,6 +511,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const authToken = window.GAS_AUTH_TOKEN || '';
   const ownsCurrentSession = () => !window.OneFormAuth || (window.OneFormAuth.getSession?.()?.email || '') === (identity.email || '');
   const generalKey = 'scientist-general-v2:' + accountId;
+  const readLocalGeneral = () => {
+    try { return JSON.parse(localStorage.getItem(generalKey) || '{}') || {}; }
+    catch (_) { return {}; }
+  };
+  const writeLocalGeneral = data => {
+    try {
+      localStorage.setItem(generalKey, JSON.stringify(data || {}));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
   const readGeneral = () => Object.fromEntries([...fields]
     .filter(el => el.name && (el.type !== 'radio' || el.checked))
     .map(el => [el.name, el.type === 'checkbox' ? el.checked : el.value]));
@@ -561,7 +573,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   preferenceFields.forEach(el => el.addEventListener('change', savePreferenceState));
-  let generalReady = !window.google?.script?.run;
+  // Cho phép Save ngay; không chờ Drive/backend tải xong mới được lưu.
+  let generalReady = true;
+  const localGeneral = readLocalGeneral();
+  if (Object.keys(localGeneral).length) applyGeneral(localGeneral);
+
   if (window.google?.script?.run) {
     if (editBtn) editBtn.disabled = false;
     google.script.run.withSuccessHandler(result => {
@@ -570,24 +586,21 @@ document.addEventListener('DOMContentLoaded', () => {
         syncAccountIdentity(result.user);
         ensureAccountDisplayName(result.user);
       }
-      applyGeneral(result.data || {}); generalReady = true;
+      const remote = result.data || {};
+      if (Object.keys(remote).length) {
+        applyGeneral(remote);
+        writeLocalGeneral(remote);
+      }
       if (editBtn) editBtn.disabled = false;
     }).withFailureHandler(err => {
-      // Không khóa nút Edit chỉ vì tải dữ liệu cũ thất bại.
-      // Người dùng vẫn phải có thể mở form để nhập/sửa thông tin;
-      // lỗi lưu (nếu còn) sẽ được báo riêng khi bấm Save.
-      generalReady = true;
       if (editBtn) editBtn.disabled = false;
-      toast('Không tải được hồ sơ cũ: ' + err.message + '. Bạn vẫn có thể nhập/chỉnh sửa thông tin rồi thử lưu lại.', 'warning');
+      toast('Kho dữ liệu máy chủ chưa sẵn sàng. Dữ liệu trên trình duyệt vẫn có thể lưu: ' + err.message, 'warning');
     }).loadGeneral(authToken);
-  } else {
-    try { applyGeneral(JSON.parse(localStorage.getItem(generalKey) || '{}')); }
-    catch (err) { toast('Không đọc được hồ sơ đã lưu.', 'warning'); }
   }
   generalForm?.addEventListener('submit', event => {
     event.preventDefault();
-    if (!ownsCurrentSession()) { toast('Tài khoản đã thay đổi. Hãy tải lại trang trước khi lưu.', 'danger'); return; }
-    if (!generalReady || !generalForm.reportValidity()) return;
+    if (!generalForm.reportValidity()) return;
+
     const data = readGeneral();
     if (data.person_dob && data.person_dob >= todayYmd) {
       toast('Ngày sinh phải trước ngày hiện tại.', 'warning'); return;
@@ -595,15 +608,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (data.person_date_issue && data.person_date_issue >= todayYmd) {
       toast('Ngày cấp CCCD phải trước ngày hiện tại.', 'warning'); return;
     }
+
+    // Lưu local trước để không mất dữ liệu dù backend/Drive đang lỗi.
+    const localSaved = writeLocalGeneral(data);
     saveBtn.disabled = true;
-    const done = () => {
-      applyGeneral(data); fields.forEach(el => el.disabled = true);
-      editBtn.style.display = ''; saveBtn.style.display = 'none'; saveBtn.disabled = false;
-      toast('Đã lưu thông tin cá nhân.');
+
+    const done = result => {
+      const persisted = result?.data || data;
+      writeLocalGeneral(persisted);
+      applyGeneral(persisted);
+      fields.forEach(el => el.disabled = true);
+      editBtn.style.display = '';
+      saveBtn.style.display = 'none';
+      saveBtn.disabled = false;
+      const where = result?.storage === 'drive' ? 'Google Drive' :
+        result?.storage === 'script-properties' ? 'bộ nhớ dự phòng' : 'máy chủ';
+      toast('Đã lưu thông tin cá nhân vào ' + where + '.');
     };
-    const failed = err => { saveBtn.disabled = false; toast('Không lưu được: ' + err.message, 'danger'); };
-    if (window.google?.script?.run) google.script.run.withSuccessHandler(done).withFailureHandler(failed).saveGeneral(data, authToken);
-    else { try { localStorage.setItem(generalKey, JSON.stringify(data)); done(); } catch (err) { failed(err); } }
+
+    const failed = err => {
+      saveBtn.disabled = false;
+      if (localSaved) {
+        // Giữ nguyên dữ liệu đã nhập và báo rõ trạng thái thay vì im lặng.
+        toast('Máy chủ chưa lưu được (' + (err?.message || err) + '), nhưng dữ liệu đã được giữ tạm trên trình duyệt này.', 'warning');
+      } else {
+        toast('Không lưu được: ' + (err?.message || err), 'danger');
+      }
+    };
+
+    if (window.google?.script?.run && authToken) {
+      google.script.run
+        .withSuccessHandler(done)
+        .withFailureHandler(failed)
+        .saveGeneral(data, authToken);
+    } else {
+      localSaved ? done({storage:'browser',data}) : failed(new Error('Trình duyệt không cho lưu dữ liệu.'));
+    }
   });
 
   // Store the scientific CV in this browser, separately for each account.
