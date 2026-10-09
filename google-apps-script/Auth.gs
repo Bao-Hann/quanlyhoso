@@ -79,8 +79,9 @@ function verifySignedToken_(token, expectedKind) {
   return data.p || {};
 }
 
-function createOAuthState_() {
-  return issueSignedToken_('oauth_state',{purpose:'google-login'},600);
+function createOAuthState_(purpose) {
+  const safePurpose = purpose === 'admin' ? 'admin' : 'user';
+  return issueSignedToken_('oauth_state',{purpose:safePurpose},600);
 }
 
 function verifyOAuthState_(state) {
