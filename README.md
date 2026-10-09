@@ -353,3 +353,18 @@ Ghi chú:
 - File sửa: `google-apps-script/Code.gs`.
 - Trạng thái: **PENDING TEST**.
 
+
+### PROFILE-SAVE-05 — Local-first + backend verify — 2026-10-10
+
+- Kết quả test PROFILE-SAVE-04: **FAIL chức năng Save** — form Edit mở được nhưng bấm Save không tạo trạng thái lưu bền vững.
+- Giả thuyết: client đang chặn Save bởi trạng thái `generalReady` trong lúc `loadGeneral`/Drive còn lỗi hoặc backend trả về mà không xác minh dữ liệu đã ghi.
+- Sửa:
+  - bỏ điều kiện phải chờ `loadGeneral` xong mới được Save;
+  - Save luôn ghi bản sao vào `localStorage` trước để không mất dữ liệu;
+  - backend `saveGeneral` trả lại storage thực tế và đọc lại dữ liệu để xác minh từng field đã được ghi;
+  - load hồ sơ đọc local ngay trước, sau đó mới đồng bộ dữ liệu server nếu server có dữ liệu;
+  - nếu server fail, UI báo rõ “đã giữ tạm trên trình duyệt”, không còn im lặng.
+- Không thay đổi logic ngày của PROFILE-SAVE-03/04.
+- File sửa: `Code.gs`, `Script.html`.
+- Trạng thái: **PENDING TEST**.
+
