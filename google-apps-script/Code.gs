@@ -412,22 +412,36 @@ function saveGeneral(data, token) {
 
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
+  let storageResult = {storage:'unknown'};
   try {
     const doc = readUserDocByEmail_(user.email) || emptyUserDoc_(user);
     doc.identity = doc.identity || {};
     doc.identity.email = user.email;
     doc.identity.name = user.name || doc.identity.name || '';
     doc.identity.picture = user.picture || doc.identity.picture || '';
-    doc.general = clean;
+    doc.general = Object.assign({}, doc.general || {}, clean);
     doc.meta = doc.meta || {};
     doc.meta.lastSeen = new Date().toISOString();
     doc.tables = doc.tables || {};
-    writeUserDoc_(doc);
+    storageResult = writeUserDoc_(doc) || storageResult;
   } finally {
     lock.releaseLock();
   }
 
-  return {ok:true};
+  const verify = readUserDocByEmail_(user.email);
+  if (!verify || !verify.general) throw new Error('Đã gửi lệnh lưu nhưng không đọc lại được dữ liệu.');
+  Object.keys(clean).forEach(key => {
+    if (String(verify.general[key] == null ? '' : verify.general[key]) !== String(clean[key])) {
+      throw new Error('Dữ liệu chưa được ghi bền vững: ' + key);
+    }
+  });
+
+  return {
+    ok:true,
+    storage:storageResult.storage || 'unknown',
+    warning:storageResult.warning || '',
+    data:verify.general
+  };
 }
 
 function loadGeneral(token) {
