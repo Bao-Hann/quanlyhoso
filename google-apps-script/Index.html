@@ -158,7 +158,7 @@
             <div class="row">
               <div class="col"><h1>Thông tin cơ bản</h1></div>
               <div class="col-sm-4 justify-content-center d-flex align-items-center">
-                <button type="button" class="btn btn-warning" id="editGeneralBtn">Edit <i class="bi bi-pencil-square"></i></button>
+                <button type="button" class="btn btn-warning" id="editGeneralBtn" onclick="document.querySelectorAll('.general-field').forEach(function(el){el.disabled=false});this.disabled=false;this.style.display='none';var s=document.getElementById('saveGeneralBtn');if(s){s.style.display='inline-block';s.disabled=false;}">Edit <i class="bi bi-pencil-square"></i></button>
                 <button type="submit" id="saveGeneralBtn" class="btn btn-primary ms-2" style="display:none">Save</button>
               </div>
             </div>
