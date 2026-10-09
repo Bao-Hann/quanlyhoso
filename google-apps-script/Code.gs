@@ -48,6 +48,7 @@ function doGet(e) {
     const t = HtmlService.createTemplateFromFile('Admin');
     t.webAppUrl = canonicalWebAppUrl_();
     t.adminSessionJson = JSON.stringify(null);
+    t.storageWarningJson = JSON.stringify('');
     return t.evaluate()
       .setTitle('Admin Dashboard - ' + APP_TITLE)
       .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
@@ -166,7 +167,13 @@ function completeGoogleOAuth_(params) {
     picture: picture
   };
 
-  upsertUserLogin_(user);
+  // Drive storage failure must not block Google authentication itself.
+  let storageWarning = '';
+  try {
+    upsertUserLogin_(user);
+  } catch (storageErr) {
+    storageWarning = String(storageErr && storageErr.message || storageErr);
+  }
 
   const session = createAppSession_(user);
 
@@ -177,6 +184,7 @@ function completeGoogleOAuth_(params) {
     const adminTemplate = HtmlService.createTemplateFromFile('Admin');
     adminTemplate.webAppUrl = canonicalWebAppUrl_();
     adminTemplate.adminSessionJson = JSON.stringify(session).replace(/</g, '\\u003c');
+    adminTemplate.storageWarningJson = JSON.stringify(storageWarning || '');
     return adminTemplate.evaluate()
       .setTitle('Admin Dashboard - ' + APP_TITLE)
       .setFaviconUrl('https://www.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
@@ -471,8 +479,23 @@ function ageFromDob_(dob) {
 
 function getAdminDashboard(token) {
   const admin = assertAdmin_(token);
-  const folder = dataFolder_();
-  const files = folder.getFiles();
+  let folder, files;
+  try {
+    folder = dataFolder_();
+    files = folder.getFiles();
+  } catch (err) {
+    return {
+      ok:true,
+      admin:{email:admin.email,name:admin.name || admin.displayName || ''},
+      generatedAt:new Date().toISOString(),
+      storageError:String(err && err.message || err),
+      stats:{
+        totalUsers:0,active7d:0,active30d:0,profilesCreated:0,
+        academicDataUsers:0,wantsTeaching:0,wantsCompanyProjects:0
+      },
+      users:[]
+    };
+  }
   const users = [];
   const now = Date.now();
 
@@ -692,6 +715,37 @@ function normalizeDoi_(raw) {
     .replace(/^doi:\s*/i, '')
     .trim();
   return /^10\.\d{4,9}\/.+$/i.test(cleaned) ? cleaned : '';
+}
+
+function authorizeStorage_() {
+  const folder = dataFolder_();
+  const info = {
+    ok:true,
+    folderId:folder.getId(),
+    folderName:folder.getName(),
+    effectiveUser:Session.getEffectiveUser().getEmail() || ''
+  };
+  console.log(JSON.stringify(info));
+  return info;
+}
+
+function debugStorageAccess() {
+  const info = {
+    effectiveUser:Session.getEffectiveUser().getEmail() || '',
+    activeUser:Session.getActiveUser().getEmail() || '',
+    uploadFolderId:appConfig_().uploadFolderId || '',
+    ok:false,
+    message:''
+  };
+  try {
+    const folder=dataFolder_();
+    info.ok=true;
+    info.folderName=folder.getName();
+  } catch (err) {
+    info.message=String(err && err.message || err);
+  }
+  console.log(JSON.stringify(info));
+  return info;
 }
 
 // ===== DIAGNOSTIC =====
