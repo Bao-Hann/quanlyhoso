@@ -212,33 +212,130 @@ function userFileName_(email) {
   return 'scientist_user_' + hashId_(String(email || '').trim().toLowerCase()) + '.json';
 }
 
-function readUserDocByEmail_(email) {
-  const folder = dataFolder_();
-  const name = userFileName_(email);
-  const files = folder.getFilesByName(name);
-  if (!files.hasNext()) return null;
+function fallbackUserBaseKey_(email) {
+  return 'FALLBACK_USER_' + hashId_(String(email || '').trim().toLowerCase());
+}
 
-  const file = files.next();
-  try {
-    return JSON.parse(file.getBlob().getDataAsString() || '{}');
-  } catch (_) {
-    throw new Error('Dữ liệu người dùng bị lỗi định dạng.');
+function readFallbackUserDocByBase_(base) {
+  const props = PropertiesService.getScriptProperties();
+  const count = Number(props.getProperty(base + '_COUNT') || 0);
+  if (!count || count < 1 || count > 100) return null;
+  let json = '';
+  for (let i=0;i<count;i++) {
+    const part = props.getProperty(base + '_CHUNK_' + i);
+    if (part == null) return null;
+    json += part;
   }
+  try { return JSON.parse(json || '{}'); }
+  catch (_) { return null; }
+}
+
+function readFallbackUserDoc_(email) {
+  return readFallbackUserDocByBase_(fallbackUserBaseKey_(email));
+}
+
+function writeFallbackUserDoc_(doc) {
+  const email = String(doc && doc.identity && doc.identity.email || '').trim().toLowerCase();
+  if (!email) throw new Error('Không xác định được email người dùng.');
+
+  const props = PropertiesService.getScriptProperties();
+  const base = fallbackUserBaseKey_(email);
+  const json = JSON.stringify(doc);
+  const chunkSize = 7000;
+  const chunks = [];
+  for (let i=0;i<json.length;i+=chunkSize) chunks.push(json.slice(i,i+chunkSize));
+  if (chunks.length > 100) throw new Error('Hồ sơ quá lớn cho bộ nhớ dự phòng.');
+
+  const oldCount = Number(props.getProperty(base + '_COUNT') || 0);
+  const values = {};
+  values[base + '_COUNT'] = String(chunks.length);
+  chunks.forEach((part,i)=>{ values[base + '_CHUNK_' + i] = part; });
+  props.setProperties(values, false);
+  for (let i=chunks.length;i<oldCount;i++) props.deleteProperty(base + '_CHUNK_' + i);
+}
+
+function listFallbackUserDocs_() {
+  const props = PropertiesService.getScriptProperties().getProperties();
+  const bases = Object.keys(props)
+    .filter(key => /^FALLBACK_USER_[A-Za-z0-9_-]+_COUNT$/.test(key))
+    .map(key => key.replace(/_COUNT$/,''));
+  return bases.map(readFallbackUserDocByBase_).filter(Boolean);
+}
+
+function listAllUserDocs_() {
+  const byEmail = {};
+  let storageError = '';
+
+  try {
+    const files = dataFolder_().getFiles();
+    while (files.hasNext()) {
+      const file = files.next();
+      if (!/^scientist_user_[a-f0-9]+\.json$/i.test(file.getName())) continue;
+      try {
+        const doc = JSON.parse(file.getBlob().getDataAsString() || '{}');
+        const email = String(doc && doc.identity && doc.identity.email || '').trim().toLowerCase();
+        if (email) byEmail[email] = doc;
+      } catch (_) {}
+    }
+  } catch (err) {
+    storageError = String(err && err.message || err);
+  }
+
+  listFallbackUserDocs_().forEach(doc => {
+    const email = String(doc && doc.identity && doc.identity.email || '').trim().toLowerCase();
+    if (email && !byEmail[email]) byEmail[email] = doc;
+  });
+
+  return {docs:Object.keys(byEmail).map(k=>byEmail[k]), storageError:storageError};
+}
+
+function readUserDocByEmail_(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  let driveError = null;
+
+  try {
+    const folder = dataFolder_();
+    const name = userFileName_(normalized);
+    const files = folder.getFilesByName(name);
+    if (files.hasNext()) {
+      const file = files.next();
+      try {
+        return JSON.parse(file.getBlob().getDataAsString() || '{}');
+      } catch (_) {
+        throw new Error('Dữ liệu người dùng bị lỗi định dạng.');
+      }
+    }
+  } catch (err) {
+    driveError = err;
+  }
+
+  const fallback = readFallbackUserDoc_(normalized);
+  if (fallback) return fallback;
+
+  // Nếu Drive đang bị chặn nhưng user chưa có dữ liệu, vẫn cho app mở hồ sơ rỗng.
+  if (driveError) return null;
+  return null;
 }
 
 function writeUserDoc_(doc) {
   const email = String(doc && doc.identity && doc.identity.email || '').trim().toLowerCase();
   if (!email) throw new Error('Không xác định được email người dùng.');
 
-  const folder = dataFolder_();
-  const name = userFileName_(email);
   const json = JSON.stringify(doc);
-  const files = folder.getFilesByName(name);
-
-  if (files.hasNext()) {
-    files.next().setContent(json);
-  } else {
-    folder.createFile(name, json, MimeType.PLAIN_TEXT);
+  try {
+    const folder = dataFolder_();
+    const name = userFileName_(email);
+    const files = folder.getFilesByName(name);
+    if (files.hasNext()) files.next().setContent(json);
+    else folder.createFile(name, json, MimeType.PLAIN_TEXT);
+    return {storage:'drive'};
+  } catch (driveErr) {
+    // Fallback để việc Save không bị chặn khi Workspace từ chối DriveApp.
+    writeFallbackUserDoc_(doc);
+    return {
+      storage:'script-properties',
+      warning:String(driveErr && driveErr.message || driveErr)
+    };
   }
 }
 
@@ -293,9 +390,20 @@ function sessionUser_(token) {
   return localSession_(token);
 }
 
+function validateGeneralDates_(data) {
+  const tz = Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
+  const today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const dob = String(data && data.person_dob || '').trim();
+  const issue = String(data && data.person_date_issue || '').trim();
+
+  if (dob && dob >= today) throw new Error('Ngày sinh phải trước ngày hiện tại.');
+  if (issue && issue >= today) throw new Error('Ngày cấp CCCD phải trước ngày hiện tại.');
+}
+
 function saveGeneral(data, token) {
   const user = sessionUser_(token);
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Hồ sơ không hợp lệ.');
+  validateGeneralDates_(data);
 
   const clean = {};
   Object.keys(data).forEach(key => {
@@ -369,18 +477,29 @@ function validateTableDates_(data) {
   const today = Utilities.formatDate(now, tz, 'yyyy-MM-dd');
   const currentYear = Number(Utilities.formatDate(now, tz, 'yyyy'));
   const currentMonth = Number(Utilities.formatDate(now, tz, 'MM'));
+  const rowData = item => item && item.data ? item.data : (item || {});
 
   (data.workBody || []).forEach(item => {
-    const start = String(item && item.start || '').trim();
-    if (start && start > today) {
-      throw new Error('Ngày "Từ" của quá trình công tác không được ở tương lai.');
-    }
+    const d = rowData(item);
+    const start = String(d.start || '').trim();
+    const end = String(d.end || '').trim();
+    if (start && start >= today) throw new Error('Ngày bắt đầu công tác phải trước ngày hiện tại.');
+    if (end && end >= today) throw new Error('Ngày kết thúc công tác phải trước ngày hiện tại.');
+  });
+
+  (data.projectBody || []).forEach(item => {
+    const d = rowData(item);
+    const start = String(d.startYear || d.start_year || '').trim();
+    const end = String(d.endYear || d.end_year || '').trim();
+    if (start && start >= today) throw new Error('Ngày bắt đầu đề tài phải trước ngày hiện tại.');
+    if (end && end >= today) throw new Error('Ngày nghiệm thu phải trước ngày hiện tại.');
   });
 
   const assertMonthYear = (items, label) => {
     (items || []).forEach(item => {
-      const y = Number(item && item.year || 0);
-      const m = Number(item && item.month || 0);
+      const d = rowData(item);
+      const y = Number(d.year || 0);
+      const m = Number(d.month || 0);
       if (y && (y > currentYear || (y === currentYear && m > currentMonth))) {
         throw new Error(label + ' không được ở tương lai.');
       }
@@ -479,23 +598,8 @@ function ageFromDob_(dob) {
 
 function getAdminDashboard(token) {
   const admin = assertAdmin_(token);
-  let folder, files;
-  try {
-    folder = dataFolder_();
-    files = folder.getFiles();
-  } catch (err) {
-    return {
-      ok:true,
-      admin:{email:admin.email,name:admin.name || admin.displayName || ''},
-      generatedAt:new Date().toISOString(),
-      storageError:String(err && err.message || err),
-      stats:{
-        totalUsers:0,active7d:0,active30d:0,profilesCreated:0,
-        academicDataUsers:0,wantsTeaching:0,wantsCompanyProjects:0
-      },
-      users:[]
-    };
-  }
+  const storage = listAllUserDocs_();
+  const docs = storage.docs || [];
   const users = [];
   const now = Date.now();
 
@@ -508,16 +612,7 @@ function getAdminDashboard(token) {
     'person_accept_instructor','person_accept_company_projects'
   ];
 
-  while (files.hasNext()) {
-    const file = files.next();
-    if (!/^scientist_user_[a-f0-9]+\.json$/i.test(file.getName())) continue;
-
-    let doc;
-    try {
-      doc = JSON.parse(file.getBlob().getDataAsString() || '{}');
-    } catch (_) {
-      continue;
-    }
+  docs.forEach(doc => {
 
     const identity = doc.identity || {};
     const meta = doc.meta || {};
@@ -603,7 +698,7 @@ function getAdminDashboard(token) {
       filterData:filterData,
       searchText:searchText
     });
-  }
+  });
 
   users.sort((a,b) => String(b.lastSeen).localeCompare(String(a.lastSeen)));
 
@@ -611,6 +706,7 @@ function getAdminDashboard(token) {
     ok:true,
     admin:{email:admin.email,name:admin.name || admin.displayName || ''},
     generatedAt:new Date().toISOString(),
+    storageError:storage.storageError || '',
     stats:{
       totalUsers:users.length,
       active7d:users.filter(u=>u.active7d).length,
