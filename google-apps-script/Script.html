@@ -488,13 +488,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const fields = document.querySelectorAll('.general-field');
   const preferenceFields = document.querySelectorAll('.preference[name]');
 
-  if (editBtn) {
-    editBtn.addEventListener('click', () => {
-      fields.forEach(el => el.disabled = false);
+  const enableGeneralEditing = () => {
+    fields.forEach(el => el.disabled = false);
+    if (editBtn) {
+      editBtn.disabled = false;
       editBtn.style.display = 'none';
+    }
+    if (saveBtn) {
+      saveBtn.disabled = false;
       saveBtn.style.display = 'inline-block';
-    });
-  }
+    }
+  };
+
+  if (editBtn) editBtn.addEventListener('click', enableGeneralEditing);
+  document.addEventListener('click', event => {
+    if (event.target.closest('#editGeneralBtn')) enableGeneralEditing();
+  });
 
   const generalForm = document.getElementById('editGeneral');
   const identity = window.GAS_USER || window.OneFormAuth?.getSession?.() || {};
@@ -554,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
   preferenceFields.forEach(el => el.addEventListener('change', savePreferenceState));
   let generalReady = !window.google?.script?.run;
   if (window.google?.script?.run) {
-    if (editBtn) editBtn.disabled = true;
+    if (editBtn) editBtn.disabled = false;
     google.script.run.withSuccessHandler(result => {
       if (result.user) {
         window.GAS_USER = result.user;
