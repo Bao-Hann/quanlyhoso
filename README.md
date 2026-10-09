@@ -267,3 +267,24 @@ Ghi chú:
 - Trạng thái: **PENDING TEST** — chưa đánh dấu PASS cho tới khi kiểm thử trên Web App và file Word thực tế.
 - Nếu fail: rollback riêng các commit FORM-EXPORT-01, không sửa chồng lên luồng đăng nhập.
 
+
+### ADMIN-PROFILE-02 — Admin login + full-profile filtering + preferences — 2026-10-09
+
+- Mục tiêu:
+  - có luồng **đăng nhập Admin riêng** nhưng lối vào vẫn kín;
+  - Admin xem dashboard tổng hợp người dùng và lọc trên toàn bộ dữ liệu hồ sơ;
+  - bổ sung nhu cầu **đi dạy/thỉnh giảng** và **tham gia dự án doanh nghiệp**;
+  - bản Word luôn lấy **học vị cao nhất** khi điền trường học vị cao nhất.
+- Thay đổi:
+  - cổng ẩn vẫn là chấm cam cạnh “Hồ sơ khoa học” bấm 5 lần, nhưng nay mở panel “Đăng nhập quản trị” riêng;
+  - OAuth state phân biệt `user` và `admin`; tài khoản admin được kiểm tra server-side qua `ADMIN_EMAILS`;
+  - callback admin vào thẳng `Admin.html`, lưu session hiện tại và gọi `getAdminDashboard`;
+  - dashboard hiển thị tuổi, giới tính, học vị cao nhất, nhu cầu giảng dạy, nhu cầu dự án doanh nghiệp, mức hoàn thiện và lần hoạt động gần nhất;
+  - tìm kiếm toàn hồ sơ bằng một ô search; thêm lọc theo bất kỳ trường dữ liệu đã thu thập, giới tính và nhu cầu;
+  - nút “Xem” mở chi tiết hồ sơ và toàn bộ dữ liệu học thuật của từng user;
+  - các switch mong muốn được lưu vào hồ sơ người dùng và xuất hiện trong dashboard admin;
+  - logic học vị cao nhất: Tiến sĩ > Thạc sĩ > Kỹ sư/Cử nhân > khác; cùng bậc chọn năm gần nhất.
+- File sửa: `Auth.gs`, `Code.gs`, `Login.html`, `Index.html`, `Script.html`, `Admin.html`.
+- Trạng thái: **PENDING TEST**.
+- Nếu fail: rollback riêng nhóm commit ADMIN-PROFILE-02 và đối chiếu LAST KNOWN GOOD trước khi sửa tiếp.
+
