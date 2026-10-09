@@ -619,7 +619,7 @@ function getAdminDashboard(token) {
     const general = doc.general || {};
     const tables = doc.tables || {};
     const email = String(identity.email || '').trim().toLowerCase();
-    if (!email) continue;
+    if (!email) return;
 
     const credentials = adminTableRecords_(tables,'credentialBody');
     const degrees = credentials
