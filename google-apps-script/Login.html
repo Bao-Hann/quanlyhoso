@@ -61,6 +61,11 @@
     .security{margin:24px auto 0;max-width:360px;color:#938a84;font-size:.81rem;line-height:1.6}
     .divider{height:1px;background:var(--line);margin:30px 0}
     .account-note{padding:16px 18px;border-radius:14px;background:#fffaf6;color:#6d625a;font-size:.88rem;line-height:1.6;text-align:left}
+    .admin-panel{margin-top:18px;padding:16px;border:1px dashed #d6cec7;border-radius:14px;background:#fbfaf9;text-align:left}
+    .admin-panel[hidden]{display:none}
+    .admin-panel strong{display:block;margin-bottom:5px}.admin-panel p{margin:0 0 12px;color:var(--muted);font-size:.82rem;line-height:1.5}
+    .admin-google{min-height:50px;font-size:.92rem;background:#2f2925;color:#fff;border-color:#2f2925}
+    .admin-google:hover{color:#fff;border-color:#1f1b18}
     @media(max-width:850px){
       .shell{padding:20px 14px}.card{grid-template-columns:1fr;min-height:auto;border-radius:22px}
       .brand{padding:30px 24px;border-right:0;border-bottom:1px solid #f0e7df}
@@ -90,6 +95,13 @@
             <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M22 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.4 3.1-7.6"/><path fill="#34a853" d="M12 22c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1-2.7 0-5-1.8-5.8-4.3H2.7v2.7A10.4 10.4 0 0 0 12 22"/><path fill="#fbbc05" d="M6.2 13.6a6.2 6.2 0 0 1 0-3.2V7.7H2.7a10.3 10.3 0 0 0 0 8.6z"/><path fill="#ea4335" d="M12 6.1c1.5 0 2.9.5 4 1.6l3-3A10 10 0 0 0 2.7 7.7l3.5 2.7C7 7.9 9.3 6.1 12 6.1"/></svg>
             <span>Chọn tài khoản Google</span>
           </a>
+          <div class="admin-panel" id="adminLoginPanel" hidden>
+            <strong>Đăng nhập quản trị</strong>
+            <p>Chỉ tài khoản có trong danh sách ADMIN_EMAILS mới được mở Dashboard quản trị.</p>
+            <a class="google admin-google" href="<?= adminOAuthUrl ?>" target="_top" rel="noopener">
+              <span>Đăng nhập Admin bằng Google</span>
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -108,7 +120,11 @@
       gateTimer = setTimeout(() => { gateClicks = 0; }, 3500);
       if (gateClicks >= 5) {
         gateClicks = 0;
-        window.top.location.href = appUrl + '?page=admin';
+        const panel = document.getElementById('adminLoginPanel');
+        if (panel) {
+          panel.hidden = false;
+          panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+        }
       }
     });
   </script>
