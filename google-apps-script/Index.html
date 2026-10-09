@@ -564,7 +564,7 @@
     <form id="workForm"><input type="hidden" name="edit_key" id="workFormEditKey" value="">
       <div class="modal-header"><h5 class="modal-title">Thêm quá trình công tác</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
-        <label class="form-label">Từ</label><input class="form-control mb-3" type="date" name="start" required>
+        <label class="form-label">Từ</label><input class="form-control mb-3" type="date" name="start" data-no-future-date required>
         <label class="form-label">Đến</label><input class="form-control mb-2" type="date" name="end" id="workEndDate">
         <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="workCurrent" name="current"><label class="form-check-label" for="workCurrent">Hiện tại</label></div>
         <input class="form-control mb-3" name="institution" placeholder="Đơn vị công tác" required>
@@ -744,7 +744,7 @@
                   <option value="">Tháng</option>
                   <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
                 </select>
-                <input class="form-control" name="year" type="number" min="1900" max="2100" placeholder="Năm">
+                <input class="form-control" name="year" type="number" min="1900" max="2100" data-no-future-year placeholder="Năm">
               </div>
             </div>
           </div>
@@ -786,7 +786,7 @@
                   <option value="">Tháng</option>
                   <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
                 </select>
-                <input class="form-control" name="year" type="number" min="1900" max="2100" placeholder="Năm">
+                <input class="form-control" name="year" type="number" min="1900" max="2100" data-no-future-year placeholder="Năm">
               </div>
             </div>
           </div>
