@@ -588,7 +588,14 @@ document.addEventListener('DOMContentLoaded', () => {
     event.preventDefault();
     if (!ownsCurrentSession()) { toast('Tài khoản đã thay đổi. Hãy tải lại trang trước khi lưu.', 'danger'); return; }
     if (!generalReady || !generalForm.reportValidity()) return;
-    const data = readGeneral(); saveBtn.disabled = true;
+    const data = readGeneral();
+    if (data.person_dob && data.person_dob >= todayYmd) {
+      toast('Ngày sinh phải trước ngày hiện tại.', 'warning'); return;
+    }
+    if (data.person_date_issue && data.person_date_issue >= todayYmd) {
+      toast('Ngày cấp CCCD phải trước ngày hiện tại.', 'warning'); return;
+    }
+    saveBtn.disabled = true;
     const done = () => {
       applyGeneral(data); fields.forEach(el => el.disabled = true);
       editBtn.style.display = ''; saveBtn.style.display = 'none'; saveBtn.disabled = false;
@@ -755,9 +762,17 @@ document.addEventListener('DOMContentLoaded', () => {
     String(currentMonth).padStart(2,'0'),
     String(nowForLimits.getDate()).padStart(2,'0')
   ].join('-');
+  const yesterday = new Date(nowForLimits);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayYmd = [
+    yesterday.getFullYear(),
+    String(yesterday.getMonth()+1).padStart(2,'0'),
+    String(yesterday.getDate()).padStart(2,'0')
+  ].join('-');
 
-  document.querySelectorAll('[data-no-future-date]').forEach(input => {
-    input.max = todayYmd;
+  // Các mốc ngày trong hồ sơ đều là dữ liệu lịch sử: không nhận hôm nay hoặc tương lai.
+  document.querySelectorAll('input[type="date"]').forEach(input => {
+    input.max = yesterdayYmd;
   });
   document.querySelectorAll('[data-no-future-year]').forEach(input => {
     input.max = String(currentYear);
@@ -1174,8 +1189,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (workForm) workForm.addEventListener('submit', e => {
     e.preventDefault();
     const fd=new FormData(workForm);
-    if (fd.get('start') && fd.get('start') > todayYmd) {
-      toast('Ngày "Từ" không được ở tương lai.', 'warning'); return;
+    if (fd.get('start') && fd.get('start') >= todayYmd) {
+      toast('Ngày "Từ" phải trước ngày hiện tại.', 'warning'); return;
+    }
+    if (fd.get('end') && fd.get('end') >= todayYmd) {
+      toast('Ngày "Đến" phải trước ngày hiện tại.', 'warning'); return;
     }
     if (!fd.get('current') && (!fd.get('end') || fd.get('end') <= fd.get('start'))) {
       toast('Ngày kết thúc phải sau ngày bắt đầu; nếu đang làm việc hãy chọn Hiện tại.', 'warning'); return;
@@ -1206,6 +1224,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (projectForm) projectForm.addEventListener('submit', e => {
     e.preventDefault();
     const fd=new FormData(projectForm);
+    if (fd.get('start_year') && fd.get('start_year') >= todayYmd) {
+      toast('Ngày bắt đầu đề tài phải trước ngày hiện tại.', 'warning'); return;
+    }
+    if (fd.get('end_year') && fd.get('end_year') >= todayYmd) {
+      toast('Ngày nghiệm thu phải trước ngày hiện tại.', 'warning'); return;
+    }
     if (fd.get('end_year') && fd.get('end_year') < fd.get('start_year')) {
       toast('Ngày nghiệm thu không được trước ngày bắt đầu.', 'warning'); return;
     }
