@@ -305,11 +305,40 @@ function loadGeneral(token) {
   return {ok:true, user:user, data:doc.general || {}};
 }
 
+function validateTableDates_(data) {
+  const tz = Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
+  const now = new Date();
+  const today = Utilities.formatDate(now, tz, 'yyyy-MM-dd');
+  const currentYear = Number(Utilities.formatDate(now, tz, 'yyyy'));
+  const currentMonth = Number(Utilities.formatDate(now, tz, 'MM'));
+
+  (data.workBody || []).forEach(item => {
+    const start = String(item && item.start || '').trim();
+    if (start && start > today) {
+      throw new Error('Ngày "Từ" của quá trình công tác không được ở tương lai.');
+    }
+  });
+
+  const assertMonthYear = (items, label) => {
+    (items || []).forEach(item => {
+      const y = Number(item && item.year || 0);
+      const m = Number(item && item.month || 0);
+      if (y && (y > currentYear || (y === currentYear && m > currentMonth))) {
+        throw new Error(label + ' không được ở tương lai.');
+      }
+    });
+  };
+
+  assertMonthYear(data.seminarBody, 'Thời gian Seminar/Hội thảo');
+  assertMonthYear(data.textbookBody, 'Năm xuất bản sách/giáo trình');
+}
+
 function saveTables(data, token) {
   const user = sessionUser_(token);
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     throw new Error('Các mục hồ sơ không hợp lệ.');
   }
+  validateTableDates_(data);
 
   const allowed = [
     'teachingBody','researchBody','credentialBody','languageBody','workBody',
