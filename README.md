@@ -314,3 +314,15 @@ Ghi chú:
 - Trạng thái: **PENDING TEST**.
 - Nếu vẫn fail, kiểm tra deployment/version mismatch trước khi tiếp tục sửa logic.
 
+### ADMIN-DRIVE-02 — Fix thực tế quyền Drive chặn Admin — 2026-10-10
+
+- Xác nhận lần trước code chưa được ghi vào GitHub: `authorizeStorage_()` và `debugStorageAccess()` chưa tồn tại trong `Code.gs`.
+- Đã cập nhật thực tế:
+  - OAuth admin không còn fail toàn bộ chỉ vì `DriveApp` bị từ chối;
+  - admin đúng email vẫn được render Dashboard;
+  - Dashboard trả `storageError` và hiển thị cảnh báo nếu chưa đọc được Drive;
+  - thêm `authorizeStorage_()` để chạy thủ công và kích hoạt quyền Drive;
+  - thêm `debugStorageAccess()` để kiểm tra effective user, active user và folder.
+- Trạng thái: **PENDING TEST**.
+- Nếu `authorizeStorage_()` vẫn báo `Access denied: DriveApp`, nguyên nhân nằm ở quyền Drive/folder hoặc chính sách Workspace, không phải `ADMIN_EMAILS`.
+
