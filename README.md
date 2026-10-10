@@ -384,3 +384,11 @@ Ghi chú:
 - File sửa: `Code.gs`, `Login.html`, `Index.html`, `Admin.html`.
 - Trạng thái: **PENDING TEST**.
 
+### LOGIN-RECENT-02 — Đồng bộ giao diện theo ảnh mẫu — 2026-10-10
+
+- Bỏ nút `×` ở từng tài khoản gần đây vì ảnh mẫu không có nút xóa.
+- Mỗi dòng tài khoản chỉ gồm avatar, tên và email; bấm toàn bộ dòng để tiếp tục OAuth.
+- Giữ nút “Sử dụng tài khoản Google khác” ở cuối danh sách.
+- File sửa: `google-apps-script/Login.html`.
+- Trạng thái: **PENDING TEST**.
+
