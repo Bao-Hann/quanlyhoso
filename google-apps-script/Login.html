@@ -58,6 +58,20 @@
       transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease
     }
     .google:hover{transform:translateY(-2px);border-color:#c5bdb6;box-shadow:0 13px 28px rgba(53,43,36,.10)}
+    .recent-wrap{display:none;margin:0 0 18px;text-align:left}
+    .recent-wrap.visible{display:block}
+    .recent-title{margin:0 0 10px;color:#5e554f;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}
+    .recent-list{overflow:hidden;border:1px solid #e4ded9;border-radius:14px;background:#fff}
+    .recent-account{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:10px 42px 10px 12px;border:0;border-bottom:1px solid #eee8e3;background:#fff;text-align:left;cursor:pointer}
+    .recent-account:last-child{border-bottom:0}
+    .recent-account:hover{background:#fff9f4}
+    .recent-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;overflow:hidden;background:#f1ece8;display:grid;place-items:center;color:#8d7f75;font-weight:800}
+    .recent-avatar img{width:100%;height:100%;object-fit:cover}
+    .recent-copy{min-width:0;flex:1}.recent-name{display:block;color:#29231f;font-size:.94rem;font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .recent-email{display:block;margin-top:2px;color:#756c66;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .recent-remove{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:#9a8f87;font-size:18px;line-height:1;cursor:pointer}
+    .recent-remove:hover{background:#f2ece7;color:#5a514b}
+    .other-label{margin-top:12px}
     .security{margin:24px auto 0;max-width:360px;color:#938a84;font-size:.81rem;line-height:1.6}
     .divider{height:1px;background:var(--line);margin:30px 0}
     .account-note{padding:16px 18px;border-radius:14px;background:#fffaf6;color:#6d625a;font-size:.88rem;line-height:1.6;text-align:left}
@@ -91,9 +105,14 @@
           <p class="form-subtitle">Chọn tài khoản Google bạn muốn sử dụng để mở đúng hồ sơ khoa học của mình.</p>
           <? if (message) { ?><div class="notice"><?= message ?></div><? } ?>
 
-          <a class="google" href="<?= googleOAuthUrl ?>" target="_top" rel="noopener">
+          <div class="recent-wrap" id="recentAccountsWrap">
+            <div class="recent-title">Tài khoản đã dùng gần đây</div>
+            <div class="recent-list" id="recentAccountsList"></div>
+          </div>
+
+          <a class="google other-label" id="otherGoogleAccountBtn" href="<?= googleOAuthUrl ?>" target="_top" rel="noopener">
             <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M22 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.4 3.1-7.6"/><path fill="#34a853" d="M12 22c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1-2.7 0-5-1.8-5.8-4.3H2.7v2.7A10.4 10.4 0 0 0 12 22"/><path fill="#fbbc05" d="M6.2 13.6a6.2 6.2 0 0 1 0-3.2V7.7H2.7a10.3 10.3 0 0 0 0 8.6z"/><path fill="#ea4335" d="M12 6.1c1.5 0 2.9.5 4 1.6l3-3A10 10 0 0 0 2.7 7.7l3.5 2.7C7 7.9 9.3 6.1 12 6.1"/></svg>
-            <span>Chọn tài khoản Google</span>
+            <span id="otherGoogleAccountLabel">Chọn tài khoản Google</span>
           </a>
           <div class="admin-panel" id="adminLoginPanel" hidden>
             <strong>Đăng nhập quản trị</strong>
@@ -109,6 +128,72 @@
 
   <script>
     const appUrl = <?!= JSON.stringify(webAppUrl) ?>;
+    const RECENT_ACCOUNTS_KEY = 'scientist-recent-google-accounts-v1';
+
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+
+    const readRecentAccounts = () => {
+      try {
+        const data = JSON.parse(localStorage.getItem(RECENT_ACCOUNTS_KEY) || '[]');
+        return Array.isArray(data) ? data.filter(item => item && item.email).slice(0,5) : [];
+      } catch (_) {
+        return [];
+      }
+    };
+
+    const saveRecentAccounts = accounts => {
+      try { localStorage.setItem(RECENT_ACCOUNTS_KEY, JSON.stringify(accounts.slice(0,5))); }
+      catch (_) {}
+    };
+
+    const renderRecentAccounts = () => {
+      const wrap = document.getElementById('recentAccountsWrap');
+      const list = document.getElementById('recentAccountsList');
+      const label = document.getElementById('otherGoogleAccountLabel');
+      const accounts = readRecentAccounts();
+
+      if (!wrap || !list) return;
+      wrap.classList.toggle('visible', accounts.length > 0);
+      if (label) label.textContent = accounts.length ? 'Sử dụng tài khoản Google khác' : 'Chọn tài khoản Google';
+
+      list.innerHTML = accounts.map((account,index) => {
+        const name = account.name || account.email;
+        const initial = String(name || '?').trim().charAt(0).toUpperCase() || '?';
+        const avatar = account.picture
+          ? '<img src="' + esc(account.picture) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=' + JSON.stringify(initial) + '">'
+          : esc(initial);
+        return '<button type="button" class="recent-account" data-recent-index="'+index+'">'+
+          '<span class="recent-avatar">'+avatar+'</span>'+
+          '<span class="recent-copy"><span class="recent-name">'+esc(name)+'</span>'+
+          '<span class="recent-email">'+esc(account.email)+'</span></span>'+
+          '<span class="recent-remove" data-remove-index="'+index+'" title="Xóa khỏi danh sách gần đây" aria-label="Xóa tài khoản">×</span>'+
+          '</button>';
+      }).join('');
+    };
+
+    document.addEventListener('click', event => {
+      const remove = event.target.closest('[data-remove-index]');
+      if (remove) {
+        event.preventDefault();
+        event.stopPropagation();
+        const accounts = readRecentAccounts();
+        accounts.splice(Number(remove.dataset.removeIndex),1);
+        saveRecentAccounts(accounts);
+        renderRecentAccounts();
+        return;
+      }
+
+      const item = event.target.closest('[data-recent-index]');
+      if (!item) return;
+      const account = readRecentAccounts()[Number(item.dataset.recentIndex)];
+      if (!account || !account.email) return;
+      item.disabled = true;
+      window.top.location.href = appUrl + '?page=oauthstart&hint=' + encodeURIComponent(account.email);
+    });
+
+    renderRecentAccounts();
 
     // Cổng quản trị bí mật: admin biết vị trí này có thể bấm chấm cam 5 lần.
     // Đây chỉ là cách giấu lối vào; quyền thật vẫn được kiểm tra server-side bằng ADMIN_EMAILS.
