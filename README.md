@@ -368,3 +368,19 @@ Ghi chú:
 - File sửa: `Code.gs`, `Script.html`.
 - Trạng thái: **PENDING TEST**.
 
+
+### LOGIN-RECENT-01 — Danh sách tài khoản Google đã dùng gần đây — 2026-10-10
+
+- Mục tiêu: màn hình login hiển thị các tài khoản Google mà **trình duyệt này đã từng dùng với Scientist Profile**, gần giống màn hình chọn tài khoản của các ứng dụng lớn.
+- Không dùng Firebase.
+- Cách làm:
+  - sau OAuth thành công, lưu tối đa 5 tài khoản vào `localStorage`;
+  - chỉ lưu `email`, tên hiển thị, avatar và thời điểm dùng gần nhất;
+  - **không lưu access token, session token, mật khẩu hoặc Google sub**;
+  - lần sau Login hiển thị danh sách tài khoản gần đây;
+  - bấm một tài khoản sẽ mở OAuth Google với `login_hint=email`; Google vẫn là bên xác thực thật;
+  - có nút × để xóa một tài khoản khỏi danh sách gần đây;
+  - “Sử dụng tài khoản Google khác” vẫn mở chooser Google bình thường.
+- File sửa: `Code.gs`, `Login.html`, `Index.html`, `Admin.html`.
+- Trạng thái: **PENDING TEST**.
+
