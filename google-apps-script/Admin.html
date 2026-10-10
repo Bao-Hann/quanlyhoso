@@ -65,7 +65,23 @@
   const bootstrapSession = <?!= adminSessionJson ?>;
   const bootstrapStorageWarning = <?!= storageWarningJson ?>;
   if (bootstrapSession && bootstrapSession.token) {
-    try { sessionStorage.setItem('scientist-local-session',JSON.stringify(bootstrapSession)); } catch (_) {}
+    try {
+      sessionStorage.setItem('scientist-local-session',JSON.stringify(bootstrapSession));
+      const user = bootstrapSession.user || {};
+      const email = String(user.email || '').trim().toLowerCase();
+      if (email) {
+        const key = 'scientist-recent-google-accounts-v1';
+        const recent = JSON.parse(localStorage.getItem(key) || '[]');
+        const accounts = Array.isArray(recent) ? recent.filter(x => x && String(x.email || '').toLowerCase() !== email) : [];
+        accounts.unshift({
+          email:email,
+          name:String(user.name || user.displayName || '').trim(),
+          picture:String(user.picture || '').trim(),
+          lastUsedAt:new Date().toISOString()
+        });
+        localStorage.setItem(key,JSON.stringify(accounts.slice(0,5)));
+      }
+    } catch (_) {}
   }
 
   let allUsers=[];
