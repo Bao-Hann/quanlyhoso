@@ -44,6 +44,11 @@ function doGet(e) {
 
   if (page === 'diag') return renderDeploymentDiagnostic_();
 
+  if (page === 'oauthstart') {
+    const hint = String(params.hint || '').trim().toLowerCase();
+    return renderOAuthRedirect_(googleOAuthStartUrl_('user', hint));
+  }
+
   if (page === 'admin') {
     const t = HtmlService.createTemplateFromFile('Admin');
     t.webAppUrl = canonicalWebAppUrl_();
@@ -84,7 +89,7 @@ function getWebAppUrl() {
   return canonicalWebAppUrl_();
 }
 
-function googleOAuthStartUrl_(purpose) {
+function googleOAuthStartUrl_(purpose, loginHint) {
   const config = appConfig_();
   if (!config.googleClientId || !config.googleClientSecret) {
     throw new Error('Chưa cấu hình GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.');
@@ -102,10 +107,26 @@ function googleOAuthStartUrl_(purpose) {
     state: state
   };
 
+  const hint = String(loginHint || '').trim().toLowerCase();
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hint)) params.login_hint = hint;
+
   return 'https://accounts.google.com/o/oauth2/v2/auth?' +
     Object.keys(params)
       .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
       .join('&');
+}
+
+function renderOAuthRedirect_(url) {
+  const safeUrl = String(url || '');
+  return HtmlService.createHtmlOutput(
+    '<!doctype html><html><head><base target="_top"><meta charset="utf-8">'+
+    '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<title>Đang mở Google...</title></head><body style="font-family:Arial,sans-serif;padding:24px">'+
+    '<p>Đang mở tài khoản Google đã chọn...</p>'+
+    '<script>window.top.location.replace(' + JSON.stringify(safeUrl) + ');<\/script>'+
+    '<p><a target="_top" href="' + safeUrl.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '">Tiếp tục với Google</a></p>'+
+    '</body></html>'
+  ).setTitle('Đang mở Google - ' + APP_TITLE);
 }
 
 function completeGoogleOAuth_(params) {
