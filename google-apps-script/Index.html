@@ -18,6 +18,22 @@
           token: window.GAS_AUTH_TOKEN,
           user: window.GAS_USER
         }));
+
+        // Chỉ lưu thông tin hiển thị để tạo danh sách tài khoản gần đây.
+        // Không lưu token, mật khẩu hoặc Google sub vào localStorage.
+        try {
+          const key = 'scientist-recent-google-accounts-v1';
+          const email = String(window.GAS_USER.email || '').trim().toLowerCase();
+          const recent = JSON.parse(localStorage.getItem(key) || '[]');
+          const accounts = Array.isArray(recent) ? recent.filter(x => x && String(x.email || '').toLowerCase() !== email) : [];
+          accounts.unshift({
+            email: email,
+            name: String(window.GAS_USER.name || window.GAS_USER.displayName || '').trim(),
+            picture: String(window.GAS_USER.picture || '').trim(),
+            lastUsedAt: new Date().toISOString()
+          });
+          localStorage.setItem(key, JSON.stringify(accounts.slice(0,5)));
+        } catch (_) {}
         if (history && history.replaceState) {
           history.replaceState(null, '', window.GAS_WEB_APP_URL + '?page=app');
         }
