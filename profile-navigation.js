@@ -11,7 +11,7 @@
 
   function showView(rawId, updateAddress) {
     if (!document.body) return;
-    const id = valid(rawId) ? rawId : 'general';
+    const id = valid(rawId) ? rawId : 'top';
     const main = document.querySelector('main#top');
     document.body.dataset.profileView = id;
     if (!main) return;
@@ -40,7 +40,7 @@
   function syncLocation() {
     let id = window.location.hash.slice(1);
     try { id = decodeURIComponent(id); } catch (_) { id = ''; }
-    showView(valid(id) ? id : 'general', false);
+    showView(valid(id) ? id : 'top', false);
   }
   document.addEventListener('click', event => {
     const target = event.target;
