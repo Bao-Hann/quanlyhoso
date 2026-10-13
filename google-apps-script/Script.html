@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const session = user || window.GAS_USER || window.OneFormAuth?.getSession?.() || {};
     const email = String(session.email || '').trim();
     const rawName = String(session.name || session.displayName || session.username || '').trim();
-    const name = rawName && rawName.toLowerCase() !== email.toLowerCase() ? rawName : '';
+    const name = rawName && rawName.toLowerCase() !== email.toLowerCase() ? rawName : (email ? email.split('@')[0] : '');
     ['authUsername', 'welcomeName', 'dashboardWelcomeName'].forEach(id => {
       const node = document.getElementById(id);
       if (node) { node.textContent = name; node.title = name; }
@@ -597,7 +597,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (result.user) {
         window.GAS_USER = result.user;
         syncAccountIdentity(result.user);
-        ensureAccountDisplayName(result.user);
+
+        // Display name already synchronized above; no undefined helper call.
       }
       const remote = result.data || {};
       if (Object.keys(remote).length) {
