@@ -663,12 +663,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const supportStatus = document.getElementById('supportFileStatus');
   const supportPreview = document.getElementById('supportExtractionPreview');
 
+  const validImportedDate = (year,month,day) => {
+    const y=Number(year),m=Number(month),d=Number(day);
+    const parsed=new Date(Date.UTC(y,m-1,d));
+    if(y<1900 || parsed.getUTCFullYear()!==y || parsed.getUTCMonth()!==m-1 || parsed.getUTCDate()!==d) return '';
+    const iso=[y,String(m).padStart(2,'0'),String(d).padStart(2,'0')].join('-');
+    return iso < todayYmd ? iso : '';
+  };
   const toIsoDate = raw => {
     const value=String(raw||'').trim();
     let m=value.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/);
-    if(m) return [m[3],String(m[2]).padStart(2,'0'),String(m[1]).padStart(2,'0')].join('-');
+    if(m) return validImportedDate(m[3], m[2], m[1]);
     m=value.match(/(\d{4})[\/\.\-](\d{1,2})[\/\.\-](\d{1,2})/);
-    if(m) return [m[1],String(m[2]).padStart(2,'0'),String(m[3]).padStart(2,'0')].join('-');
+    if(m) return validImportedDate(m[1], m[2], m[3]);
     return '';
   };
   const cleanImportedValue = value => String(value||'').replace(/\s+/g,' ').replace(/^[\s:;\-–—]+|[\s;]+$/g,'').trim();
@@ -703,7 +710,26 @@ document.addEventListener('DOMContentLoaded', () => {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
     const pages=[];
-    for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();pages.push(content.items.map(x=>x.str||'').join(' '));}
+    // Preserve visual line breaks. Joining every PDF token with spaces makes
+    // "Họ và tên:" and other field labels impossible to identify reliably.
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i), content=await page.getTextContent();
+      const lines=[]; let row=[],lastY=null;
+      const flush=()=>{
+        if(row.length){lines.push(row.sort((a,b)=>a.x-b.x).map(x=>x.text).join(' '));row=[];}
+        lastY=null;
+      };
+      for(const item of content.items||[]){
+        const value=String(item.str||'').trim();
+        if(!value) {if(item.hasEOL)flush();continue;}
+        const x=Number(item.transform?.[4]),y=Number(item.transform?.[5]);
+        if(Number.isFinite(y)&&lastY!==null&&Math.abs(y-lastY)>2)flush();
+        row.push({x:Number.isFinite(x)?x:0,text:value});
+        if(Number.isFinite(y))lastY=y;
+        if(item.hasEOL)flush();
+      }
+      flush();pages.push(lines.join('\n'));
+    }
     return pages.join('\n');
   };
   const readDocxText = async file => { if(!window.mammoth)throw new Error('Thư viện đọc DOCX chưa tải được.'); const r=await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()}); return r.value||''; };
@@ -727,11 +753,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if(lower.endsWith('.pdf'))text=await readPdfText(file); else if(lower.endsWith('.docx'))text=await readDocxText(file); else throw new Error('Hiện hệ thống hỗ trợ PDF và DOCX.');
       if(!text.trim())throw new Error('Không đọc được lớp chữ trong file. PDF scan ảnh cần OCR riêng.');
       const extracted=parseImportedProfile(text); const keys=Object.keys(extracted); if(!keys.length)throw new Error('Đọc được file nhưng chưa nhận diện được trường hồ sơ phù hợp.');
-      enableGeneralEditing(); const applied=applyImportedFields(extracted); writeLocalGeneral({...readLocalGeneral(),...extracted});
-      if(supportPreview){supportPreview.hidden=false;supportPreview.innerHTML='<strong>Đã nhận diện '+applied+' trường.</strong><div class="small text-muted mt-2">Hãy kiểm tra lại thông tin trước khi sử dụng chính thức.</div>';}
-      if(window.google?.script?.run&&authToken)await new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(rej).saveGeneral(extracted,authToken));
-      if(supportStatus)supportStatus.innerHTML='<div class="alert alert-success">Đã trích xuất và tự điền '+applied+' trường.</div>';
-      showProfileView('general'); toast('Đã nhập thông tin từ file. Hãy kiểm tra lại dữ liệu tự điền.');
+      enableGeneralEditing();
+      const applied=applyImportedFields(extracted);
+      if(!applied)throw new Error('Đã đọc tệp nhưng không tìm được ô thông tin tương ứng để điền.');
+      if(supportPreview){supportPreview.hidden=false;supportPreview.textContent='Đã nhận diện '+applied+' trường. Vui lòng kiểm tra và bấm Save trong Thông tin cơ bản.';}
+      if(supportStatus)supportStatus.innerHTML='<div class="alert alert-success">Đã điền '+applied+' trường vào biểu mẫu. Chưa lưu; hãy kiểm tra và bấm Save.</div>';
+      showProfileView('general');
+      toast('Đã tự điền '+applied+' trường. Hãy kiểm tra rồi bấm Save để lưu hồ sơ.', 'warning');
     }catch(err){if(supportStatus)supportStatus.innerHTML='<div class="alert alert-danger">'+escapeHtml(err?.message||err)+'</div>';}
     finally{if(button)button.disabled=false;}
   });
@@ -1683,6 +1711,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Crossref results are third-party data; never render javascript: or data: links.
+  const safePublicationUrl = raw => {
+    try {
+      const parsed=new URL(String(raw||'').trim());
+      return parsed.protocol==='https:'||parsed.protocol==='http:' ? parsed.href : '';
+    } catch (_) { return ''; }
+  };
+
   const renderPublicationResults = () => {
     if (!publicationSearchResults) return;
     const items = publicationSearchState.items;
@@ -1702,7 +1738,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const year = escapeHtml(item.year || '');
       const doi = escapeHtml(item.doi || '');
       const issn = escapeHtml(item.issn || '');
-      const sourceUrl = String(item.url || (item.doi ? 'https://doi.org/' + item.doi : '') || '').trim();
+      const sourceUrl = safePublicationUrl(item.url || (item.doi ? 'https://doi.org/' + item.doi : ''));
       const source = sourceUrl ? '<a class="publication-source-link" href="'+escapeHtml(sourceUrl)+'" target="_blank" rel="noopener noreferrer" data-publication-source><i class="bi bi-box-arrow-up-right"></i> Mở nguồn để kiểm tra bài báo</a>' : '<span class="publication-source-missing">Không có link nguồn</span>';
       return `
         <div class="crossref-result-card" data-result-index="${index}" role="button" tabindex="0">
@@ -1905,9 +1941,14 @@ document.addEventListener('DOMContentLoaded', () => {
     exportPreview.innerHTML='<div class="text-muted p-3">Đang tạo bản xem trước...</div>';
     try{
       const html=await window.MinistryExport.preview(getExportOptions());
-      if(generation===exportPreviewGeneration)exportPreview.innerHTML=html;
+      if(generation===exportPreviewGeneration){
+        exportPreview.innerHTML=html;
+        return Boolean(exportPreview.querySelector('.ministry-document'));
+      }
+      return false;
     }catch(err){
       if(generation===exportPreviewGeneration)exportPreview.textContent='Không mở được mẫu Word: '+err.message;
+      return false;
     }
   };
 
@@ -1946,9 +1987,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('downloadExportPdf')?.addEventListener('click',async event=>{
     const button=event.currentTarget;button.disabled=true;
     try{
-      await buildExportPreview();
+      if(!await buildExportPreview())throw new Error('Không tạo được bản xem trước hợp lệ để xuất PDF.');
       if(!window.html2pdf)throw new Error('Thư viện xuất PDF chưa tải được.');
-      const paper=exportPreview?.querySelector('.ministry-document')||exportPreview;
+      const paper=exportPreview.querySelector('.ministry-document');
       await window.html2pdf().set({
         margin:[10,10,10,10],
         filename:'ly-lich-khoa-hoc.pdf',
@@ -2002,6 +2043,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const initialView = location.hash && (location.hash === '#top' || profileViewIds.includes(location.hash.slice(1))) ? location.hash.slice(1) : 'general';
   showProfileView(initialView,false);
+  window.addEventListener('hashchange',()=>{
+    const hash=location.hash.slice(1);
+    if(hash==='top'||profileViewIds.includes(hash))showProfileView(hash,false);
+  });
   // Toàn bộ bảng được lưu theo danh tính đã xác thực, không đọc dữ liệu dùng chung cũ.
   const profileBodies = [...document.querySelectorAll('.managed-table tbody[id]')];
   const profileDataKey = 'scientist-tables-v3:' + accountId;
