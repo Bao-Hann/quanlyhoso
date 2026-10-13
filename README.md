@@ -392,3 +392,18 @@ Ghi chú:
 - File sửa: `google-apps-script/Login.html`.
 - Trạng thái: **PENDING TEST**.
 
+### UX-IMPORT-NAV-01 — Nguồn bài báo + single-view + import PDF/DOCX + export UI — 2026-10-13
+
+- Kết quả:
+  - mỗi kết quả tìm bài báo có link “Mở nguồn để kiểm tra bài báo” từ URL/DOI;
+  - sidebar chỉ hiển thị một chức năng tại một thời điểm, không cuộn qua nhiều section;
+  - bỏ thanh cuộn dọc riêng của sidebar desktop;
+  - “Hỗ trợ” đổi thành nhập hồ sơ từ PDF/DOCX và tự điền các trường cơ bản nhận diện được;
+  - modal xuất được thiết kế lại theo kiểu chọn nội dung + địa danh ký + ngày ký + xem trước + nút PDF/DOCX;
+  - đã bỏ thử nghiệm danh sách tài khoản Google gần đây ở các commit trước.
+- Giới hạn:
+  - PDF scan ảnh thuần chưa OCR;
+  - DOC cũ (.doc) chưa hỗ trợ;
+  - parser file là heuristic, cần người dùng kiểm tra lại.
+- Trạng thái: **PENDING TEST**.
+
