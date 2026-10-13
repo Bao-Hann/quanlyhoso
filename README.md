@@ -419,3 +419,13 @@ Ghi chú:
   - xuất PDF từ bản preview bằng html2pdf.
 - Trạng thái: **PENDING TEST**.
 
+### UX-IMPORT-QA-03 — Bổ sung độ tin cậy cho nhập/xuất — 2026-10-13
+
+- Đọc PDF theo từng dòng dựa trên vị trí chữ thay vì ghép toàn bộ nội dung thành một dòng; hỗ trợ nhận diện nhãn như Họ tên, Ngày sinh, Email.
+- Kiểm tra ngày thực sự tồn tại và là ngày trong quá khứ trước khi tự điền ngày sinh/ngày cấp.
+- **Chỉ tự điền vào biểu mẫu; không ghi đè dữ liệu đã lưu** cho đến khi người dùng kiểm tra rồi bấm Save.
+- Chỉ cho mở liên kết nguồn có giao thức HTTP/HTTPS, tránh liên kết không an toàn từ dữ liệu bên ngoài.
+- Dừng xuất PDF nếu không tạo được bản xem trước đúng cấu trúc; đồng bộ điều hướng khi thay đổi phần `#...` của URL.
+- Bổ sung `tests/ui-workflows.cjs` vào `npm test`.
+- Đã xác nhận các tệp được đẩy lên GitHub; **chưa kiểm thử thực thi** do môi trường hiện tại không thể truy cập GitHub để cài và chạy dự án, cần chạy `npm install && npm test` ở máy có kết nối.
+- Sau khi mã Google Apps Script được cập nhật, **phải tạo phiên bản triển khai Web App mới** và kiểm tra PDF có lớp chữ, PDF ảnh scan (hiện chưa OCR), DOCX, xuất DOCX/PDF, điều hướng và lưu trên tài khoản thực.
