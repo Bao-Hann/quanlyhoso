@@ -2541,3 +2541,16 @@ body[data-theme="dashboard"] .welcome-section{padding:28px 2rem 16px!important;}
 #exportPreview .ministry-document td{background:#fff;}
 
 #exportPreview .ministry-leader{background-image:radial-gradient(circle,#000 0.7px,transparent 0.85px);background-size:4px 2px;background-repeat:repeat-x;background-position:left bottom;}
+
+/* Profile view routing: only one main section appears at any moment. */
+main#top > .full-screen-section[hidden],main#top > .oneform-dashboard-overview[hidden]{display:none!important;}
+body[data-profile-view] .sidebar{height:100dvh!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin;}
+body[data-profile-view] .sidebar > .d-flex{min-height:0;}
+body[data-profile-view] main#top > .full-screen-section:not([hidden]){min-height:0!important;}
+body[data-profile-view] main#top > .oneform-dashboard-overview:not([hidden]){display:block;}
+@media(max-width:767.98px){
+  body[data-profile-view] .sidebar{height:auto!important;max-height:none!important;overflow:visible!important;position:relative!important;}
+  body[data-profile-view] .sidebar .nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:4px;}
+  body[data-profile-view] .sidebar .nav-item{min-width:0;}
+  body[data-profile-view] .sidebar .nav-link{white-space:normal;overflow-wrap:anywhere;}
+}
