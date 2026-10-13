@@ -19,9 +19,8 @@
           user: window.GAS_USER
         }));
 
-        if (history && history.replaceState) {
-          history.replaceState(null, '', window.GAS_WEB_APP_URL + '?page=app');
-        }
+        // Do not rewrite Apps Script iframe origin or redirect on a valid OAuth callback.
+        // The browser location here can differ from the public Web App URL.
       } else {
         const session = JSON.parse(sessionStorage.getItem('scientist-local-session') || 'null');
         if (session && session.token && session.user) {
@@ -30,9 +29,35 @@
         }
       }
     } catch (_) {}
+    // Startup UI must not depend on the large scientific-profile script.
+    document.addEventListener('DOMContentLoaded', function () {
+      try {
+        var allowed=['default','chatgpt','github','shopee','tiktok','ute','dashboard'];
+        var selected='default';
+        try { var stored=localStorage.getItem('scientist-theme'); if(allowed.indexOf(stored)>=0)selected=stored; } catch (_) {}
+        document.body.setAttribute('data-theme',selected);
+        document.querySelectorAll('.theme-option').forEach(function(button){
+          button.classList.toggle('active',button.dataset.themeOption===selected);
+        });
+        var user=window.GAS_USER||{};
+        var email=String(user.email||'').trim();
+        var name=String(user.name||user.displayName||user.username||'').trim()||(email?email.split('@')[0]:'');
+        [['authUsername',name],['welcomeName',name],['dashboardWelcomeName',name],['authEmail',email],['dashboardAccountEmail',email]].forEach(function(item){
+          var element=document.getElementById(item[0]);if(element)element.textContent=item[1];
+        });
+        var picture=String(user.picture||'').trim(),avatar=document.getElementById('authAvatar'),fallback=document.getElementById('authAvatarFallback');
+        if(avatar&&picture){avatar.src=picture;avatar.style.display='block';if(fallback)fallback.style.display='none';}
+        if(!email||!window.GAS_AUTH_TOKEN){
+          var message=document.getElementById('sessionRestoreNotice');
+          if(message)message.hidden=false;
+          var login=document.getElementById('sessionLoginLink'); if(login){login.href=(window.GAS_WEB_APP_URL||'')+'?page=login';login.target='_top';}
+        }
+      } catch (err) { console.error('Startup display error:',err); }
+    });
   </script>
 </head>
 <body>
+<div id="sessionRestoreNotice" hidden role="alert" style="padding:12px 18px;background:#fff5db;color:#664d03;text-align:center">Không nhận được phiên đăng nhập Google. <a href="#" id="sessionLoginLink" target="_top">Đăng nhập lại</a> để tải tên và email.</div>
 <div id="toastHost" class="position-fixed top-0 end-0 p-3" style="z-index:2000"></div>
 <nav class="oneform-dashboard-navbar">
   <div class="oneform-nav-container">
