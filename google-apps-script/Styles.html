@@ -2662,4 +2662,27 @@ body[data-theme="tiktok"] .dropdown-menu{
 #exportPreview .ministry-document td{background:#fff;}
 
 #exportPreview .ministry-leader{background-image:radial-gradient(circle,#000 0.7px,transparent 0.85px);background-size:4px 2px;background-repeat:repeat-x;background-position:left bottom;}
+
+/* ===== One-function navigation + import/export refresh ===== */
+.sidebar{overflow-y:hidden!important;}
+.full-screen-section[hidden],.oneform-dashboard-overview[hidden],.welcome-section[hidden]{display:none!important;}
+.crossref-result-source{margin-top:10px;}
+.publication-source-link{display:inline-flex;align-items:center;gap:6px;color:var(--theme-accent);font-size:.88rem;font-weight:650;text-decoration:none;}
+.publication-source-link:hover{text-decoration:underline;}
+.publication-source-missing{color:var(--theme-muted);font-size:.84rem;}
+.import-profile-card{max-width:920px;margin:0 auto;padding:28px;border:1px solid var(--theme-border);border-radius:16px;background:var(--theme-card);}
+.import-extraction-preview{padding:16px;border:1px solid var(--theme-border);border-radius:12px;background:var(--theme-card-alt);}
+.export-modern-modal .modal-body{padding:22px;}
+.export-layout{display:grid;grid-template-columns:minmax(330px,430px) minmax(0,1fr);gap:20px;}
+.export-options-card{border:1px solid var(--theme-border);border-top:5px solid var(--theme-accent);border-radius:14px;padding:22px;background:var(--theme-card);align-self:start;}
+.export-card-heading h5{margin:0 0 8px;font-size:1.45rem;}.export-card-heading p{margin:0 0 18px;color:var(--theme-muted);}
+.export-checks{border:1px solid var(--theme-border);border-radius:12px;padding:16px;margin:0 0 18px;}
+.export-checks legend{float:none;width:auto;padding:0 8px;margin:0 0 6px;font-size:.92rem;font-weight:700;}
+.export-checks label{display:flex;align-items:flex-start;gap:9px;padding:8px 0;cursor:pointer;}
+.export-checks input{margin-top:3px;width:18px;height:18px;accent-color:var(--theme-accent);}.export-checks small{color:var(--theme-muted);}
+.export-signature-options>label{display:block;font-weight:650;margin-bottom:7px;}
+.export-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}.export-actions .btn{min-width:120px;}
+#exportPreview{max-height:72vh;overflow:auto;}
+@media(max-width:991.98px){.export-layout{grid-template-columns:1fr;}}
+
 </style>
