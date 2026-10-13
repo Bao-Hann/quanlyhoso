@@ -1,0 +1,62 @@
+<script>
+/* Navigation is independent of data-loading scripts, so UI stays usable when a service fails. */
+(function () {
+  'use strict';
+  const labels = {
+    top:'Tổng quan', general:'Thông tin cơ bản', additional:'Thông tin bổ sung',
+    education:'Quá trình đào tạo', work_exp:'Quá trình công tác',
+    participate:'Đề tài tham gia', publishedPaper:'Công bố khoa học',
+    award:'Giải thưởng', support:'Nhập hồ sơ từ tệp'
+  };
+  const valid = id => Object.prototype.hasOwnProperty.call(labels, id);
+
+  function showView(rawId, updateAddress) {
+    if (!document.body) return;
+    const id = valid(rawId) ? rawId : 'general';
+    const main = document.querySelector('main#top');
+    document.body.dataset.profileView = id;
+    if (!main) return;
+    main.querySelectorAll(':scope > .full-screen-section, :scope > .oneform-dashboard-overview').forEach(section => {
+      const home = section.classList.contains('welcome-section') || section.classList.contains('oneform-dashboard-overview');
+      const visible = id === 'top' ? home : !home && section.id === id;
+      section.hidden = !visible;
+      if (visible) section.removeAttribute('aria-hidden');
+      else section.setAttribute('aria-hidden', 'true');
+    });
+    document.querySelectorAll('.sidebar a[href^="#"], .oneform-nav-links a[href^="#"], [data-profile-navigation-menu] a[href^="#"]').forEach(link => {
+      const active = link.getAttribute('href') === '#' + id;
+      link.classList.toggle('active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('[data-active-section-label]').forEach(el => { el.textContent = labels[id]; });
+    if (updateAddress && window.location.hash !== '#' + id) {
+      try { window.history.pushState({profileView:id}, '', '#' + id); }
+      catch (_) { try { window.location.hash = id; } catch (_) {} }
+    }
+    if (updateAddress && typeof window.scrollTo === 'function') {
+      try { window.scrollTo({top:0,left:0,behavior:'auto'}); } catch (_) {}
+    }
+  }
+  function syncLocation() {
+    let id = window.location.hash.slice(1);
+    try { id = decodeURIComponent(id); } catch (_) { id = ''; }
+    showView(valid(id) ? id : 'general', false);
+  }
+  document.addEventListener('click', event => {
+    const target = event.target;
+    if (!target || typeof target.closest !== 'function') return;
+    const link = target.closest('a[href^="#"]');
+    if (!link) return;
+    const id = String(link.getAttribute('href') || '').slice(1);
+    if (!valid(id)) return; // Preserve inner tabs, modal triggers and logout buttons.
+    event.preventDefault();
+    showView(id, true);
+  }, true);
+  window.addEventListener('hashchange', syncLocation);
+  window.addEventListener('popstate', syncLocation);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncLocation);
+  else syncLocation();
+  window.ScientistNavigation = {open:showView};
+})();
+</script>
