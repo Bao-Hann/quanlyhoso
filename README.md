@@ -407,3 +407,15 @@ Ghi chú:
   - parser file là heuristic, cần người dùng kiểm tra lại.
 - Trạng thái: **PENDING TEST**.
 
+### UX-IMPORT-EXPORT-02 — Hoàn tất logic export mới — 2026-10-13
+
+- Hoàn tất phần còn thiếu của UX-IMPORT-NAV-01:
+  - engine xuất nhận object lựa chọn thay vì 4 template cũ;
+  - checkbox giảng dạy, hướng nghiên cứu, giáo trình, giải thưởng và chuyển giao công nghệ thực sự chèn section tương ứng vào DOCX/preview;
+  - địa danh ký và tùy chọn tự điền ngày được áp dụng vào mẫu;
+  - số lượng mục hiển thị cạnh từng lựa chọn;
+  - “Chọn tất cả” đồng bộ các checkbox;
+  - xuất DOCX dùng cùng cấu hình với preview;
+  - xuất PDF từ bản preview bằng html2pdf.
+- Trạng thái: **PENDING TEST**.
+
