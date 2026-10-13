@@ -2698,4 +2698,13 @@ body[data-profile-view] main#top > .oneform-dashboard-overview:not([hidden]){dis
   body[data-profile-view] .sidebar .nav-link{white-space:normal;overflow-wrap:anywhere;}
 }
 
+
+/* Keep original Welcome visible on the overview route across all saved themes. */
+body[data-profile-view="top"] main#top > .welcome-section:not([hidden]){display:flex!important;}
+body[data-profile-view="top"] main#top > .welcome-section:not([hidden]) > .welcome-hero{display:flex!important;}
+body[data-profile-view]:not([data-profile-view="top"]) main#top > .welcome-section{display:none!important;}
+body[data-profile-view="top"] main#top > .oneform-dashboard-overview:not([hidden]){display:block!important;}
+body[data-profile-view] .session-info{min-width:0;overflow-wrap:anywhere;}
+body[data-profile-view] #authUsername,body[data-profile-view] #authEmail{display:block;max-width:100%;overflow-wrap:anywhere;}
+
 </style>
