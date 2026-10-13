@@ -646,53 +646,81 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Store the scientific CV in this browser, separately for each account.
   const supportForm = document.getElementById('supportForm');
   const supportStatus = document.getElementById('supportFileStatus');
-  let supportUrl;
-  const openPdfDb = () => new Promise((resolve, reject) => {
-    const request = indexedDB.open('scientist-support-v1', 1);
-    request.onupgradeneeded = () => request.result.createObjectStore('cv');
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-  const showPdf = record => {
-    if (!supportStatus) return;
-    supportStatus.replaceChildren();
-    if (supportUrl) URL.revokeObjectURL(supportUrl);
-    if (!record) return;
-    supportUrl = URL.createObjectURL(record.file);
-    const link = document.createElement('a'); link.href = supportUrl;
-    link.download = record.name; link.textContent = 'Mở PDF đã lưu: ' + record.name;
-    supportStatus.appendChild(link);
+  const supportPreview = document.getElementById('supportExtractionPreview');
+
+  const toIsoDate = raw => {
+    const value=String(raw||'').trim();
+    let m=value.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/);
+    if(m) return [m[3],String(m[2]).padStart(2,'0'),String(m[1]).padStart(2,'0')].join('-');
+    m=value.match(/(\d{4})[\/\.\-](\d{1,2})[\/\.\-](\d{1,2})/);
+    if(m) return [m[1],String(m[2]).padStart(2,'0'),String(m[3]).padStart(2,'0')].join('-');
+    return '';
   };
-  const readPdf = async () => {
-    const db = await openPdfDb();
-    await new Promise((resolve,reject) => {
-      const tx=db.transaction('cv','readonly'), request=tx.objectStore('cv').get(accountId);
-      request.onsuccess=()=>showPdf(request.result);
-      tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
-    }).finally(()=>db.close());
+  const cleanImportedValue = value => String(value||'').replace(/\s+/g,' ').replace(/^[\s:;\-–—]+|[\s;]+$/g,'').trim();
+  const extractLabeledValue = (text, labels) => {
+    const escaped=labels.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    const m=text.match(new RegExp('(?:^|\\n)\\s*(?:'+escaped+')\\s*[:\\-–]?\\s*([^\\n]+)','i'));
+    return m ? cleanImportedValue(m[1]) : '';
   };
-  if (supportForm) readPdf().catch(() => { if(supportStatus) supportStatus.textContent='Không đọc được PDF đã lưu trong trình duyệt.'; });
+  const parseImportedProfile = text => {
+    const normalized=String(text||'').replace(/\r/g,'\n').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n');
+    const out={}; const put=(k,v)=>{v=cleanImportedValue(v); if(v) out[k]=v;};
+    put('person_name',extractLabeledValue(normalized,['Họ và tên','Họ tên']));
+    const gender=extractLabeledValue(normalized,['Giới tính','Phái']); if(/\bnam\b/i.test(gender))out.person_gender='1'; else if(/nữ/i.test(gender))out.person_gender='0';
+    const dob=toIsoDate(extractLabeledValue(normalized,['Ngày, tháng, năm sinh','Ngày tháng năm sinh','Ngày sinh'])); if(dob)out.person_dob=dob;
+    put('person_pob',extractLabeledValue(normalized,['Nơi sinh']));
+    put('person_hometown',extractLabeledValue(normalized,['Quê quán']));
+    put('person_ethnicity',extractLabeledValue(normalized,['Dân tộc']));
+    put('person_position',extractLabeledValue(normalized,['Chức vụ (Hiện tại hoặc trước khi nghỉ hưu)','Chức vụ']));
+    put('person_work_unit',extractLabeledValue(normalized,['Đơn vị công tác (Hiện tại hoặc trước khi nghỉ hưu)','Đơn vị công tác','Cơ quan công tác']));
+    put('person_address',extractLabeledValue(normalized,['Chỗ ở riêng hoặc địa chỉ liên lạc','Địa chỉ liên lạc','Địa chỉ']));
+    put('person_fax',extractLabeledValue(normalized,['Fax']));
+    const em=(extractLabeledValue(normalized,['Email','E-mail']).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[])[0]; if(em)put('person_email',em);
+    put('person_citizen_id',extractLabeledValue(normalized,['CCCD','Căn cước công dân','CMND']));
+    const issue=toIsoDate(extractLabeledValue(normalized,['Ngày cấp'])); if(issue)out.person_date_issue=issue;
+    put('person_place_issue',extractLabeledValue(normalized,['Nơi cấp']));
+    const mobile=normalized.match(/(?:Điện thoại di động|Di động|Mobile|ĐĐ|DD)\s*[:\-]?\s*([+\d().\s-]{8,})/i); if(mobile)put('person_mobile_phone',mobile[1]);
+    return out;
+  };
+
+  const readPdfText = async file => {
+    if(!window.pdfjsLib) throw new Error('Thư viện đọc PDF chưa tải được.');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+    const pages=[];
+    for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();pages.push(content.items.map(x=>x.str||'').join(' '));}
+    return pages.join('\n');
+  };
+  const readDocxText = async file => { if(!window.mammoth)throw new Error('Thư viện đọc DOCX chưa tải được.'); const r=await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()}); return r.value||''; };
+  const applyImportedFields = data => {
+    let applied=0;
+    Object.entries(data).forEach(([name,value])=>{
+      const controls=[...document.querySelectorAll('[name="'+CSS.escape(name)+'"]')]; if(!controls.length)return;
+      if(controls[0].type==='radio'){controls.forEach(el=>el.checked=String(el.value)===String(value));applied++;return;}
+      const control=controls[0];
+      if(control.tagName==='SELECT'){const w=String(value).toLocaleLowerCase('vi-VN');const opt=[...control.options].find(o=>String(o.value).toLocaleLowerCase('vi-VN')===w||String(o.textContent).toLocaleLowerCase('vi-VN').includes(w));if(opt){control.value=opt.value;applied++;}return;}
+      control.value=value;applied++;
+    });
+    return applied;
+  };
   supportForm?.addEventListener('submit', async event => {
-    event.preventDefault();
-    const file=document.getElementById('supportFile')?.files?.[0];
-    if (!file) return;
-    const button=supportForm.querySelector('[type="submit"]'); button.disabled=true;
-    try {
-      const signature=new TextDecoder().decode(await file.slice(0,5).arrayBuffer());
-      if (!/\.pdf$/i.test(file.name) || signature !== '%PDF-' || (file.type && file.type !== 'application/pdf')) throw new Error('Chỉ nhận tệp PDF hợp lệ.');
-      if (file.size > 20*1024*1024) throw new Error('PDF không được lớn hơn 20 MB.');
-      const db=await openPdfDb();
-      const record={file,name:file.name,updatedAt:new Date().toISOString()};
-      await new Promise((resolve,reject)=>{
-        const tx=db.transaction('cv','readwrite'); tx.objectStore('cv').put(record,accountId);
-        tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error); tx.onabort=()=>reject(tx.error||new Error('Trình duyệt không cho lưu tệp.'));
-      }).finally(()=>db.close());
-      showPdf(record); supportForm.reset(); toast('Đã lưu PDF trong ứng dụng trên trình duyệt này.');
-    } catch(err) { toast(err.message,'danger'); }
-    finally { button.disabled=false; }
+    event.preventDefault(); const file=document.getElementById('supportFile')?.files?.[0]; if(!file)return;
+    const button=document.getElementById('extractProfileBtn'); if(button)button.disabled=true;
+    if(supportStatus)supportStatus.innerHTML='<div class="alert alert-info">Đang đọc và trích xuất dữ liệu...</div>';
+    try{
+      const lower=file.name.toLowerCase(); let text='';
+      if(lower.endsWith('.pdf'))text=await readPdfText(file); else if(lower.endsWith('.docx'))text=await readDocxText(file); else throw new Error('Hiện hệ thống hỗ trợ PDF và DOCX.');
+      if(!text.trim())throw new Error('Không đọc được lớp chữ trong file. PDF scan ảnh cần OCR riêng.');
+      const extracted=parseImportedProfile(text); const keys=Object.keys(extracted); if(!keys.length)throw new Error('Đọc được file nhưng chưa nhận diện được trường hồ sơ phù hợp.');
+      enableGeneralEditing(); const applied=applyImportedFields(extracted); writeLocalGeneral({...readLocalGeneral(),...extracted});
+      if(supportPreview){supportPreview.hidden=false;supportPreview.innerHTML='<strong>Đã nhận diện '+applied+' trường.</strong><div class="small text-muted mt-2">Hãy kiểm tra lại thông tin trước khi sử dụng chính thức.</div>';}
+      if(window.google?.script?.run&&authToken)await new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(rej).saveGeneral(extracted,authToken));
+      if(supportStatus)supportStatus.innerHTML='<div class="alert alert-success">Đã trích xuất và tự điền '+applied+' trường.</div>';
+      showProfileView('general'); toast('Đã nhập thông tin từ file. Hãy kiểm tra lại dữ liệu tự điền.');
+    }catch(err){if(supportStatus)supportStatus.innerHTML='<div class="alert alert-danger">'+escapeHtml(err?.message||err)+'</div>';}
+    finally{if(button)button.disabled=false;}
   });
 
   const workCurrent = document.getElementById('workCurrent');
@@ -1649,8 +1677,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (publicationAddBtn) publicationAddBtn.disabled = true;
 
     if (!items.length) {
-      publicationSearchResults.innerHTML =
-        '<div class="publication-search-empty text-muted text-center">Không tìm thấy bài báo phù hợp.</div>';
+      publicationSearchResults.innerHTML = '<div class="publication-search-empty text-muted text-center">Không tìm thấy bài báo phù hợp.</div>';
       updatePublicationPager();
       return;
     }
@@ -1662,32 +1689,39 @@ document.addEventListener('DOMContentLoaded', () => {
       const year = escapeHtml(item.year || '');
       const doi = escapeHtml(item.doi || '');
       const issn = escapeHtml(item.issn || '');
+      const sourceUrl = String(item.url || (item.doi ? 'https://doi.org/' + item.doi : '') || '').trim();
+      const source = sourceUrl ? '<a class="publication-source-link" href="'+escapeHtml(sourceUrl)+'" target="_blank" rel="noopener noreferrer" data-publication-source><i class="bi bi-box-arrow-up-right"></i> Mở nguồn để kiểm tra bài báo</a>' : '<span class="publication-source-missing">Không có link nguồn</span>';
       return `
-        <button type="button" class="crossref-result-card" data-result-index="${index}">
+        <div class="crossref-result-card" data-result-index="${index}" role="button" tabindex="0">
           <div class="crossref-result-select"><span></span></div>
           <div class="crossref-result-content">
             <div class="crossref-result-title">${title}</div>
             <div class="crossref-result-meta">${authors}</div>
-            <div class="crossref-result-meta">
-              ${[journal, year].filter(Boolean).join(' · ')}
-            </div>
-            <div class="crossref-result-identifiers">
-              ${doi ? '<span>DOI: '+doi+'</span>' : ''}
-              ${issn ? '<span>ISSN: '+issn+'</span>' : ''}
-            </div>
+            <div class="crossref-result-meta">${[journal, year].filter(Boolean).join(' · ')}</div>
+            <div class="crossref-result-identifiers">${doi ? '<span>DOI: '+doi+'</span>' : ''}${issn ? '<span>ISSN: '+issn+'</span>' : ''}</div>
+            <div class="crossref-result-source">${source}</div>
           </div>
-        </button>`;
+        </div>`;
     }).join('');
 
+    const selectCard = card => {
+      publicationSearchResults.querySelectorAll('.crossref-result-card').forEach(x => x.classList.remove('selected'));
+      card.classList.add('selected');
+      publicationSearchState.selectedIndex = Number(card.dataset.resultIndex);
+      if (publicationAddBtn) publicationAddBtn.disabled = false;
+    };
+
     publicationSearchResults.querySelectorAll('.crossref-result-card').forEach(card => {
-      card.addEventListener('click', () => {
-        publicationSearchResults.querySelectorAll('.crossref-result-card').forEach(x => x.classList.remove('selected'));
-        card.classList.add('selected');
-        publicationSearchState.selectedIndex = Number(card.dataset.resultIndex);
-        if (publicationAddBtn) publicationAddBtn.disabled = false;
+      card.addEventListener('click', event => {
+        if (event.target.closest('[data-publication-source]')) return;
+        selectCard(card);
+      });
+      card.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        selectCard(card);
       });
     });
-
     updatePublicationPager();
   };
 
@@ -1866,15 +1900,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const links = [...document.querySelectorAll('.sidebar a[href^="#"]')];
-  const sections = links.filter(a => a.getAttribute('href').length > 1).map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id));
-    });
-  }, {rootMargin:'-35% 0px -55% 0px', threshold:0});
-  sections.forEach(s => observer.observe(s));
+  const profileViewIds = ['general','additional','education','work_exp','participate','publishedPaper','award','support'];
+  const sidebarViewLinks = [...document.querySelectorAll('.sidebar a[href^="#"]')];
+  const welcomeView = document.querySelector('.welcome-section');
+  const dashboardView = document.querySelector('.oneform-dashboard-overview');
+
+  const showProfileView = (targetId, updateHash=true) => {
+    const id = profileViewIds.includes(targetId) ? targetId : 'top';
+    profileViewIds.forEach(sectionId => { const section=document.getElementById(sectionId); if(section) section.hidden = sectionId !== id; });
+    const dashboardMode = id === 'top';
+    if (welcomeView) welcomeView.hidden = !dashboardMode;
+    if (dashboardView) dashboardView.hidden = !dashboardMode;
+    sidebarViewLinks.forEach(link => link.classList.toggle('active', link.getAttribute('href') === '#' + id));
+    if (updateHash) { try { history.replaceState(null,'','#' + id); } catch (_) {} }
+    window.scrollTo({top:0,left:0,behavior:'auto'});
+  };
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) return;
+    const hash = link.getAttribute('href');
+    if (!hash || hash === '#') return;
+    const id = hash.slice(1);
+    if (id !== 'top' && !profileViewIds.includes(id)) return;
+    event.preventDefault();
+    showProfileView(id);
+  });
+
+  const initialView = location.hash && (location.hash === '#top' || profileViewIds.includes(location.hash.slice(1))) ? location.hash.slice(1) : 'general';
+  showProfileView(initialView,false);
   // Toàn bộ bảng được lưu theo danh tính đã xác thực, không đọc dữ liệu dùng chung cũ.
   const profileBodies = [...document.querySelectorAll('.managed-table tbody[id]')];
   const profileDataKey = 'scientist-tables-v3:' + accountId;
