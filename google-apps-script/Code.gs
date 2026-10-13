@@ -56,6 +56,9 @@ function doGet(e) {
   }
 
   if (page === 'app' || page === 'home') {
+    // A direct /exec?page=app request does not contain an authenticated
+    // identity. The browser restores its own short-lived session, or
+    // the page displays a visible sign-in notice.
     const t = HtmlService.createTemplateFromFile('Index');
     t.userJson = JSON.stringify({provider:'local'}).replace(/</g, '\\u003c');
     t.authTokenJson = JSON.stringify('');
@@ -866,7 +869,7 @@ function renderDeploymentDiagnostic_() {
   const html = [
     '<!doctype html><html><head><meta charset="utf-8"><title>Deployment Diagnostic</title></head><body>',
     '<h2>Deployment Diagnostic</h2>',
-    '<p><b>Build:</b> AUTH-MULTI-ACCOUNT-01-20261008</p>',
+    '<p><b>Build:</b> UI-WELCOME-SESSION-20261013-R2</p>',
     '<p><b>WEB_APP_URL:</b> '+config.webAppUrl+'</p>',
     '<p><b>Client ID configured:</b> '+Boolean(config.googleClientId)+'</p>',
     '<p><b>Client Secret configured:</b> '+Boolean(config.googleClientSecret)+'</p>',
