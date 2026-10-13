@@ -95,8 +95,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       table.appendChild(row);
     });
   }
-  async function build(variant = "standard") {
-    if(!["standard","textbooks","awards","full"].includes(variant)) throw new Error("Mẫu xuất không hợp lệ.");
+  async function build(options = {}) {
+    const legacy = typeof options === 'string' ? options : '';
+    const config = options && typeof options === 'object' ? options : {};
+    const include = {
+      teaching:Boolean(config.teaching),
+      research:Boolean(config.research),
+      textbooks:Boolean(config.textbooks || legacy==='textbooks' || legacy==='full'),
+      awards:Boolean(config.awards || legacy==='awards' || legacy==='full'),
+      transfers:Boolean(config.transfers)
+    };
+    const signaturePlace=String(config.place || '').trim();
+    const autoDate=config.autoDate !== false;
     const zip=await JSZip.loadAsync(TEMPLATE,{base64:true});
     const xml=await zip.file('word/document.xml').async('string');
     const doc=new DOMParser().parseFromString(xml,'application/xml');
@@ -234,30 +244,33 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if(!children(trpr,'tblHeader').length) trpr.appendChild(doc.createElementNS(W,'w:tblHeader'));
       body.insertBefore(label,p[41]);body.insertBefore(table,p[41]);
     };
-    if(variant==='textbooks'||variant==='full') addSection('3. Sách và giáo trình đã biên soạn:',p[39],
+    if(include.teaching) addSection('V. MÔN HỌC CÓ THỂ GIẢNG DẠY',p[36],
+      ['TT','Ngành / Chuyên ngành','Môn học','Mô tả'],
+      rows('teachingBody').map((x,i)=>[i+1,x.major,x.title,x.description]));
+    if(include.research) addSection('VI. HƯỚNG NGHIÊN CỨU',p[36],
+      ['TT','Ngành / Chuyên ngành','Hướng nghiên cứu','Mô tả'],
+      rows('researchBody').map((x,i)=>[i+1,x.major,x.title,x.description]));
+    if(include.textbooks) addSection('VII. SÁCH VÀ GIÁO TRÌNH ĐÃ BIÊN SOẠN',p[39],
       ['TT','Tên sách / giáo trình','Năm xuất bản','Nhà xuất bản'],
       rows('textbookBody').map((x,i)=>[i+1,[x.title,x.description].filter(Boolean).join('\n'),x.year,[x.publisher,x.month?'Tháng '+x.month:''].filter(Boolean).join('\n')]));
-    if(variant==='awards'||variant==='full') addSection('V. GIẢI THƯỞNG VÀ THÀNH TÍCH',p[36],
-      ['TT','Giải thưởng / Thành tích','Năm','Nơi cấp / Áp dụng'],
-      rows('awardBody').map((x,i)=>[i+1,[x.category,x.name,x.description].filter(Boolean).join('\n'),x.year,x.organization]));
-    // Tự động điền ngày/tháng/năm hiện tại vào dòng ký của mẫu Word.
-    const exportNow=new Date();
-    const exportDay=String(exportNow.getDate()).padStart(2,'0');
-    const exportMonth=String(exportNow.getMonth()+1).padStart(2,'0');
-    const exportYear=String(exportNow.getFullYear());
+    if(include.awards) addSection('VIII. GIẢI THƯỞNG KHOA HỌC VÀ CÔNG NGHỆ',p[36],
+      ['TT','Giải thưởng / Thành tích','Năm','Nơi cấp'],
+      rows('awardBody').filter(x=>x.category!=='tech_transfer').map((x,i)=>[i+1,[x.name,x.description].filter(Boolean).join('\n'),x.year,x.organization]));
+    if(include.transfers) addSection('IX. CHUYỂN GIAO CÔNG NGHỆ',p[36],
+      ['TT','Công nghệ / Giải pháp','Năm','Nơi áp dụng'],
+      rows('awardBody').filter(x=>x.category==='tech_transfer').map((x,i)=>[i+1,[x.name,x.description].filter(Boolean).join('\n'),x.year,x.organization]));
+    // Địa danh và ngày ký theo lựa chọn xuất.
     const dateParagraph=children(body,'p').find(paragraph => {
       const plain=descendants(paragraph,'t').map(node=>node.textContent || '').join('');
       return /ngày[\s.…\.]*tháng[\s.…\.]*năm/i.test(plain);
     });
     if(dateParagraph) {
-      const plain=descendants(dateParagraph,'t').map(node=>node.textContent || '').join('');
-      const updated=plain.replace(
-        /ngày\s*[.…\.]*\s*tháng\s*[.…\.]*\s*năm\s*(?:20)?[.…\.]*/i,
-        'ngày '+exportDay+' tháng '+exportMonth+' năm '+exportYear
-      );
-      if(updated !== plain) setParagraph(dateParagraph,updated);
+      const now=new Date();
+      const dateText=autoDate
+        ? 'ngày '+String(now.getDate()).padStart(2,'0')+' tháng '+String(now.getMonth()+1).padStart(2,'0')+' năm '+now.getFullYear()
+        : 'ngày ..... tháng ..... năm ........';
+      setParagraph(dateParagraph,(signaturePlace ? signaturePlace+', ' : '')+dateText);
     }
-
     const signature=children(children(tables[4],'tr')[0],'tc')[1];
     if(value('person_name')) {
       const seed=children(signature,'p')[1];
@@ -265,7 +278,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const line=seed.cloneNode(true);setParagraph(line,text);signature.appendChild(line);
       });
     }
-    if(variant!=='standard') {
+    if(Object.values(include).some(Boolean)) {
       const datePr=children(p[41],'pPr')[0] || p[41].insertBefore(doc.createElementNS(W,'w:pPr'),p[41].firstChild);
       if(!children(datePr,'keepNext').length) datePr.appendChild(doc.createElementNS(W,'w:keepNext'));
       const signRow=children(tables[4],'tr')[0];
@@ -344,8 +357,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return '<p style="font-family:Times New Roman,serif;color:#000;'+(tabCount&&stops.length?'display:flex;flex-wrap:nowrap;':'')+'text-align:'+jc+';font-size:'+size+'pt;line-height:'+lineHeight+';margin:'+before+'pt '+(right/20)+'pt '+after+'pt '+(lineStart/20)+'pt">'+(text||'&nbsp;')+'</p>';
   }
   window.MinistryExport={
-    create:async(variant="standard")=>{const {zip}=await build(variant);return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});},
-    preview:async(variant="standard")=>{const {zip,body}=await build(variant);const logo=await zip.file('word/media/image1.png').async('base64');return '<div class="ministry-document" style="font-family:Times New Roman,serif;color:#000;width:638px;font-size:13pt"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16pt"><img alt="" src="data:image/png;base64,'+logo+'" style="width:115px;height:auto"><span style="font-style:italic;font-size:10pt">BM04/QT03/ĐT</span></div>'+[...body.children].map(el=>{
+    create:async(options={})=>{const {zip}=await build(options);return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});},
+    preview:async(options={})=>{const {zip,body}=await build(options);const logo=await zip.file('word/media/image1.png').async('base64');return '<div class="ministry-document" style="font-family:Times New Roman,serif;color:#000;width:638px;font-size:13pt"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16pt"><img alt="" src="data:image/png;base64,'+logo+'" style="width:115px;height:auto"><span style="font-style:italic;font-size:10pt">BM04/QT03/ĐT</span></div>'+[...body.children].map(el=>{
       if(el.localName==='p')return previewParagraph(el);
       if(el.localName!=='tbl')return '';
       const grid=descendants(el,'gridCol').map(x=>Number(x.getAttributeNS(W,'w'))),sum=grid.reduce((a,b)=>a+b,0);
@@ -1862,31 +1875,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const exportPreview = document.getElementById('exportPreview');
   let exportPreviewGeneration = 0;
-  const buildExportPreview = async () => {
-    const generation = ++exportPreviewGeneration;
-    if (!exportPreview) return;
-    try { const html = await window.MinistryExport.preview(document.getElementById("exportTemplateSelect")?.value || "standard"); if (generation === exportPreviewGeneration) exportPreview.innerHTML = html; }
-    catch (err) { exportPreview.textContent = 'Không mở được mẫu Word: ' + err.message; }
+
+  const exportCount = bodyId => document.querySelectorAll('#'+bodyId+' tr:not(.empty-row)').length;
+  const refreshExportCounts = () => {
+    const awards=[...document.querySelectorAll('#awardBody tr:not(.empty-row)')];
+    const counts={
+      exportTeachingCount:exportCount('teachingBody'),
+      exportResearchCount:exportCount('researchBody'),
+      exportTextbookCount:exportCount('textbookBody'),
+      exportAwardCount:awards.filter(r=>r.dataset.category!=='tech_transfer').length,
+      exportTransferCount:awards.filter(r=>r.dataset.category==='tech_transfer').length
+    };
+    Object.entries(counts).forEach(([id,count])=>{const el=document.getElementById(id);if(el)el.textContent='('+count+' mục)';});
   };
-  document.getElementById('exportTemplateSelect')?.addEventListener('change', buildExportPreview);
-  document.querySelectorAll('[name="exportTemplateChoice"]').forEach(choice=>choice.addEventListener('change',()=>{
-    if(!choice.checked) return;
-    document.getElementById('exportTemplateSelect').value=choice.value;
+
+  const getExportOptions = () => ({
+    teaching:Boolean(document.getElementById('exportIncludeTeaching')?.checked),
+    research:Boolean(document.getElementById('exportIncludeResearch')?.checked),
+    textbooks:Boolean(document.getElementById('exportIncludeTextbooks')?.checked),
+    awards:Boolean(document.getElementById('exportIncludeAwards')?.checked),
+    transfers:Boolean(document.getElementById('exportIncludeTransfers')?.checked),
+    place:document.getElementById('exportSignaturePlace')?.value || '',
+    autoDate:Boolean(document.getElementById('exportAutoDate')?.checked)
+  });
+
+  const buildExportPreview = async () => {
+    const generation=++exportPreviewGeneration;
+    if(!exportPreview)return;
+    exportPreview.innerHTML='<div class="text-muted p-3">Đang tạo bản xem trước...</div>';
+    try{
+      const html=await window.MinistryExport.preview(getExportOptions());
+      if(generation===exportPreviewGeneration)exportPreview.innerHTML=html;
+    }catch(err){
+      if(generation===exportPreviewGeneration)exportPreview.textContent='Không mở được mẫu Word: '+err.message;
+    }
+  };
+
+  document.getElementById('exportSelectAll')?.addEventListener('change',event=>{
+    document.querySelectorAll('.export-extra').forEach(box=>box.checked=event.target.checked);
+    buildExportPreview();
+  });
+  document.querySelectorAll('.export-extra,#exportAutoDate').forEach(control=>control.addEventListener('change',()=>{
+    const extras=[...document.querySelectorAll('.export-extra')];
+    const selectAll=document.getElementById('exportSelectAll');
+    if(selectAll){
+      selectAll.checked=extras.length>0&&extras.every(x=>x.checked);
+      selectAll.indeterminate=extras.some(x=>x.checked)&&!extras.every(x=>x.checked);
+    }
     buildExportPreview();
   }));
-  document.getElementById('refreshExportPreview')?.addEventListener('click', buildExportPreview);
-  document.getElementById('exportCvModal')?.addEventListener('shown.bs.modal', buildExportPreview);
-  document.getElementById('downloadExportDoc')?.addEventListener('click', async event => {
-    const button = event.currentTarget; button.disabled = true;
-    try {
-      const variant=document.getElementById("exportTemplateSelect")?.value || "standard";
-      const blob = await window.MinistryExport.create(variant);
-      const url = URL.createObjectURL(blob), link = document.createElement('a');
-      link.href = url; link.download = 'ly-lich-khoa-hoc-' + variant + '.docx'; link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-      toast('Đã xuất lý lịch khoa học theo mẫu Bộ.');
-    } catch (err) { toast('Không xuất được Word: ' + err.message, 'danger'); }
-    finally { button.disabled = false; }
+  document.getElementById('exportSignaturePlace')?.addEventListener('input',()=>{
+    clearTimeout(window.__exportPlaceTimer);
+    window.__exportPlaceTimer=setTimeout(buildExportPreview,300);
+  });
+  document.getElementById('refreshExportPreview')?.addEventListener('click',buildExportPreview);
+  document.getElementById('exportCvModal')?.addEventListener('shown.bs.modal',()=>{refreshExportCounts();buildExportPreview();});
+
+  document.getElementById('downloadExportDoc')?.addEventListener('click',async event=>{
+    const button=event.currentTarget;button.disabled=true;
+    try{
+      const blob=await window.MinistryExport.create(getExportOptions());
+      const url=URL.createObjectURL(blob),link=document.createElement('a');
+      link.href=url;link.download='ly-lich-khoa-hoc.docx';link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),10000);
+      toast('Đã xuất DOCX lý lịch khoa học.');
+    }catch(err){toast('Không xuất được DOCX: '+err.message,'danger');}
+    finally{button.disabled=false;}
+  });
+
+  document.getElementById('downloadExportPdf')?.addEventListener('click',async event=>{
+    const button=event.currentTarget;button.disabled=true;
+    try{
+      await buildExportPreview();
+      if(!window.html2pdf)throw new Error('Thư viện xuất PDF chưa tải được.');
+      const paper=exportPreview?.querySelector('.ministry-document')||exportPreview;
+      await window.html2pdf().set({
+        margin:[10,10,10,10],
+        filename:'ly-lich-khoa-hoc.pdf',
+        image:{type:'jpeg',quality:0.98},
+        html2canvas:{scale:2,useCORS:true},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+        pagebreak:{mode:['css','legacy']}
+      }).from(paper).save();
+      toast('Đã xuất PDF lý lịch khoa học.');
+    }catch(err){toast('Không xuất được PDF: '+(err?.message||err),'danger');}
+    finally{button.disabled=false;}
   });
 
   const savedArticleSearch = document.getElementById('savedArticleSearch');
