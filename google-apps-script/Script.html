@@ -2041,12 +2041,8 @@ document.addEventListener('DOMContentLoaded', () => {
     showProfileView(id);
   });
 
-  const initialView = location.hash && (location.hash === '#top' || profileViewIds.includes(location.hash.slice(1))) ? location.hash.slice(1) : 'general';
-  showProfileView(initialView,false);
-  window.addEventListener('hashchange',()=>{
-    const hash=location.hash.slice(1);
-    if(hash==='top'||profileViewIds.includes(hash))showProfileView(hash,false);
-  });
+  // One navigation owner: Navigation.html handles links, history and section visibility.
+  // Do not run a competing initial router here.
   // Toàn bộ bảng được lưu theo danh tính đã xác thực, không đọc dữ liệu dùng chung cũ.
   const profileBodies = [...document.querySelectorAll('.managed-table tbody[id]')];
   const profileDataKey = 'scientist-tables-v3:' + accountId;
