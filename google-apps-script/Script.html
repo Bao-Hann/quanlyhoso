@@ -1073,6 +1073,23 @@ document.addEventListener('DOMContentLoaded', () => {
       detail = [thesis, institution].filter(Boolean).join(' — ');
     }
 
+    // A professorial appointment is only valid after a completed doctoral degree.
+    const currentEditKey = fd.get('credential_edit_key') || '';
+    const candidate = [...getCredentialRows()].filter(row => row.dataset.key !== currentEditKey)
+      .map(row => ({kind:row.dataset.kind,level:row.dataset.level,year:row.dataset.year,unfinished:row.dataset.unfinished}));
+    candidate.push({kind,level,year:rawYear,unfinished:unfinished?'1':'0'});
+    const doctorateYears = candidate.filter(row => row.kind==='degree' && row.unfinished!=='1' &&
+      /tiến sĩ|phd|ph\\.d|dba|tskh/i.test(row.level))
+      .map(row => Number(row.year)).filter(y=>y>=1900);
+    const ranks = candidate.filter(row=>row.kind==='title' && /giáo sư/i.test(row.level));
+    if (kind==='degree' && !unfinished && (!level || !rawYear)) {
+      toast('Học vị đã hoàn thành phải có tên và năm tốt nghiệp.', 'warning');return;
+    }
+    if (ranks.length && (!doctorateYears.length || ranks.some(row => !Number(row.year) ||
+        !doctorateYears.some(year=>year<=Number(row.year))))) {
+      toast('GS/PGS phải được bổ nhiệm sau khi đã nhận bằng tiến sĩ. Vui lòng kiểm tra các dòng học vị và học hàm.', 'warning');
+      return;
+    }
     const editKey = fd.get('credential_edit_key') || '';
     const data = {
       key: editKey || ('credential-' + Date.now() + '-' + Math.random().toString(36).slice(2,7)),
