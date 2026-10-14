@@ -1,175 +1,254 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <base target="_top">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
-  <style>
-    :root{--bg:#f7f4f1;--card:#fff;--ink:#201c19;--muted:#756d67;--line:#e8e1db;--orange:#d96f2b;--orange2:#a94e17}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
-    .top{position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;padding:18px 28px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
-    .top h1{margin:0;font-size:1.1rem}.top a{color:var(--orange2);font-weight:700;text-decoration:none}
-    .shell{max-width:1500px;margin:0 auto;padding:32px 24px 50px}
-    .hero{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:24px}.hero h2{font-size:2rem;margin:0 0 8px}.hero p{margin:0;color:var(--muted)}
-    .stats{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin:22px 0 28px}.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 8px 24px rgba(60,45,35,.04)}
-    .stat strong{display:block;font-size:1.7rem;margin-bottom:5px}.stat span{color:var(--muted);font-size:.8rem}
-    .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(60,45,35,.05)}
-    .tools{padding:16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(240px,2fr) repeat(4,minmax(130px,1fr)) auto;gap:10px;align-items:center}
-    .tools input,.tools select,.tools button{padding:10px 12px;border:1px solid #d9d1cb;border-radius:10px;font:inherit;background:#fff;min-width:0}.tools button{cursor:pointer;font-weight:700}
-    table{width:100%;border-collapse:collapse}th,td{padding:12px 12px;border-bottom:1px solid #eee8e3;text-align:left;vertical-align:middle;font-size:.86rem}
-    th{background:#fffaf6;color:#655c56;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-    .name{font-weight:750}.email{color:var(--muted);font-size:.8rem;margin-top:3px}.pill{display:inline-flex;padding:5px 8px;border-radius:999px;background:#f2eee9;font-size:.74rem;font-weight:700;white-space:nowrap}
-    .pill.yes{background:#e9f7ef;color:#176b3a}.pill.no{background:#f4f1ee;color:#766d67}.bar{width:82px;height:7px;background:#eee8e3;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--orange)}
-    .muted{color:var(--muted)}.empty{padding:40px;text-align:center;color:var(--muted)}.error{padding:18px;color:#9d2c20;background:#fff1ee;border-radius:12px}
-    .detail-btn{border:1px solid #d8cfc8;border-radius:8px;background:#fff;padding:7px 10px;cursor:pointer}.detail-row td{background:#fcfaf8;padding:18px}.detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-    .detail-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;overflow:auto}.detail-card h4{margin:0 0 10px;font-size:.9rem}.kv{display:grid;grid-template-columns:150px 1fr;gap:5px 10px;font-size:.8rem}.kv b{color:#6e635c}.json{white-space:pre-wrap;word-break:break-word;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;color:#49423d;max-height:300px;overflow:auto}
-    @media(max-width:1150px){.stats{grid-template-columns:repeat(3,1fr)}.tools{grid-template-columns:1fr 1fr}.table-wrap{overflow:auto}table{min-width:1150px}.detail-grid{grid-template-columns:1fr}}
-  </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<base target="_top">
+<title>Quản trị hợp tác học thuật</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<style>
+:root{--ink:#202a35;--muted:#64748b;--accent:#2563eb;--bg:#f5f7fb;--card:#fff;--line:#e2e8f0;--orange:#eb8e46}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:var(--bg);font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:14px}
+header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar{max-width:1500px;margin:auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.4px}.sub{font-size:12px;color:var(--muted);margin-top:4px}
+a{color:var(--accent);text-decoration:none}button,select,input{font:inherit}
+button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:9px;padding:10px 13px;cursor:pointer}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}button:disabled{opacity:.45;cursor:not-allowed}
+button:hover:not(:disabled){filter:brightness(.96)}
+.shell{max-width:1500px;margin:0 auto;padding:24px 24px 48px}
+.heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:17px}
+h1{font-size:25px;margin:0 0 7px;letter-spacing:-.6px}h2{font-size:16px;margin:0 0 14px}
+.text-muted{color:var(--muted)}.status{font-size:12px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:18px 0 22px}
+.kpi,.panel{background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:0 4px 12px #0f172a06}
+.kpi{padding:17px 15px}.kpi strong{display:block;font-size:26px;line-height:1.2;margin-bottom:7px}.kpi span{font-size:12px;color:var(--muted)}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:22px}
+.panel{padding:18px;min-width:0}.chart-header{display:flex;justify-content:space-between;align-items:center;gap:10px}.chart-wrap{position:relative;height:280px}
+.chart-hint{margin-top:8px;color:var(--muted);font-size:12px}
+.fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+label{font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:6px}
+input,select{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:9px;padding:10px 11px;background:#fff;color:var(--ink)}
+.search-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:14px 0 0}
+.active-filter{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 11px;color:#1d4ed8;display:none}
+.results-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:13px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:980px}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{background:#f8fafc;color:#475569;font-size:12px;white-space:nowrap}td{font-size:13px}
+tr:last-child td{border-bottom:0}tr:hover td{background:#f8fafc}
+.person{font-weight:700}.sm{font-size:12px;color:var(--muted);margin-top:3px}
+.tag{display:inline-block;border-radius:999px;padding:4px 8px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:750}
+.tiny{font-size:11px;color:var(--muted);margin-top:5px}.empty{padding:34px;color:var(--muted);text-align:center}
+.summary-list{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+.chip{border:1px solid #bfdbfe;background:#eff6ff;border-radius:999px;color:#1d4ed8;padding:6px 10px;font-size:12px}
+.privacy{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:14px;color:#475569}
+.privacy input,.check-cell input{width:auto}.privacy label{margin:0;font-size:12px}
+.alert{padding:12px 14px;border:1px solid #f5b4b4;border-radius:9px;background:#fff2f2;color:#8f2424;margin-bottom:14px}
+.success{background:#effcf5;border-color:#8bd3a6;color:#166534}
+.group-controls{display:flex;gap:10px;align-items:center}
+.group-controls select{width:auto}.footnote{margin-top:12px;font-size:12px;color:var(--muted)}
+#printArea{display:none}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.fields{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.charts{grid-template-columns:1fr}.bar,.shell{padding-left:14px;padding-right:14px}}
+@media(max-width:520px){.kpis{grid-template-columns:repeat(2,1fr)}.fields{grid-template-columns:1fr}}
+@media print{
+  @page{size:A4 landscape;margin:12mm}
+  header,.shell{display:none!important}body{background:#fff}
+  #printArea{display:block!important;color:#111;font-family:"Times New Roman",serif}
+  #printArea h1{font-size:19pt;text-align:center}
+  #printArea table{min-width:0;table-layout:auto}
+  #printArea th,#printArea td{border:1px solid #777;padding:5px;font-size:9pt;word-break:break-word}
+  #printArea .report-footer{font-size:10pt;margin-top:20px}
+}
+</style>
 </head>
 <body>
-  <header class="top">
-    <h1>Scientist Profile · Admin</h1>
-    <a href="<?= webAppUrl ?>?page=app" target="_top">Về hồ sơ của tôi</a>
-  </header>
-  <main class="shell">
-    <section class="hero"><div><h2>Dashboard người dùng</h2><p id="adminLine">Đang tải dữ liệu...</p></div></section>
-    <div id="errorBox"></div>
-    <section class="stats">
-      <div class="stat"><strong id="sTotal">—</strong><span>Tổng người dùng</span></div>
-      <div class="stat"><strong id="s7">—</strong><span>Hoạt động 7 ngày</span></div>
-      <div class="stat"><strong id="s30">—</strong><span>Hoạt động 30 ngày</span></div>
-      <div class="stat"><strong id="sProfile">—</strong><span>Đã có hồ sơ</span></div>
-      <div class="stat"><strong id="sAcademic">—</strong><span>Có dữ liệu học thuật</span></div>
-      <div class="stat"><strong id="sTeach">—</strong><span>Mong muốn đi dạy</span></div>
-      <div class="stat"><strong id="sCompany">—</strong><span>Muốn dự án doanh nghiệp</span></div>
-    </section>
-    <section class="panel">
-      <div class="tools">
-        <input id="search" type="search" placeholder="Tìm trên toàn bộ hồ sơ..." disabled>
-        <select id="fieldFilter" disabled><option value="">Mọi trường thông tin</option></select>
-        <input id="fieldValue" type="search" placeholder="Giá trị cần lọc..." disabled>
-        <select id="genderFilter" disabled><option value="">Mọi giới tính</option><option>Nam</option><option>Nữ</option></select>
-        <select id="needFilter" disabled><option value="">Mọi nhu cầu</option><option value="teach">Muốn đi dạy</option><option value="company">Muốn dự án DN</option><option value="both">Cả hai</option></select>
-        <button id="clearFilter" type="button" disabled>Xóa lọc</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Người dùng</th><th>Tuổi</th><th>Giới tính</th><th>Học vị cao nhất</th><th>Giảng dạy</th><th>Dự án DN</th><th>Hoàn thiện</th><th>Gần nhất</th><th>Chi tiết</th></tr></thead>
-          <tbody id="rows"><tr><td colspan="9" class="empty">Đang tải...</td></tr></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+<header><div class="bar"><div><div class="brand">Scientist Profile <span class="tag">ADMIN</span></div><div class="sub">Quản lý chuyên gia & điều phối hợp tác học thuật</div></div><a href="<?= webAppUrl ?>?page=app" target="_top">Về hồ sơ của tôi ↗</a></div></header>
+<main class="shell">
+<div class="heading"><div><h1>Tổng quan đội ngũ giảng viên</h1><div class="status" id="adminStatus">Đang xác thực và tải dữ liệu…</div></div>
+<div class="group-controls"><button id="reload" type="button">Làm mới dữ liệu</button><button id="sync" class="primary" type="button">Đồng bộ JSON → Sheet</button></div></div>
+<div id="messages" role="status" aria-live="polite"></div>
+<section class="kpis" id="kpis"><div class="kpi"><strong>—</strong><span>Tổng giảng viên</span></div></section>
+<section class="charts">
+<div class="panel"><div class="chart-header"><h2>1. Cơ cấu học hàm & học vị</h2></div><div class="chart-wrap"><canvas id="chartAcademic"></canvas></div><div class="chart-hint">Nhấn vào một nhóm để lọc danh sách</div></div>
+<div class="panel"><h2>2. Nhu cầu hợp tác</h2><div class="chart-wrap"><canvas id="chartCooperation"></canvas></div><div class="chart-hint">Nhấn cột để chọn loại hợp tác</div></div>
+<div class="panel"><div class="chart-header"><h2>3. Phân bổ chuyên gia</h2><select id="distributionBy" aria-label="Phân bố theo"><option value="major">Chuyên ngành</option><option value="institution">Đơn vị công tác</option></select></div><div class="chart-wrap"><canvas id="chartDistribution"></canvas></div><div class="chart-hint">Hiển thị tối đa 8 nhóm đông nhất; chọn cột để lọc</div></div>
+<div class="panel"><h2>4. Năng lực nghiên cứu & giảng dạy</h2><div class="chart-wrap"><canvas id="chartCapacity"></canvas></div><div class="chart-hint">Các cột: đề tài, công bố, giáo trình, giải thưởng theo nhóm học thuật</div></div>
+</section>
+<section class="panel" style="margin-bottom:16px">
+<h2>Bộ lọc đề xuất chuyên gia</h2>
+<div class="fields">
+<div><label for="cooperation">Loại hợp tác cần mời</label><select id="cooperation"><option value="">Tất cả</option><option value="teaching">Thỉnh giảng</option><option value="research">Hợp tác nghiên cứu</option><option value="committee">Tham gia hội đồng</option><option value="instructor">Hướng dẫn học viên / sinh viên</option><option value="company">Dự án doanh nghiệp</option></select></div>
+<div><label for="studyLevel">Bậc đào tạo / hội đồng</label><select id="studyLevel"><option value="undergraduate">Đại học</option><option value="masters">Cao học (Thạc sĩ)</option><option value="doctoral">Nghiên cứu sinh (Tiến sĩ)</option><option value="bachelor_thesis">Hội đồng khóa luận ĐH</option><option value="masters_thesis">Hội đồng luận văn ThS</option><option value="doctoral_thesis">Hội đồng luận án TS</option><option value="institutional">Nghiệm thu cấp cơ sở</option><option value="ministry">Nghiệm thu cấp Bộ/Nhà nước</option><option value="undergraduate_supervision">Hướng dẫn sinh viên ĐH</option><option value="masters_supervision">Hướng dẫn học viên ThS</option><option value="doctoral_supervision">Hướng dẫn NCS</option></select></div>
+<div><label for="keyword">Chuyên ngành, môn học, đề tài</label><input id="keyword" type="search" placeholder="Ví dụ: trí tuệ nhân tạo"></div>
+<div><label for="institution">Đơn vị công tác</label><input id="institution" type="search" placeholder="Ví dụ: HCMUTE"></div>
+</div>
+<div class="search-actions"><button type="button" class="primary" id="apply">Tìm chuyên gia</button><button type="button" id="clear">Xóa bộ lọc</button><span class="active-filter" id="chartFilter" role="status"></span><span class="status" id="resultStatus"></span></div>
+</section>
+<section class="panel" style="margin-bottom:16px">
+<div class="results-head"><h2 style="margin:0">Danh sách chuyên gia phù hợp</h2><button type="button" id="selectVisible">Chọn tất cả kết quả đang hiển thị</button></div>
+<div class="table-wrap"><table><thead><tr><th>Chọn</th><th>Danh xưng & họ tên</th><th>Học hàm/Học vị</th><th>Đơn vị</th><th>Chuyên ngành / môn dạy</th><th>Nhu cầu hợp tác</th><th>Điểm</th></tr></thead><tbody id="results"><tr><td colspan="7" class="empty">Đang tải dữ liệu…</td></tr></tbody></table></div>
+</section>
+<section class="panel" id="shortlistPanel">
+<div class="results-head"><div><h2 style="margin:0">Danh sách đề xuất hợp tác</h2><div class="text-muted tiny" id="selectionCount">Chưa chọn giảng viên nào</div></div><button id="clearSelection" type="button">Xóa danh sách chọn</button></div>
+<div id="shortlist" class="summary-list"></div>
+<div class="privacy"><input type="checkbox" id="includeInternal"><label for="includeInternal">Bao gồm thông tin hành chính nội bộ (CCCD, nơi/ngày cấp, địa chỉ nhà riêng) — chỉ dành cho trường hợp được phép chia sẻ</label></div>
+<div class="search-actions"><button class="primary" type="button" id="exportCsv">Xuất Excel / CSV</button><button type="button" id="exportPrint">In / Lưu bản PDF trích ngang</button></div>
+<div class="footnote">Dữ liệu gửi đối tác mặc định không chứa CCCD và địa chỉ riêng. Tệp CSV sử dụng UTF-8 và mở được bằng Excel.</div>
+</section>
+</main>
+<section id="printArea" aria-hidden="true"></section>
 <script>
-  const bootstrapSession = <?!= adminSessionJson ?>;
-  const bootstrapStorageWarning = <?!= storageWarningJson ?>;
-  if (bootstrapSession && bootstrapSession.token) {
-    try { sessionStorage.setItem('scientist-local-session',JSON.stringify(bootstrapSession)); } catch (_) {}
-  }
-
-  let allUsers=[];
-  const fmt=value=>{if(!value)return '—';const d=new Date(value);if(Number.isNaN(d.getTime()))return '—';return new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short'}).format(d);};
-  const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const yes=v=>v?'<span class="pill yes">Có</span>':'<span class="pill no">Không</span>';
-  const FIELD_LABELS={
-    email:'Email',accountName:'Tên tài khoản Google',profileName:'Họ tên hồ sơ',age:'Tuổi',gender:'Giới tính',
-    highestDegree:'Học vị cao nhất',highestDegreeMajor:'Ngành học vị cao nhất',highestTitle:'Học hàm cao nhất',
-    wantsTeaching:'Mong muốn đi dạy',wantsCompanyProjects:'Dự án doanh nghiệp',
-    'general.person_name':'Họ tên','general.person_dob':'Ngày sinh','general.person_pob':'Nơi sinh','general.person_hometown':'Quê quán',
-    'general.person_ethnicity':'Dân tộc','general.person_position':'Chức vụ','general.person_work_unit':'Đơn vị công tác',
-    'general.person_address':'Địa chỉ','general.person_mobile_phone':'Điện thoại','general.person_email':'Email hồ sơ',
-    'general.person_accept_teaching':'Mong muốn đi dạy','general.person_accept_company_projects':'Mong muốn dự án doanh nghiệp',
-    'tables.teachingBody':'Môn có thể giảng dạy','tables.researchBody':'Hướng nghiên cứu','tables.credentialBody':'Học hàm - học vị',
-    'tables.workBody':'Quá trình công tác','tables.projectBody':'Đề tài','tables.articleBody':'Bài báo','tables.seminarBody':'Hội thảo','tables.textbookBody':'Giáo trình','tables.awardBody':'Giải thưởng'
-  };
-
-  const renderDetail=u=>{
-    const g=u.general||{}, d=u.derived||{}, t=u.tables||{};
-    const basic=[
-      ['Họ tên',g.person_name],['Ngày sinh',g.person_dob],['Tuổi',d.age],['Giới tính',d.gender],['Nơi sinh',g.person_pob],['Quê quán',g.person_hometown],
-      ['Dân tộc',g.person_ethnicity],['Chức vụ',g.person_position],['Đơn vị',g.person_work_unit],['Địa chỉ',g.person_address],
-      ['Điện thoại',g.person_mobile_phone],['Email hồ sơ',g.person_email],['Học vị cao nhất',d.highestDegree],['Ngành',d.highestDegreeMajor],['Học hàm cao nhất',d.highestTitle]
-    ];
-    const wishes=[
-      ['Mong muốn đi dạy',d.wantsTeaching?'Có':'Không'],
-      ['Dự án doanh nghiệp',d.wantsCompanyProjects?'Có':'Không'],
-      ['Nghiên cứu chung',String(g.person_accept_researching||'0')==='1'?'Có':'Không'],
-      ['Tham gia hội đồng',String(g.person_accept_committee||'0')==='1'?'Có':'Không'],
-      ['Làm người hướng dẫn',String(g.person_accept_instructor||'0')==='1'?'Có':'Không']
-    ];
-    const kv=list=>'<div class="kv">'+list.map(x=>'<b>'+esc(x[0])+'</b><span>'+esc(x[1]||'—')+'</span>').join('')+'</div>';
-    return '<div class="detail-grid"><div class="detail-card"><h4>Thông tin hồ sơ</h4>'+kv(basic)+'</div>'+
-      '<div class="detail-card"><h4>Mong muốn / kết nối</h4>'+kv(wishes)+'</div>'+
-      '<div class="detail-card"><h4>Toàn bộ dữ liệu học thuật</h4><div class="json">'+esc(JSON.stringify(t,null,2))+'</div></div></div>';
-  };
-
-  const render=users=>{
-    const body=document.getElementById('rows');
-    if(!users.length){body.innerHTML='<tr><td colspan="9" class="empty">Chưa có người dùng phù hợp.</td></tr>';return;}
-    body.innerHTML=users.map((u,i)=>'<tr>'+
-      '<td><div class="name">'+esc(u.profileName||u.accountName||'(chưa có tên)')+'</div><div class="email">'+esc(u.email)+'</div></td>'+
-      '<td>'+esc(u.derived?.age||'—')+'</td><td>'+esc(u.derived?.gender||'—')+'</td>'+
-      '<td><div class="name">'+esc(u.derived?.highestDegree||'—')+'</div><div class="email">'+esc(u.derived?.highestDegreeMajor||'')+'</div></td>'+
-      '<td>'+yes(u.derived?.wantsTeaching)+'</td><td>'+yes(u.derived?.wantsCompanyProjects)+'</td>'+
-      '<td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><i style="width:'+(Number(u.completion)||0)+'%"></i></div><span>'+(Number(u.completion)||0)+'%</span></div></td>'+
-      '<td class="muted">'+fmt(u.lastSeen)+'</td><td><button class="detail-btn" data-detail="'+i+'">Xem</button></td></tr>'+
-      '<tr class="detail-row" data-detail-row="'+i+'" hidden><td colspan="9">'+renderDetail(u)+'</td></tr>'
-    ).join('');
-    body.querySelectorAll('.detail-btn').forEach(btn=>btn.addEventListener('click',()=>{
-      const row=body.querySelector('[data-detail-row="'+btn.dataset.detail+'"]'); if(row) row.hidden=!row.hidden;
-    }));
-  };
-
-  const applyFilters=()=>{
-    const q=document.getElementById('search').value.trim().toLowerCase();
-    const field=document.getElementById('fieldFilter').value;
-    const fieldValue=document.getElementById('fieldValue').value.trim().toLowerCase();
-    const gender=document.getElementById('genderFilter').value;
-    const need=document.getElementById('needFilter').value;
-    const filtered=allUsers.filter(u=>{
-      if(q && !String(u.searchText||'').includes(q)) return false;
-      if(field && fieldValue && !String((u.filterData||{})[field]||'').toLowerCase().includes(fieldValue)) return false;
-      if(gender && u.derived?.gender!==gender) return false;
-      if(need==='teach' && !u.derived?.wantsTeaching) return false;
-      if(need==='company' && !u.derived?.wantsCompanyProjects) return false;
-      if(need==='both' && !(u.derived?.wantsTeaching && u.derived?.wantsCompanyProjects)) return false;
-      return true;
-    });
-    render(filtered);
-  };
-
-  const ok=data=>{
-    document.getElementById('adminLine').textContent='Đăng nhập quản trị: '+(data.admin.name||data.admin.email);
-    const storageError = data.storageError || bootstrapStorageWarning || '';
-    if(storageError){
-      document.getElementById('errorBox').innerHTML =
-        '<div class="error"><b>Admin đã đăng nhập thành công.</b><br>Dashboard chưa đọc được kho dữ liệu Drive: '+
-        esc(storageError)+
-        '<br><small>Chạy hàm authorizeStorage_() một lần trong Apps Script bằng tài khoản đang deploy. Nếu vẫn Access denied: DriveApp thì kiểm tra quyền/thư mục Drive hoặc chính sách Google Workspace.</small></div>';
-    }
-    [['sTotal','totalUsers'],['s7','active7d'],['s30','active30d'],['sProfile','profilesCreated'],['sAcademic','academicDataUsers'],['sTeach','wantsTeaching'],['sCompany','wantsCompanyProjects']]
-      .forEach(([id,key])=>document.getElementById(id).textContent=data.stats[key]||0);
-    allUsers=data.users||[];
-    const fieldSet=new Set(); allUsers.forEach(u=>Object.keys(u.filterData||{}).forEach(k=>fieldSet.add(k)));
-    const select=document.getElementById('fieldFilter');
-    [...fieldSet].sort((a,b)=>(FIELD_LABELS[a]||a).localeCompare(FIELD_LABELS[b]||b,'vi')).forEach(key=>{
-      const option=document.createElement('option'); option.value=key; option.textContent=FIELD_LABELS[key]||key; select.appendChild(option);
-    });
-    ['search','fieldFilter','fieldValue','genderFilter','needFilter','clearFilter'].forEach(id=>document.getElementById(id).disabled=false);
-    ['search','fieldFilter','fieldValue','genderFilter','needFilter'].forEach(id=>document.getElementById(id).addEventListener(id==='search'||id==='fieldValue'?'input':'change',applyFilters));
-    document.getElementById('clearFilter').addEventListener('click',()=>{
-      ['search','fieldValue'].forEach(id=>document.getElementById(id).value='');
-      ['fieldFilter','genderFilter','needFilter'].forEach(id=>document.getElementById(id).value='');
-      render(allUsers);
-    });
-    render(allUsers);
-  };
-  const fail=err=>{document.getElementById('errorBox').innerHTML='<div class="error">'+esc(err.message||err)+'</div>';document.getElementById('rows').innerHTML='<tr><td colspan="9" class="empty">Không tải được dữ liệu.</td></tr>';};
-  let adminToken=bootstrapSession&&bootstrapSession.token||'';
-  if(!adminToken){try{const session=JSON.parse(sessionStorage.getItem('scientist-local-session')||'null');adminToken=session&&session.token||'';}catch(_){}}
-  if(!adminToken){window.top.location.href=<?= JSON.stringify(webAppUrl) ?>+'?page=login';}
-  else{google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getAdminDashboard(adminToken);}
+const bootstrapSession=<?!= adminSessionJson ?>;
+const bootstrapStorageWarning=<?!= storageWarningJson ?>;
+if(bootstrapSession&&bootstrapSession.token){try{sessionStorage.setItem('scientist-local-session',JSON.stringify(bootstrapSession))}catch(_){}}
+let token=bootstrapSession&&bootstrapSession.token||'';
+if(!token){try{const old=JSON.parse(sessionStorage.getItem('scientist-local-session')||'null');token=old&&old.token||''}catch(_){}}
+const $=id=>document.getElementById(id);
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const values={users:[],statistics:null,serverScores:null,selected:new Set(),activeChart:null,charts:{},requestId:0,loading:false};
+const labels={teaching:'Thỉnh giảng',research:'NCKH',committee:'Hội đồng',instructor:'Hướng dẫn',company:'Dự án doanh nghiệp'};
+const groups=['GS.TS','PGS.TS','TS','ThS','CN/KS/BS/Khác'];
+function call(fn,args){return new Promise((resolve,reject)=>{if(!window.google?.script?.run){reject(new Error('Hãy mở trang qua đường dẫn triển khai Google Apps Script.'));return;}
+const runner=google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);runner[fn].apply(runner,args)})}
+function note(msg,good){$('messages').innerHTML='<div class="alert'+(good?' success':'')+'">'+esc(msg)+'</div>'}
+function group(u){const g=u.general||{},d=u.derived||{};const rank=String(g.person_academic_rank||d.highestTitle||'').toLowerCase(),degree=String(g.person_academic_degree||d.highestDegree||'').toLowerCase();
+if(rank==='gs'||(/giáo sư/.test(rank)&&!/phó/.test(rank)))return 'GS.TS';
+if(rank==='pgs'||/phó giáo sư/.test(rank))return 'PGS.TS';
+if(/tiến sĩ|phd|ph\.d|^ts$|tskh/.test(degree))return 'TS';
+if(/thạc sĩ|^ths$/.test(degree))return 'ThS';return 'CN/KS/BS/Khác'}
+function counts(u){const t=u.tables||{},len=k=>Array.isArray(t[k])?t[k].length:0;
+return {projects:len('projectBody'),publications:len('articleBody')+len('seminarBody'),textbooks:len('textbookBody'),awards:len('awardBody'),teaching:len('teachingBody')}}
+function flag(u,type){return String((u.general||{})['person_accept_'+({research:'researching',instructor:'instructor',company:'company_projects'}[type]||type)]||'')==='1'}
+function fullTitle(u){const g=u.general||{};let title=String(g.person_name||u.profileName||u.accountName||'').trim();const rank=String(g.person_academic_rank||'').trim(),deg=String(g.person_academic_degree||'').trim();
+if(rank||deg)return [rank,deg].filter(Boolean).join('.')+'. '+title;
+const d=u.derived||{},rawRank=String(d.highestTitle||''),rawDeg=String(d.highestDegree||'');
+const r=/phó giáo sư/i.test(rawRank)?'PGS':/giáo sư/i.test(rawRank)?'GS':'';
+const p=/tiến sĩ|phd|dba/i.test(rawDeg)?'TS':/thạc sĩ/i.test(rawDeg)?'ThS':/cử nhân/i.test(rawDeg)?'CN':/kỹ sư/i.test(rawDeg)?'KS':'';
+return (r||p?[r,p].filter(Boolean).join('.')+'. ':'')+title}
+function speciality(u){const g=u.general||{},t=u.tables||{},subjects=(t.teachingBody||[]).map(r=>(r.data||r).title).filter(Boolean);
+return {major:String(g.person_major||u.derived?.highestDegreeMajor||''),subjects:String(g.person_teaching_subjects||subjects.join(', '))}}
+function workUnit(u){return String(u.general?.person_work_unit||'').trim()}
+function scoreLocal(u,keyword){const c=counts(u),gr=group(u),t=u.tables||{},projects=t.projectBody||[];
+const rolePoints=projects.reduce((sum,x)=>{const role=String((x.data||x).position||'');return sum+(/chủ nhiệm/i.test(role)?10:/thành viên/i.test(role)?5:0)},0);
+return (gr==='GS.TS'?40:gr==='PGS.TS'?30:0)+(['GS.TS','PGS.TS','TS'].includes(gr)?20:gr==='ThS'?10:0)+5*c.teaching+rolePoints+5*c.publications+5*c.textbooks+(keyword?30:0)}
+function params(){return {type:$('cooperation').value,level:$('studyLevel').value,keyword:$('keyword').value.trim(),institution:$('institution').value.trim()}}
+function filterChart(u){const f=values.activeChart;if(!f)return true;
+if(f.field==='academic')return group(u)===f.value;
+if(f.field==='cooperation')return flag(u,f.value);
+if(f.field==='major')return (speciality(u).major||'Chưa khai báo')===f.value;
+if(f.field==='institution')return (workUnit(u)||'Chưa khai báo')===f.value;
+if(f.field==='capacity')return group(u)===f.value && counts(u)[f.metric]>0;
+return true}
+function setChartFilter(field,value,metric){values.activeChart={field:field,value:value,metric:metric||''};
+$('chartFilter').style.display='inline-block';$('chartFilter').textContent='Biểu đồ: '+value+' ×';renderFiltered()}
+function filtered(){const p=params(),eligible=values.serverScores;
+return values.users.filter(u=>{
+if(!filterChart(u))return false;
+if(p.institution&&!norm(workUnit(u)).includes(norm(p.institution)))return false;
+if(p.type){
+if(!eligible||!eligible.has(u.email))return false;
+}else if(p.keyword){const s=speciality(u),t=u.tables||{};
+const text=[s.major,s.subjects,...(t.researchBody||[]).map(x=>(x.data||x).title),...(t.projectBody||[]).map(x=>(x.data||x).title)].join(' ');
+if(!norm(text).includes(norm(p.keyword)))return false;
+}
+return true}).sort((a,b)=>(eligible?.get(b.email)||scoreLocal(b,p.keyword))-(eligible?.get(a.email)||scoreLocal(a,p.keyword)))}
+function renderFiltered(){
+const users=filtered(),p=params();
+$('resultStatus').textContent=users.length+' giảng viên phù hợp';
+$('results').innerHTML=users.length?users.map(u=>{const s=speciality(u),c=counts(u),score=values.serverScores?.get(u.email)??scoreLocal(u,p.keyword);
+return '<tr><td class="check-cell"><input type="checkbox" data-email="'+esc(u.email)+'" '+(values.selected.has(u.email)?'checked':'')+' aria-label="Chọn giảng viên"></td>'+
+'<td><div class="person">'+esc(fullTitle(u))+'</div><div class="sm">'+esc(u.email)+'</div></td>'+
+'<td><span class="tag">'+esc(group(u))+'</span></td><td>'+esc(workUnit(u)||'—')+'</td>'+
+'<td>'+esc(s.major||'—')+'<div class="sm">'+esc(s.subjects.slice(0,120))+'</div></td>'+
+'<td>'+Object.keys(labels).filter(k=>flag(u,k)).map(k=>esc(labels[k])).join(', ')+'</td>'+
+'<td><strong>'+score+'</strong><div class="tiny">'+c.projects+' đề tài · '+c.publications+' công bố</div></td></tr>'}).join(''):
+'<tr><td colspan="7" class="empty">Không tìm thấy chuyên gia phù hợp.</td></tr>';
+$('results').querySelectorAll('input[data-email]').forEach(box=>box.addEventListener('change',()=>{box.checked?values.selected.add(box.dataset.email):values.selected.delete(box.dataset.email);renderShortlist()}))}
+function renderShortlist(){const list=[...values.selected].map(e=>values.users.find(u=>u.email===e)).filter(Boolean);
+$('selectionCount').textContent=list.length+' giảng viên đã chọn';
+$('shortlist').innerHTML=list.length?list.map(u=>'<button type="button" class="chip" data-drop="'+esc(u.email)+'">'+esc(fullTitle(u))+' ×</button>').join(''):'<span class="text-muted">Chọn giảng viên từ bảng kết quả ở trên.</span>';
+$('shortlist').querySelectorAll('[data-drop]').forEach(btn=>btn.addEventListener('click',()=>{values.selected.delete(btn.dataset.drop);renderShortlist();renderFiltered()}));
+$('exportCsv').disabled=!list.length;$('exportPrint').disabled=!list.length}
+async function renderSearch(){const p=params(),seq=++values.requestId;values.serverScores=null;
+if(p.type){$('resultStatus').textContent='Đang xét điều kiện học thuật…';
+try{const output=await call('searchAdminExperts',[p,token]);if(seq!==values.requestId)return;
+values.serverScores=new Map((output.results||[]).map(x=>[String(x.email).toLowerCase(),Number(x.score)||0]));
+if(output.storageError)note('Không đọc đủ dữ liệu Drive: '+output.storageError,false)}
+catch(err){if(seq!==values.requestId)return;values.serverScores=new Map();note('Không lọc được chuyên gia: '+(err.message||err),false)}}
+renderFiltered()}
+const debounce=(fn,ms)=>{let timeout;return ()=>{clearTimeout(timeout);timeout=setTimeout(fn,ms)}};
+function renderKpis(stat){const k=stat.kpi||{},items=[['Tổng giảng viên',k.total||0],['GS / PGS',k.professors||0],['Tiến sĩ',k.doctors||0],['Nhận thỉnh giảng',k.teaching||0],['Nhận hội đồng',k.committee||0],['Dự án doanh nghiệp',k.company||0]];
+$('kpis').innerHTML=items.map(item=>'<div class="kpi"><strong>'+item[1]+'</strong><span>'+esc(item[0])+'</span></div>').join('')}
+function chartData(stat){const byKey=(items,fn)=>{const result={};items.forEach(x=>{const k=fn(x)||'Chưa khai báo';result[k]=(result[k]||0)+1});return result};
+const cohort=byKey(values.users,group);
+const cooperation={};Object.keys(labels).forEach(k=>{cooperation[labels[k]]=values.users.filter(u=>flag(u,k)).length});
+const field=$('distributionBy').value;
+const dist=byKey(values.users,u=>field==='major'?speciality(u).major:workUnit(u));
+const top=Object.entries(dist).sort((a,b)=>b[1]-a[1]).slice(0,8);
+const capKeys=['projects','publications','textbooks','awards'];
+const capacity=capKeys.map(key=>groups.map(g=>values.users.filter(u=>group(u)===g).reduce((sum,u)=>sum+counts(u)[key],0)));
+return {academic:groups.map(g=>cohort[g]||0),cooperation:Object.values(cooperation),cooperationLabels:Object.keys(cooperation),distLabels:top.map(x=>x[0]),distValues:top.map(x=>x[1]),field,capacity,capKeys}}
+function buildCharts(stat){const data=chartData(stat);
+if(typeof Chart==='undefined'){note('Không tải được thư viện biểu đồ. Hãy kiểm tra kết nối đến jsDelivr.',false);return}
+Object.values(values.charts).forEach(c=>c.destroy());values.charts={};
+const palette=['#2563eb','#f59e0b','#22c55e','#a855f7','#ef4444'];
+const common=(id,type,chartData,options)=>new Chart($(id),{type:type,data:chartData,options:Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}},options||{})});
+values.charts.academic=common('chartAcademic','doughnut',{labels:groups,datasets:[{data:data.academic,backgroundColor:palette}]},
+{onClick:(e,items)=>{if(items.length)setChartFilter('academic',groups[items[0].index])}});
+values.charts.cooperation=common('chartCooperation','bar',{labels:data.cooperationLabels,datasets:[{label:'Giảng viên',data:data.cooperation,backgroundColor:'#60a5fa'}]},
+{indexAxis:'y',plugins:{legend:{display:false}},onClick:(e,items)=>{if(items.length)setChartFilter('cooperation',Object.keys(labels)[items[0].index])}});
+values.charts.distribution=common('chartDistribution','bar',{labels:data.distLabels,datasets:[{label:'Giảng viên',data:data.distValues,backgroundColor:'#34d399'}]},
+{plugins:{legend:{display:false}},onClick:(e,items)=>{if(items.length)setChartFilter(data.field,data.distLabels[items[0].index])}});
+values.charts.capacity=common('chartCapacity','bar',{labels:groups,datasets:data.capKeys.map((k,i)=>({label:['Đề tài','Công bố','Giáo trình','Giải thưởng'][i],data:data.capacity[i],backgroundColor:palette[i]}))},
+{onClick:(e,items)=>{if(items.length)setChartFilter('capacity',groups[items[0].index],data.capKeys[items[0].datasetIndex])}});
+}
+function selectedUsers(){return [...values.selected].map(e=>values.users.find(u=>u.email===e)).filter(Boolean)}
+function exportRows(){const withInternal=$('includeInternal').checked,cols=['STT','Danh xưng + Họ tên','Học hàm/Học vị','Đơn vị công tác','Chuyên ngành','Môn giảng dạy / Hướng nghiên cứu','Đề tài','Công bố','Giáo trình','Email','Di động','Mảng nhận hợp tác'];
+if(withInternal)cols.push('CCCD','Ngày cấp','Nơi cấp','Địa chỉ nhà riêng');
+const rows=selectedUsers().map((u,i)=>{const g=u.general||{},s=speciality(u),c=counts(u),t=u.tables||{},research=(t.researchBody||[]).map(x=>(x.data||x).title).filter(Boolean).join(', ');
+const a=[i+1,fullTitle(u),group(u),workUnit(u),s.major,[s.subjects,research].filter(Boolean).join(' / '),c.projects,c.publications,c.textbooks,
+g.person_email||u.email,g.person_mobile_phone||'',Object.keys(labels).filter(k=>flag(u,k)).map(k=>labels[k]).join('; ')];
+if(withInternal)a.push(g.person_citizen_id||'',g.person_date_issue||'',g.person_place_issue||'',g.person_address||'');return a});
+return {cols,rows,withInternal}}
+function allowedExport(){if(!values.selected.size){note('Chưa chọn giảng viên để xuất.',false);return false}
+if($('includeInternal').checked&&!confirm('Bạn đang chọn xuất dữ liệu hành chính nhạy cảm. Chỉ tiếp tục khi việc chia sẻ đã được cho phép.'))return false;
+return true}
+function csvCell(x){let v=String(x??'');if(/^\s*[=+\-@\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'}
+function exportCsv(){if(!allowedExport())return;const report=exportRows();
+const csv='\uFEFF'+[report.cols,...report.rows].map(r=>r.map(csvCell).join(',')).join('\r\n');
+const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+const a=document.createElement('a');a.href=url;a.download='de-xuat-hop-tac-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportPrint(){if(!allowedExport())return;const report=exportRows();
+$('printArea').innerHTML='<h1>DANH SÁCH ĐỀ XUẤT HỢP TÁC HỌC THUẬT</h1>'+
+'<p>Ngày lập: '+esc(new Date().toLocaleDateString('vi-VN'))+' · Tổng số chuyên gia: '+report.rows.length+'</p>'+
+'<table><thead><tr>'+report.cols.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+
+report.rows.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+
+'</tbody></table><div class="report-footer">Danh sách đề xuất phục vụ liên hệ hợp tác. Cần kiểm tra hồ sơ, tiêu chuẩn cụ thể và sự đồng ý của giảng viên trước khi gửi đối tác.</div>';
+window.print()}
+async function load(){if(values.loading)return;values.loading=true;
+$('reload').disabled=true;$('adminStatus').textContent='Đang tải hồ sơ và thống kê…';
+try{const pair=await Promise.all([call('getAdminDashboard',[token]),call('getAdminStage2Statistics',[token])]);
+const detailed=pair[0],stat=pair[1];values.users=(detailed.users||[]).map(u=>Object.assign({},u,{email:String(u.email||'').toLowerCase()}));
+values.statistics=stat;
+$('adminStatus').textContent='Admin: '+(detailed.admin?.name||detailed.admin?.email||'')+' · '+new Date().toLocaleString('vi-VN');
+if(detailed.storageError||stat.storageError||bootstrapStorageWarning)note('Cảnh báo kho dữ liệu: '+(detailed.storageError||stat.storageError||bootstrapStorageWarning),false);
+else $('messages').innerHTML='';
+renderKpis(stat);buildCharts(stat);await renderSearch();renderShortlist();
+}catch(err){note('Không tải được dữ liệu Admin: '+(err.message||err),false);$('results').innerHTML='<tr><td colspan="7" class="empty">Không thể tải dữ liệu.</td></tr>'}
+finally{values.loading=false;$('reload').disabled=false}}
+$('reload').addEventListener('click',load);
+$('sync').addEventListener('click',async()=>{const btn=$('sync');btn.disabled=true;try{const r=await call('syncAllProfilesToSheet',[token]);note('Đã đồng bộ '+r.count+' hồ sơ vào Google Sheet. '+(r.spreadsheetUrl||''),true);await load()}catch(e){note('Đồng bộ thất bại: '+(e.message||e),false)}finally{btn.disabled=false}});
+$('apply').addEventListener('click',renderSearch);
+['cooperation','studyLevel'].forEach(id=>$(id).addEventListener('change',renderSearch));
+['keyword','institution'].forEach(id=>$(id).addEventListener('input',debounce(renderSearch,450)));
+$('distributionBy').addEventListener('change',()=>{if(values.statistics)buildCharts(values.statistics)});
+$('chartFilter').addEventListener('click',()=>{values.activeChart=null;$('chartFilter').style.display='none';renderFiltered()});
+$('clear').addEventListener('click',()=>{$('cooperation').value='';$('studyLevel').value='undergraduate';$('keyword').value='';$('institution').value='';values.activeChart=null;$('chartFilter').style.display='none';renderSearch()});
+$('selectVisible').addEventListener('click',()=>{filtered().forEach(u=>values.selected.add(u.email));renderFiltered();renderShortlist()});
+$('clearSelection').addEventListener('click',()=>{values.selected.clear();renderShortlist();renderFiltered()});
+$('exportCsv').addEventListener('click',exportCsv);$('exportPrint').addEventListener('click',exportPrint);
+if(!token){note('Phiên Admin chưa sẵn sàng. Hãy đăng nhập lại bằng tài khoản được cấp quyền.',false);
+$('adminStatus').textContent='Chưa đăng nhập Admin'}else load();
 </script>
-</body>
-</html>
+</body></html>
