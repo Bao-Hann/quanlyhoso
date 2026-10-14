@@ -447,7 +447,7 @@ function validateAcademicGeneral_(data) {
   const tz=Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
   const nowText=Utilities.formatDate(new Date(),tz,'yyyy-MM-dd');
   const dob=String(data.person_dob || '');
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dob)) throw new Error('Vui lòng khai đúng ngày sinh.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) throw new Error('Vui lòng khai đúng ngày sinh.');
   const date=new Date(dob+'T00:00:00Z');
   if(isNaN(date.getTime()) || date.toISOString().slice(0,10)!==dob) throw new Error('Ngày sinh không hợp lệ.');
   const age=Number(nowText.slice(0,4))-Number(dob.slice(0,4))-(nowText.slice(5)<dob.slice(5)?1:0);
