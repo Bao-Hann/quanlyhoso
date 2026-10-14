@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,845 +8,1640 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <?!= include('Styles'); ?>
-<script>
+  <script>
     window.GAS_USER = <?!= userJson ?>;
     window.GAS_AUTH_TOKEN = <?!= authTokenJson ?>;
     window.GAS_WEB_APP_URL = <?!= webAppUrlJson ?>;
 
-    try {
-      if (window.GAS_AUTH_TOKEN && window.GAS_USER && window.GAS_USER.email) {
-        sessionStorage.setItem('scientist-local-session', JSON.stringify({
-          token: window.GAS_AUTH_TOKEN,
-          user: window.GAS_USER
-        }));
-
-        if (history && history.replaceState) {
-          history.replaceState(null, '', window.GAS_WEB_APP_URL + '?page=app');
+    (function() {
+      var storageAvailable = false;
+      try {
+        storageAvailable = typeof window !== 'undefined' && 'sessionStorage' in window && window.sessionStorage !== null;
+        if (storageAvailable) {
+          var testKey = '__test_storage__';
+          window.sessionStorage.setItem(testKey, '1');
+          window.sessionStorage.removeItem(testKey);
         }
-      } else {
-        const session = JSON.parse(sessionStorage.getItem('scientist-local-session') || 'null');
-        if (session && session.token && session.user) {
-          window.GAS_AUTH_TOKEN = session.token;
-          window.GAS_USER = session.user;
-        }
+      } catch (_) {
+        storageAvailable = false;
       }
-    } catch (_) {}
+
+      if (!storageAvailable) return;
+
+      try {
+        if (window.GAS_AUTH_TOKEN && window.GAS_USER && window.GAS_USER.email) {
+          window.sessionStorage.setItem('scientist-local-session', JSON.stringify({
+            token: window.GAS_AUTH_TOKEN,
+            user: window.GAS_USER
+          }));
+
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', window.GAS_WEB_APP_URL + '?page=app');
+          }
+        } else {
+          var session = JSON.parse(window.sessionStorage.getItem('scientist-local-session') || 'null');
+          if (session && session.token && session.user) {
+            window.GAS_AUTH_TOKEN = session.token;
+            window.GAS_USER = session.user;
+          }
+        }
+      } catch (_) {}
+    })();
   </script>
 </head>
-<body>
-<div id="toastHost" class="position-fixed top-0 end-0 p-3" style="z-index:2000"></div>
-<nav class="oneform-dashboard-navbar">
-  <div class="oneform-nav-container">
-    <a href="#top" class="oneform-nav-logo">Hồ sơ khoa học UTE</a>
-    <div class="oneform-nav-links">
-      <a href="#top">Tổng quan</a>
-      <a href="#general">Hồ sơ của tôi</a>
-      <div class="dropdown oneform-theme-dropdown">
-        <button class="oneform-theme-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Chủ đề</button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-          <li><button class="dropdown-item theme-option" type="button" data-theme-option="default">Mặc định</button></li>
-          <li><button class="dropdown-item theme-option" type="button" data-theme-option="chatgpt">ChatGPT</button></li>
-          <li><button class="dropdown-item theme-option" type="button" data-theme-option="github">GitHub</button></li>
-          <li><button class="dropdown-item theme-option" type="button" data-theme-option="shopee">Shopee</button></li>
-          <li><button class="dropdown-item theme-option" type="button" data-theme-option="tiktok">TikTok</button></li>
-          <li><button class="dropdown-item theme-option" type="button" data-theme-option="ute">UTE học thuật</button></li>
-          <li><button class="dropdown-item theme-option" type="button" data-theme-option="dashboard">UTE tổng quan</button></li>
-        </ul>
-      </div>
-      <a href="#" class="oneform-logout-link" data-oneform-logout>Đăng xuất</a>
-    </div>
-  </div>
-</nav>
 
-<div class="container-fluid">
-  <div class="row">
-    <nav class="col-md-3 col-lg-2 d-md-block sidebar position-fixed vh-100">
-      <div class="d-flex flex-column p-3">
-        <a class="text-dark text-center text-decoration-none mb-3" href="#top"><h3>Hồ sơ cá nhân</h3></a>
-        <div class="session-card mb-3">
-          <div class="session-avatar">
-            <img id="authAvatar" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
-            <i id="authAvatarFallback" class="bi bi-person-fill"></i>
-          </div>
-          <div class="session-info">
-            <strong id="authUsername"></strong>
-            <small id="authEmail"></small>
-          </div>
-        </div>
-        <div class="dropdown mb-3 theme-picker">
-          <button class="btn btn-outline-secondary w-100 dropdown-toggle d-flex align-items-center justify-content-between" type="button" id="themeMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-            <span>Chủ đề</span>
-          </button>
-          <ul class="dropdown-menu w-100 shadow-sm">
-            <li><button class="dropdown-item theme-option" type="button" data-theme-option="default">Mặc định</button></li>
-            <li><button class="dropdown-item theme-option" type="button" data-theme-option="chatgpt">ChatGPT</button></li>
+<body data-theme="default">
+  <div id="toastHost" class="position-fixed top-0 end-0 p-3" style="z-index:2000"></div>
+  <nav class="oneform-dashboard-navbar">
+    <div class="oneform-nav-container">
+      <a href="#general" class="oneform-nav-logo" data-panel="general">Hồ sơ khoa học UTE</a>
+      <div class="oneform-nav-links">
+        <a href="#overview" data-panel="overview">Tổng quan</a>
+        <a href="#general" data-panel="general">Hồ sơ của tôi</a>
+        <a href="#exportCvPanel" data-panel="exportCvPanel"
+          class="badge bg-primary text-white text-decoration-none px-2 py-1"><i
+            class="bi bi-file-earmark-word me-1"></i>Xuất CV</a>
+        <a href="#importFilePanel" data-panel="importFilePanel"
+          class="badge bg-info text-dark text-decoration-none px-2 py-1"><i class="bi bi-cloud-arrow-up me-1"></i>Nhập
+          tệp</a>
+        <div class="dropdown oneform-theme-dropdown">
+          <button class="oneform-theme-btn dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            aria-expanded="false">Chủ đề</button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="default">Mặc định</button>
+            </li>
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="chatgpt">ChatGPT</button>
+            </li>
             <li><button class="dropdown-item theme-option" type="button" data-theme-option="github">GitHub</button></li>
             <li><button class="dropdown-item theme-option" type="button" data-theme-option="shopee">Shopee</button></li>
             <li><button class="dropdown-item theme-option" type="button" data-theme-option="tiktok">TikTok</button></li>
-            <li><button class="dropdown-item theme-option" type="button" data-theme-option="ute" id="uteThemeOption">UTE học thuật</button></li>
-            <li><button class="dropdown-item theme-option" type="button" data-theme-option="dashboard">UTE tổng quan</button></li>
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="ute" id="uteThemeOption">UTE
+                học thuật</button></li>
+            <li><button class="dropdown-item theme-option" type="button" data-theme-option="dashboard">UTE tổng
+                quan</button></li>
           </ul>
         </div>
-        <ul class="nav flex-column">
-          <li class="nav-item"><a class="nav-link text-dark" href="#general">Thông tin cơ bản</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="#additional">Thông tin bổ sung</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="#education">Quá trình đào tạo</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="#work_exp">Quá trình công tác</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="#participate">Đề tài tham gia</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="#publishedPaper">Công bố khoa học</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="#award">Giải thưởng</a></li>
-          <hr>
-          <li class="nav-item"><button class="nav-link text-dark border-0 bg-transparent w-100 text-start" type="button" id="exportCvBtn" data-bs-toggle="modal" data-bs-target="#exportCvModal">Xuất hồ sơ</button></li>
-          <hr>
-          <li class="nav-item"><a class="nav-link text-dark" href="#support">Hỗ trợ</a></li>
-          <li class="nav-item"><a class="nav-link text-dark" href="#" id="logoutBtn">Đăng xuất</a></li>
-        </ul>
+        <a href="#" class="oneform-logout-link" data-oneform-logout>Đăng xuất</a>
       </div>
-    </nav>
+    </div>
+  </nav>
 
-    <main id="top" class="col-md-9 ms-sm-auto col-lg-10 px-md-4 offset-md-3 offset-lg-2">
-      <section class="full-screen-section welcome-section">
-        <div class="container welcome-hero">
-          <div class="welcome-orbit" aria-hidden="true"></div>
-          <div class="welcome-content">
-            <p class="welcome-eyebrow">KHÔNG GIAN HỌC THUẬT CỦA BẠN</p>
-            <h1 class="welcome-title">WELCOME</h1>
-            <div class="welcome-rule" aria-hidden="true"></div>
-            <p class="welcome-greeting">Xin chào, <strong id="welcomeName"></strong><span>!</span></p>
-            <p class="welcome-description">Mỗi dấu mốc hôm nay, một hành trình tri thức ngày mai.</p>
-            <div class="welcome-actions">
-              <a class="welcome-action welcome-action-primary" href="#general">Cập nhật hồ sơ <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-              <button class="welcome-action welcome-action-secondary" type="button" data-bs-toggle="modal" data-bs-target="#exportCvModal">Xuất hồ sơ <i class="bi bi-download" aria-hidden="true"></i></button>
+  <div class="container-fluid">
+    <div class="row">
+      <nav class="col-md-3 col-lg-2 d-md-block sidebar position-fixed vh-100">
+        <div class="d-flex flex-column p-3">
+          <a class="text-dark text-center text-decoration-none mb-3" href="#top">
+            <h3>Hồ sơ cá nhân</h3>
+          </a>
+          <div class="session-card mb-3">
+            <div class="session-avatar">
+              <img id="authAvatar" alt=""
+                style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
+              <i id="authAvatarFallback" class="bi bi-person-fill"></i>
+            </div>
+            <div class="session-info">
+              <strong id="authUsername"></strong>
+              <small id="authEmail"></small>
             </div>
           </div>
-          <a class="welcome-explore" href="#general">Khám phá hồ sơ của bạn <i class="bi bi-arrow-down" aria-hidden="true"></i></a>
-        </div>
-        <hr class="fixed-hr">
-      </section>
-
-      
-<section class="oneform-dashboard-overview" aria-label="Dashboard overview">
-  <div class="oneform-dashboard-header">
-    <h1>Xin chào, <span id="dashboardWelcomeName"></span>!</h1>
-    <p>Quản lý hồ sơ khoa học và các nội dung học thuật của bạn tại đây</p>
-  </div>
-  <div class="oneform-dashboard-grid">
-    <a class="oneform-dashboard-card" href="#general">
-      <h3>Thông tin hồ sơ</h3>
-      <p>Chỉnh sửa thông tin trong hồ sơ khoa học</p>
-      <span class="oneform-card-button oneform-card-primary">Chỉnh sửa hồ sơ</span>
-    </a>
-    <a class="oneform-dashboard-card" href="#publishedPaper">
-      <h3>Hồ sơ khoa học</h3>
-      <p>Xem công bố, đề tài và quá trình học thuật</p>
-      <span class="oneform-card-button oneform-card-secondary">Xem hồ sơ</span>
-    </a>
-    <a class="oneform-dashboard-card" href="#" data-bs-toggle="modal" data-bs-target="#exportCvModal">
-      <h3>Xuất hồ sơ</h3>
-      <p>Xem trước và tải hồ sơ khoa học</p>
-      <span class="oneform-card-button oneform-card-success">Xuất hồ sơ</span>
-    </a>
-    <a class="oneform-dashboard-card" href="#" data-oneform-logout>
-      <h3>Tài khoản</h3>
-      <p>Đang đăng nhập: <span id="dashboardAccountEmail"></span></p>
-      <span class="oneform-card-button oneform-card-outline">Logout</span>
-    </a>
-  </div>
-</section>
-
-      <section id="general" class="full-screen-section">
-        <div class="container">
-          <form id="editGeneral">
-            <div class="row">
-              <div class="col"><h1>Thông tin cơ bản</h1></div>
-              <div class="col-sm-4 justify-content-center d-flex align-items-center">
-                <button type="button" class="btn btn-warning" id="editGeneralBtn" onclick="document.querySelectorAll('.general-field').forEach(function(el){el.disabled=false});this.disabled=false;this.style.display='none';var s=document.getElementById('saveGeneralBtn');if(s){s.style.display='inline-block';s.disabled=false;}">Edit <i class="bi bi-pencil-square"></i></button>
-                <button type="submit" id="saveGeneralBtn" class="btn btn-primary ms-2" style="display:none">Save</button>
-              </div>
-            </div>
-
-            <div class="form-group mt-3">
-              <div class="row mb-3">
-                <div class="col">
-                  <div class="input-group">
-                    <span class="input-group-text">Họ và tên:</span>
-                    <input type="text" name="person_name" class="form-control general-field smart-titlecase" value="" disabled>
-                  </div>
-                </div>
-                <div class="col">
-                  <div class="input-group">
-                    <span class="input-group-text">Giới tính:</span>
-                    <div class="input-group-text"><input class="form-check-input general-field" type="radio" name="person_gender" id="femaleGender" value="0" checked disabled><label class="form-check-label ms-1" for="femaleGender">Nữ</label></div>
-                    <div class="input-group-text"><input class="form-check-input general-field" type="radio" name="person_gender" id="maleGender" value="1" disabled><label class="form-check-label ms-1" for="maleGender">Nam</label></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <div class="col"><div class="input-group"><span class="input-group-text">Ngày, tháng, năm sinh:</span><input type="date" name="person_dob" class="form-control general-field compact-date" disabled></div></div>
-                <div class="col"><div class="input-group"><span class="input-group-text">Nơi sinh:</span><select name="person_pob" class="form-select general-field compact-location" disabled><option value="">Chọn tỉnh/thành phố</option><option value="Hà Nội">Hà Nội</option><option value="Huế">Huế</option><option value="Hải Phòng">Hải Phòng</option><option value="Đà Nẵng">Đà Nẵng</option><option value="Cần Thơ">Cần Thơ</option><option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option><option value="Cao Bằng">Cao Bằng</option><option value="Điện Biên">Điện Biên</option><option value="Hà Tĩnh">Hà Tĩnh</option><option value="Lai Châu">Lai Châu</option><option value="Lạng Sơn">Lạng Sơn</option><option value="Nghệ An">Nghệ An</option><option value="Quảng Ninh">Quảng Ninh</option><option value="Thanh Hóa">Thanh Hóa</option><option value="Sơn La">Sơn La</option><option value="Tuyên Quang">Tuyên Quang</option><option value="Lào Cai">Lào Cai</option><option value="Thái Nguyên">Thái Nguyên</option><option value="Phú Thọ">Phú Thọ</option><option value="Bắc Ninh">Bắc Ninh</option><option value="Hưng Yên">Hưng Yên</option><option value="Ninh Bình">Ninh Bình</option><option value="Quảng Trị">Quảng Trị</option><option value="Quảng Ngãi">Quảng Ngãi</option><option value="Gia Lai">Gia Lai</option><option value="Khánh Hòa">Khánh Hòa</option><option value="Lâm Đồng">Lâm Đồng</option><option value="Đắk Lắk">Đắk Lắk</option><option value="Đồng Nai">Đồng Nai</option><option value="Tây Ninh">Tây Ninh</option><option value="Vĩnh Long">Vĩnh Long</option><option value="Đồng Tháp">Đồng Tháp</option><option value="Cà Mau">Cà Mau</option><option value="An Giang">An Giang</option></select></div></div>
-              </div>
-
-              <div class="row mb-3">
-                <div class="col"><div class="input-group"><span class="input-group-text">Quê quán:</span><select name="person_hometown" class="form-select general-field compact-location" disabled><option value="">Chọn tỉnh/thành phố</option><option value="Hà Nội">Hà Nội</option><option value="Huế">Huế</option><option value="Hải Phòng">Hải Phòng</option><option value="Đà Nẵng">Đà Nẵng</option><option value="Cần Thơ">Cần Thơ</option><option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option><option value="Cao Bằng">Cao Bằng</option><option value="Điện Biên">Điện Biên</option><option value="Hà Tĩnh">Hà Tĩnh</option><option value="Lai Châu">Lai Châu</option><option value="Lạng Sơn">Lạng Sơn</option><option value="Nghệ An">Nghệ An</option><option value="Quảng Ninh">Quảng Ninh</option><option value="Thanh Hóa">Thanh Hóa</option><option value="Sơn La">Sơn La</option><option value="Tuyên Quang">Tuyên Quang</option><option value="Lào Cai">Lào Cai</option><option value="Thái Nguyên">Thái Nguyên</option><option value="Phú Thọ">Phú Thọ</option><option value="Bắc Ninh">Bắc Ninh</option><option value="Hưng Yên">Hưng Yên</option><option value="Ninh Bình">Ninh Bình</option><option value="Quảng Trị">Quảng Trị</option><option value="Quảng Ngãi">Quảng Ngãi</option><option value="Gia Lai">Gia Lai</option><option value="Khánh Hòa">Khánh Hòa</option><option value="Lâm Đồng">Lâm Đồng</option><option value="Đắk Lắk">Đắk Lắk</option><option value="Đồng Nai">Đồng Nai</option><option value="Tây Ninh">Tây Ninh</option><option value="Vĩnh Long">Vĩnh Long</option><option value="Đồng Tháp">Đồng Tháp</option><option value="Cà Mau">Cà Mau</option><option value="An Giang">An Giang</option></select></div></div>
-                <div class="col"><div class="input-group"><span class="input-group-text">Dân tộc:</span><select name="person_ethnicity" class="form-select general-field compact-ethnicity" disabled><option value="">Chọn dân tộc</option><option value="Kinh">Kinh (đa số)</option><option value="Tày">Tày</option><option value="Thái">Thái</option><option value="Hoa">Hoa</option><option value="Khmer">Khmer</option><option value="Mường">Mường</option><option value="Nùng">Nùng</option><option value="Mông">Mông</option><option value="Dao">Dao</option><option value="Gia Rai">Gia Rai</option><option value="Ê Đê">Ê Đê</option><option value="Ba Na">Ba Na</option><option value="Sán Chay">Sán Chay</option><option value="Chăm">Chăm</option><option value="Cơ Ho">Cơ Ho</option><option value="Xơ Đăng">Xơ Đăng</option><option value="Sán Dìu">Sán Dìu</option><option value="Hrê">Hrê</option><option value="Ra Glai">Ra Glai</option><option value="M'Nông">M'Nông</option><option value="Thổ">Thổ</option><option value="Xtiêng">Xtiêng</option><option value="Khơ Mú">Khơ Mú</option><option value="Bru - Vân Kiều">Bru - Vân Kiều</option><option value="Cơ Tu">Cơ Tu</option><option value="Giáy">Giáy</option><option value="Tà Ôi">Tà Ôi</option><option value="Mạ">Mạ</option><option value="Giẻ Triêng">Giẻ Triêng</option><option value="Co">Co</option><option value="Chơ Ro">Chơ Ro</option><option value="Xinh Mun">Xinh Mun</option><option value="Hà Nhì">Hà Nhì</option><option value="Chu Ru">Chu Ru</option><option value="Lào">Lào</option><option value="La Chí">La Chí</option><option value="Kháng">Kháng</option><option value="Phù Lá">Phù Lá</option><option value="La Hủ">La Hủ</option><option value="La Ha">La Ha</option><option value="Pà Thẻn">Pà Thẻn</option><option value="Chứt">Chứt</option><option value="Lự">Lự</option><option value="Lô Lô">Lô Lô</option><option value="Mảng">Mảng</option><option value="Cờ Lao">Cờ Lao</option><option value="Bố Y">Bố Y</option><option value="Cống">Cống</option><option value="Ngái">Ngái</option><option value="Si La">Si La</option><option value="Pu Péo">Pu Péo</option><option value="Rơ Măm">Rơ Măm</option><option value="Brâu">Brâu</option><option value="Ơ Đu">Ơ Đu</option></select></div></div>
-              </div>
-
-              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Chức vụ (Hiện tại hoặc trước khi nghỉ hưu):</span><input type="text" name="person_position" class="form-control general-field smart-titlecase" disabled></div></div>
-              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Đơn vị công tác (Hiện tại hoặc trước khi nghỉ hưu):</span><input type="text" name="person_work_unit" class="form-control general-field smart-titlecase" disabled></div></div>
-              <div class="row mb-3"><div class="input-group"><span class="input-group-text">Chỗ ở riêng hoặc địa chỉ liên lạc:</span><input type="text" name="person_address" class="form-control general-field smart-titlecase" disabled></div></div>
-
-              <div class="row mb-3">
-                <div class="input-group">
-                  <span class="input-group-text">Điện thoại liên hệ:</span>
-                  <span class="input-group-text">CQ:</span><input type="text" name="person_office_phone" class="form-control general-field compact-phone" disabled>
-                  <span class="input-group-text">NR:</span><input type="text" name="person_home_phone" class="form-control general-field compact-phone" disabled>
-                  <span class="input-group-text">DĐ:</span><input type="text" name="person_mobile_phone" class="form-control general-field compact-phone" disabled>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <div class="col"><div class="input-group"><span class="input-group-text">Fax:</span><input type="text" name="person_fax" class="form-control general-field" disabled></div></div>
-                <div class="col"><div class="input-group"><span class="input-group-text">Email:</span><input type="email" name="person_email" class="form-control general-field" value="" disabled></div></div>
-              </div>
-
-              <div class="row mb-3">
-                <div class="input-group">
-                  <span class="input-group-text">CCCD:</span><input type="text" name="person_citizen_id" class="form-control general-field compact-id" disabled>
-                  <span class="input-group-text">Ngày cấp:</span><input type="date" name="person_date_issue" class="form-control general-field compact-date" disabled>
-                  <span class="input-group-text">Nơi cấp:</span><input type="text" name="person_place_issue" class="form-control general-field smart-titlecase" disabled>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-        <hr class="fixed-hr">
-      </section>
-
-      <section id="additional" class="full-screen-section">
-        <div class="container">
-          <h1 class="mb-3 pb-3">Thông tin bổ sung</h1>
-
-          <div class="mb-3 p-3 box border border-info rounded">
-            <h4 class="box-title">Tùy chỉnh mong muốn của bạn</h4>
-            <div class="row mb-3">
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Mong muốn tham gia giảng dạy/thỉnh giảng</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_teaching" name="person_accept_teaching"></div></div></div></div>
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý tìm đồng đội nghiên cứu chung</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_researching" name="person_accept_researching"></div></div></div></div>
-            </div>
-            <div class="row mb-3">
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý tham gia hội đồng</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_committee" name="person_accept_committee"></div></div></div></div>
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Đồng ý làm người hướng dẫn</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_instructor" name="person_accept_instructor"></div></div></div></div>
-            </div>
-            <div class="row mb-1">
-              <div class="col"><div class="row align-items-center"><div class="col-8"><strong>Mong muốn tham gia dự án cùng doanh nghiệp</strong></div><div class="col-4"><div class="form-check form-switch"><input class="form-check-input custom-switch preference" type="checkbox" id="accept_company_projects" name="person_accept_company_projects"></div></div></div></div>
-              <div class="col"></div>
-            </div>
-          </div>
-
-          <div class="content-body">
-            <ul class="nav nav-tabs d-flex justify-content-between w-100">
-              <div class="d-flex">
-                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#teaching">Môn học có thể giảng dạy</button></li>
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#researching">Hướng nghiên cứu</button></li>
-              </div>
-              <button class="btn btn-primary ms-auto me-5 mb-1" data-bs-toggle="modal" data-bs-target="#addAddition"><i class="bi bi-plus-circle"></i></button>
+          <div class="dropdown mb-3 theme-picker">
+            <button
+              class="btn btn-outline-secondary w-100 dropdown-toggle d-flex align-items-center justify-content-between"
+              type="button" id="themeMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+              <span>Chủ đề</span>
+            </button>
+            <ul class="dropdown-menu w-100 shadow-sm">
+              <li><button class="dropdown-item theme-option" type="button" data-theme-option="default">Mặc định</button>
+              </li>
+              <li><button class="dropdown-item theme-option" type="button" data-theme-option="chatgpt">ChatGPT</button>
+              </li>
+              <li><button class="dropdown-item theme-option" type="button" data-theme-option="github">GitHub</button>
+              </li>
+              <li><button class="dropdown-item theme-option" type="button" data-theme-option="shopee">Shopee</button>
+              </li>
+              <li><button class="dropdown-item theme-option" type="button" data-theme-option="tiktok">TikTok</button>
+              </li>
+              <li><button class="dropdown-item theme-option" type="button" data-theme-option="ute"
+                  id="uteThemeOption">UTE học thuật</button></li>
+              <li><button class="dropdown-item theme-option" type="button" data-theme-option="dashboard">UTE tổng
+                  quan</button></li>
             </ul>
-            <div class="tab-content">
-              <div class="tab-pane addition-table-wrapper fade show active" id="teaching">
-                <table class="table table-hover managed-table" id="teachingTable"><thead class="table-light"><tr class="text-center"><th class="select-col"><input class="form-check-input" type="checkbox" id="teachingSelectAll"></th><th>Ngành/Chuyên ngành</th><th>Tên môn học</th><th>Mô tả</th><th>Thao tác</th></tr></thead><tbody id="teachingBody"><tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table><div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="teachingDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
+          </div>
+          <ul class="nav flex-column app-sidebar-nav">
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item active" href="#general"
+                data-panel="general"><i class="bi bi-person me-2"></i>Thông tin cơ bản</a></li>
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item" href="#additional"
+                data-panel="additional"><i class="bi bi-sliders me-2"></i>Thông tin bổ sung</a></li>
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item" href="#education" data-panel="education"><i
+                  class="bi bi-mortarboard me-2"></i>Quá trình đào tạo</a></li>
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item" href="#work_exp" data-panel="work_exp"><i
+                  class="bi bi-briefcase me-2"></i>Quá trình công tác</a></li>
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item" href="#participate"
+                data-panel="participate"><i class="bi bi-folder2-open me-2"></i>Đề tài tham gia</a></li>
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item" href="#publishedPaper"
+                data-panel="publishedPaper"><i class="bi bi-journal-text me-2"></i>Công bố khoa học</a></li>
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item" href="#award" data-panel="award"><i
+                  class="bi bi-trophy me-2"></i>Giải thưởng</a></li>
+            <hr class="my-2">
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item nav-export-cv fw-bold" href="#exportCvPanel"
+                data-panel="exportCvPanel" id="navExportCvLink"><i class="bi bi-file-earmark-word me-2"></i>Xuất CV</a>
+            </li>
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item" href="#importFilePanel"
+                data-panel="importFilePanel" id="navImportFileLink"><i class="bi bi-cloud-arrow-up me-2"></i>Nhập từ
+                PDF/Word</a></li>
+            <hr class="my-2">
+            <li class="nav-item"><a class="nav-link text-dark app-nav-item" href="#support" data-panel="support"><i
+                  class="bi bi-question-circle me-2"></i>Hỗ trợ</a></li>
+            <li class="nav-item"><a class="nav-link text-dark" href="#" id="logoutBtn"><i
+                  class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <main id="top" class="col-md-9 ms-sm-auto col-lg-10 px-md-4 offset-md-3 offset-lg-2">
+        <section id="overview" class="app-panel-frame">
+          <div class="welcome-section mb-4">
+            <div class="container welcome-hero">
+              <div class="welcome-orbit" aria-hidden="true"></div>
+              <div class="welcome-content">
+                <p class="welcome-eyebrow">KHÔNG GIAN HỌC THUẬT CỦA BẠN</p>
+                <h1 class="welcome-title">WELCOME</h1>
+                <div class="welcome-rule" aria-hidden="true"></div>
+                <p class="welcome-greeting">Xin chào, <strong id="welcomeName"></strong><span>!</span></p>
+                <p class="welcome-description">Mỗi dấu mốc hôm nay, một hành trình tri thức ngày mai.</p>
+                <div class="welcome-actions">
+                  <a class="welcome-action welcome-action-primary" href="#general" data-panel="general">Cập nhật hồ sơ
+                    <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                  <a class="welcome-action welcome-action-secondary" href="#exportCvPanel"
+                    data-panel="exportCvPanel">Xuất hồ sơ <i class="bi bi-download" aria-hidden="true"></i></a>
+                </div>
               </div>
-              <div class="tab-pane addition-table-wrapper fade" id="researching">
-                <table class="table table-hover managed-table" id="researchTable"><thead class="table-light"><tr class="text-center"><th class="select-col"><input class="form-check-input" type="checkbox" id="researchSelectAll"></th><th>Ngành/Chuyên ngành</th><th>Hướng nghiên cứu</th><th>Mô tả</th><th>Thao tác</th></tr></thead><tbody id="researchBody"><tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table><div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="researchDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
-              </div>
+              <a class="welcome-explore" href="#general" data-panel="general">Khám phá hồ sơ của bạn <i
+                  class="bi bi-arrow-down" aria-hidden="true"></i></a>
             </div>
           </div>
-        </div>
-        <hr class="fixed-hr">
-      </section>
 
-      <section id="education" class="full-screen-section">
-        <div class="container">
-          <div class="content-header">
-            <div class="row align-text-center">
-              <div class="col-sm-8"><h1>Quá trình đào tạo</h1></div>
-              <div class="col-sm-4 justify-content-center d-flex align-items-center">
-                <div class="btn-group">
-                  <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-circle"></i> Add</button>
-                  <div class="dropdown-menu">
-                    <a class="dropdown-item credential-open" href="#" data-bs-toggle="modal" data-bs-target="#addCredential" data-kind="degree">Học vị</a>
-                    <a class="dropdown-item credential-open" href="#" data-bs-toggle="modal" data-bs-target="#addCredential" data-kind="title">Học hàm</a>
-                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addLanguage">Ngoại ngữ</a>
+          <div class="oneform-dashboard-overview" aria-label="Dashboard overview">
+            <div class="oneform-dashboard-header">
+              <h1>Xin chào, <span id="dashboardWelcomeName"></span>!</h1>
+              <p>Quản lý hồ sơ khoa học và các nội dung học thuật của bạn tại đây</p>
+            </div>
+            <div class="oneform-dashboard-grid">
+              <a class="oneform-dashboard-card" href="#general" data-panel="general">
+                <h3>Thông tin hồ sơ</h3>
+                <p>Chỉnh sửa thông tin trong hồ sơ khoa học</p>
+                <span class="oneform-card-button oneform-card-primary">Chỉnh sửa hồ sơ</span>
+              </a>
+              <a class="oneform-dashboard-card" href="#publishedPaper" data-panel="publishedPaper">
+                <h3>Hồ sơ khoa học</h3>
+                <p>Xem công bố, đề tài và quá trình học thuật</p>
+                <span class="oneform-card-button oneform-card-secondary">Xem hồ sơ</span>
+              </a>
+              <a class="oneform-dashboard-card" href="#exportCvPanel" data-panel="exportCvPanel">
+                <h3>Xuất hồ sơ</h3>
+                <p>Xem trước và tải hồ sơ khoa học</p>
+                <span class="oneform-card-button oneform-card-success">Xuất hồ sơ</span>
+              </a>
+              <a class="oneform-dashboard-card" href="#" data-oneform-logout>
+                <h3>Tài khoản</h3>
+                <p>Đang đăng nhập: <span id="dashboardAccountEmail"></span></p>
+                <span class="oneform-card-button oneform-card-outline">Logout</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section id="general" class="app-panel-frame active">
+          <div class="container">
+            <form id="editGeneral">
+              <div class="row">
+                <div class="col">
+                  <h1>Thông tin cơ bản</h1>
+                </div>
+                <div class="col-sm-4 justify-content-center d-flex align-items-center">
+                  <button type="button" class="btn btn-warning" id="editGeneralBtn"
+                    onclick="document.querySelectorAll('.general-field').forEach(function(el){el.disabled=false});this.disabled=false;this.style.display='none';var s=document.getElementById('saveGeneralBtn');if(s){s.style.display='inline-block';s.disabled=false;}">Edit
+                    <i class="bi bi-pencil-square"></i></button>
+                  <button type="submit" id="saveGeneralBtn" class="btn btn-primary ms-2"
+                    style="display:none">Save</button>
+                </div>
+              </div>
+
+              <div class="form-group mt-3">
+                <div class="row mb-3">
+                  <div class="col">
+                    <div class="input-group">
+                      <span class="input-group-text">Họ và tên:</span>
+                      <input type="text" name="person_name" class="form-control general-field smart-titlecase" value=""
+                        disabled>
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="input-group">
+                      <span class="input-group-text">Giới tính:</span>
+                      <div class="input-group-text"><input class="form-check-input general-field" type="radio"
+                          name="person_gender" id="femaleGender" value="0" checked disabled><label
+                          class="form-check-label ms-1" for="femaleGender">Nữ</label></div>
+                      <div class="input-group-text"><input class="form-check-input general-field" type="radio"
+                          name="person_gender" id="maleGender" value="1" disabled><label class="form-check-label ms-1"
+                          for="maleGender">Nam</label></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col">
+                    <div class="input-group"><span class="input-group-text">Ngày, tháng, năm sinh:</span><input
+                        type="date" name="person_dob" class="form-control general-field compact-date" disabled></div>
+                  </div>
+                  <div class="col">
+                    <div class="input-group"><span class="input-group-text">Nơi sinh:</span><select name="person_pob"
+                        class="form-select general-field compact-location" disabled>
+                        <option value="">Chọn tỉnh/thành phố</option>
+                        <option value="Hà Nội">Hà Nội</option>
+                        <option value="Huế">Huế</option>
+                        <option value="Hải Phòng">Hải Phòng</option>
+                        <option value="Đà Nẵng">Đà Nẵng</option>
+                        <option value="Cần Thơ">Cần Thơ</option>
+                        <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
+                        <option value="Cao Bằng">Cao Bằng</option>
+                        <option value="Điện Biên">Điện Biên</option>
+                        <option value="Hà Tĩnh">Hà Tĩnh</option>
+                        <option value="Lai Châu">Lai Châu</option>
+                        <option value="Lạng Sơn">Lạng Sơn</option>
+                        <option value="Nghệ An">Nghệ An</option>
+                        <option value="Quảng Ninh">Quảng Ninh</option>
+                        <option value="Thanh Hóa">Thanh Hóa</option>
+                        <option value="Sơn La">Sơn La</option>
+                        <option value="Tuyên Quang">Tuyên Quang</option>
+                        <option value="Lào Cai">Lào Cai</option>
+                        <option value="Thái Nguyên">Thái Nguyên</option>
+                        <option value="Phú Thọ">Phú Thọ</option>
+                        <option value="Bắc Ninh">Bắc Ninh</option>
+                        <option value="Hưng Yên">Hưng Yên</option>
+                        <option value="Ninh Bình">Ninh Bình</option>
+                        <option value="Quảng Trị">Quảng Trị</option>
+                        <option value="Quảng Ngãi">Quảng Ngãi</option>
+                        <option value="Gia Lai">Gia Lai</option>
+                        <option value="Khánh Hòa">Khánh Hòa</option>
+                        <option value="Lâm Đồng">Lâm Đồng</option>
+                        <option value="Đắk Lắk">Đắk Lắk</option>
+                        <option value="Đồng Nai">Đồng Nai</option>
+                        <option value="Tây Ninh">Tây Ninh</option>
+                        <option value="Vĩnh Long">Vĩnh Long</option>
+                        <option value="Đồng Tháp">Đồng Tháp</option>
+                        <option value="Cà Mau">Cà Mau</option>
+                        <option value="An Giang">An Giang</option>
+                      </select></div>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col">
+                    <div class="input-group"><span class="input-group-text">Quê quán:</span><select
+                        name="person_hometown" class="form-select general-field compact-location" disabled>
+                        <option value="">Chọn tỉnh/thành phố</option>
+                        <option value="Hà Nội">Hà Nội</option>
+                        <option value="Huế">Huế</option>
+                        <option value="Hải Phòng">Hải Phòng</option>
+                        <option value="Đà Nẵng">Đà Nẵng</option>
+                        <option value="Cần Thơ">Cần Thơ</option>
+                        <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
+                        <option value="Cao Bằng">Cao Bằng</option>
+                        <option value="Điện Biên">Điện Biên</option>
+                        <option value="Hà Tĩnh">Hà Tĩnh</option>
+                        <option value="Lai Châu">Lai Châu</option>
+                        <option value="Lạng Sơn">Lạng Sơn</option>
+                        <option value="Nghệ An">Nghệ An</option>
+                        <option value="Quảng Ninh">Quảng Ninh</option>
+                        <option value="Thanh Hóa">Thanh Hóa</option>
+                        <option value="Sơn La">Sơn La</option>
+                        <option value="Tuyên Quang">Tuyên Quang</option>
+                        <option value="Lào Cai">Lào Cai</option>
+                        <option value="Thái Nguyên">Thái Nguyên</option>
+                        <option value="Phú Thọ">Phú Thọ</option>
+                        <option value="Bắc Ninh">Bắc Ninh</option>
+                        <option value="Hưng Yên">Hưng Yên</option>
+                        <option value="Ninh Bình">Ninh Bình</option>
+                        <option value="Quảng Trị">Quảng Trị</option>
+                        <option value="Quảng Ngãi">Quảng Ngãi</option>
+                        <option value="Gia Lai">Gia Lai</option>
+                        <option value="Khánh Hòa">Khánh Hòa</option>
+                        <option value="Lâm Đồng">Lâm Đồng</option>
+                        <option value="Đắk Lắk">Đắk Lắk</option>
+                        <option value="Đồng Nai">Đồng Nai</option>
+                        <option value="Tây Ninh">Tây Ninh</option>
+                        <option value="Vĩnh Long">Vĩnh Long</option>
+                        <option value="Đồng Tháp">Đồng Tháp</option>
+                        <option value="Cà Mau">Cà Mau</option>
+                        <option value="An Giang">An Giang</option>
+                      </select></div>
+                  </div>
+                  <div class="col">
+                    <div class="input-group"><span class="input-group-text">Dân tộc:</span><select
+                        name="person_ethnicity" class="form-select general-field compact-ethnicity" disabled>
+                        <option value="">Chọn dân tộc</option>
+                        <option value="Kinh">Kinh (đa số)</option>
+                        <option value="Tày">Tày</option>
+                        <option value="Thái">Thái</option>
+                        <option value="Hoa">Hoa</option>
+                        <option value="Khmer">Khmer</option>
+                        <option value="Mường">Mường</option>
+                        <option value="Nùng">Nùng</option>
+                        <option value="Mông">Mông</option>
+                        <option value="Dao">Dao</option>
+                        <option value="Gia Rai">Gia Rai</option>
+                        <option value="Ê Đê">Ê Đê</option>
+                        <option value="Ba Na">Ba Na</option>
+                        <option value="Sán Chay">Sán Chay</option>
+                        <option value="Chăm">Chăm</option>
+                        <option value="Cơ Ho">Cơ Ho</option>
+                        <option value="Xơ Đăng">Xơ Đăng</option>
+                        <option value="Sán Dìu">Sán Dìu</option>
+                        <option value="Hrê">Hrê</option>
+                        <option value="Ra Glai">Ra Glai</option>
+                        <option value="M'Nông">M'Nông</option>
+                        <option value="Thổ">Thổ</option>
+                        <option value="Xtiêng">Xtiêng</option>
+                        <option value="Khơ Mú">Khơ Mú</option>
+                        <option value="Bru - Vân Kiều">Bru - Vân Kiều</option>
+                        <option value="Cơ Tu">Cơ Tu</option>
+                        <option value="Giáy">Giáy</option>
+                        <option value="Tà Ôi">Tà Ôi</option>
+                        <option value="Mạ">Mạ</option>
+                        <option value="Giẻ Triêng">Giẻ Triêng</option>
+                        <option value="Co">Co</option>
+                        <option value="Chơ Ro">Chơ Ro</option>
+                        <option value="Xinh Mun">Xinh Mun</option>
+                        <option value="Hà Nhì">Hà Nhì</option>
+                        <option value="Chu Ru">Chu Ru</option>
+                        <option value="Lào">Lào</option>
+                        <option value="La Chí">La Chí</option>
+                        <option value="Kháng">Kháng</option>
+                        <option value="Phù Lá">Phù Lá</option>
+                        <option value="La Hủ">La Hủ</option>
+                        <option value="La Ha">La Ha</option>
+                        <option value="Pà Thẻn">Pà Thẻn</option>
+                        <option value="Chứt">Chứt</option>
+                        <option value="Lự">Lự</option>
+                        <option value="Lô Lô">Lô Lô</option>
+                        <option value="Mảng">Mảng</option>
+                        <option value="Cờ Lao">Cờ Lao</option>
+                        <option value="Bố Y">Bố Y</option>
+                        <option value="Cống">Cống</option>
+                        <option value="Ngái">Ngái</option>
+                        <option value="Si La">Si La</option>
+                        <option value="Pu Péo">Pu Péo</option>
+                        <option value="Rơ Măm">Rơ Măm</option>
+                        <option value="Brâu">Brâu</option>
+                        <option value="Ơ Đu">Ơ Đu</option>
+                      </select></div>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="input-group"><span class="input-group-text">Chức vụ (Hiện tại hoặc trước khi nghỉ
+                      hưu):</span><input type="text" name="person_position"
+                      class="form-control general-field smart-titlecase" disabled></div>
+                </div>
+                <div class="row mb-3">
+                  <div class="input-group"><span class="input-group-text">Đơn vị công tác (Hiện tại hoặc trước khi nghỉ
+                      hưu):</span><input type="text" name="person_work_unit"
+                      class="form-control general-field smart-titlecase" disabled></div>
+                </div>
+                <div class="row mb-3">
+                  <div class="input-group"><span class="input-group-text">Chỗ ở riêng hoặc địa chỉ liên
+                      lạc:</span><input type="text" name="person_address"
+                      class="form-control general-field smart-titlecase" disabled></div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="input-group">
+                    <span class="input-group-text">Điện thoại liên hệ:</span>
+                    <span class="input-group-text">CQ:</span><input type="text" name="person_office_phone"
+                      class="form-control general-field compact-phone" disabled>
+                    <span class="input-group-text">NR:</span><input type="text" name="person_home_phone"
+                      class="form-control general-field compact-phone" disabled>
+                    <span class="input-group-text">DĐ:</span><input type="text" name="person_mobile_phone"
+                      class="form-control general-field compact-phone" disabled>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col">
+                    <div class="input-group"><span class="input-group-text">Fax:</span><input type="text"
+                        name="person_fax" class="form-control general-field" disabled></div>
+                  </div>
+                  <div class="col">
+                    <div class="input-group"><span class="input-group-text">Email:</span><input type="email"
+                        name="person_email" class="form-control general-field" value="" disabled></div>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="input-group">
+                    <span class="input-group-text">CCCD:</span><input type="text" name="person_citizen_id"
+                      class="form-control general-field compact-id" disabled>
+                    <span class="input-group-text">Ngày cấp:</span><input type="date" name="person_date_issue"
+                      class="form-control general-field compact-date" disabled>
+                    <span class="input-group-text">Nơi cấp:</span><input type="text" name="person_place_issue"
+                      class="form-control general-field smart-titlecase" disabled>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <hr class="fixed-hr">
+        </section>
+
+        <section id="additional" class="app-panel-frame">
+          <div class="container">
+            <h1 class="mb-3 pb-3">Thông tin bổ sung</h1>
+
+            <div class="mb-3 p-3 box border border-info rounded">
+              <h4 class="box-title">Tùy chỉnh mong muốn của bạn</h4>
+              <div class="row mb-3">
+                <div class="col">
+                  <div class="row align-items-center">
+                    <div class="col-8"><strong>Mong muốn tham gia giảng dạy/thỉnh giảng</strong></div>
+                    <div class="col-4">
+                      <div class="form-check form-switch"><input class="form-check-input custom-switch preference"
+                          type="checkbox" id="accept_teaching" name="person_accept_teaching"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="row align-items-center">
+                    <div class="col-8"><strong>Đồng ý tìm đồng đội nghiên cứu chung</strong></div>
+                    <div class="col-4">
+                      <div class="form-check form-switch"><input class="form-check-input custom-switch preference"
+                          type="checkbox" id="accept_researching" name="person_accept_researching"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col">
+                  <div class="row align-items-center">
+                    <div class="col-8"><strong>Đồng ý tham gia hội đồng</strong></div>
+                    <div class="col-4">
+                      <div class="form-check form-switch"><input class="form-check-input custom-switch preference"
+                          type="checkbox" id="accept_committee" name="person_accept_committee"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="row align-items-center">
+                    <div class="col-8"><strong>Đồng ý làm người hướng dẫn</strong></div>
+                    <div class="col-4">
+                      <div class="form-check form-switch"><input class="form-check-input custom-switch preference"
+                          type="checkbox" id="accept_instructor" name="person_accept_instructor"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mb-1">
+                <div class="col">
+                  <div class="row align-items-center">
+                    <div class="col-8"><strong>Mong muốn tham gia dự án cùng doanh nghiệp</strong></div>
+                    <div class="col-4">
+                      <div class="form-check form-switch"><input class="form-check-input custom-switch preference"
+                          type="checkbox" id="accept_company_projects" name="person_accept_company_projects"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col"></div>
+              </div>
+            </div>
+
+            <div class="content-body">
+              <ul class="nav nav-tabs d-flex justify-content-between w-100">
+                <div class="d-flex">
+                  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab"
+                      data-bs-target="#teaching">Môn học có thể giảng dạy</button></li>
+                  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#researching">Hướng
+                      nghiên cứu</button></li>
+                </div>
+                <button class="btn btn-primary ms-auto me-5 mb-1" data-bs-toggle="modal"
+                  data-bs-target="#addAddition"><i class="bi bi-plus-circle"></i></button>
+              </ul>
+              <div class="tab-content">
+                <div class="tab-pane addition-table-wrapper fade show active" id="teaching">
+                  <table class="table table-hover managed-table" id="teachingTable">
+                    <thead class="table-light">
+                      <tr class="text-center">
+                        <th class="select-col"><input class="form-check-input" type="checkbox" id="teachingSelectAll">
+                        </th>
+                        <th>Ngành/Chuyên ngành</th>
+                        <th>Tên môn học</th>
+                        <th>Mô tả</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody id="teachingBody">
+                      <tr class="empty-row">
+                        <td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="teachingDeleteSelectedBtn"
+                      disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
+                  </div>
+                </div>
+                <div class="tab-pane addition-table-wrapper fade" id="researching">
+                  <table class="table table-hover managed-table" id="researchTable">
+                    <thead class="table-light">
+                      <tr class="text-center">
+                        <th class="select-col"><input class="form-check-input" type="checkbox" id="researchSelectAll">
+                        </th>
+                        <th>Ngành/Chuyên ngành</th>
+                        <th>Hướng nghiên cứu</th>
+                        <th>Mô tả</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody id="researchBody">
+                      <tr class="empty-row">
+                        <td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="researchDeleteSelectedBtn"
+                      disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          <hr class="fixed-hr">
+        </section>
 
-          <ul class="nav nav-tabs">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#degree">Học hàm - Học vị</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#language">Ngoại ngữ</button></li>
-          </ul>
-          <div class="tab-content table-wrapper">
-            <div class="tab-pane fade show active" id="degree">
-              <table class="table table-hover" id="credentialTable">
-                <thead class="align-middle table-light">
-                  <tr class="text-center">
-                    <th style="width:54px"><input class="form-check-input" type="checkbox" id="credentialSelectAll" aria-label="Chọn tất cả"></th>
-                    <th>Học hàm/Học vị</th>
-                    <th>Ngành/Chuyên ngành</th>
-                    <th>Năm</th>
-                    <th>Khóa luận/Luận văn/Luận án - Chi tiết</th>
-                  </tr>
-                </thead>
-                <tbody id="credentialBody">
-                  <tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr>
-                </tbody>
-              </table>
-              <div class="credential-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-                <button type="button" class="btn btn-outline-danger btn-sm" id="credentialDeleteSelectedBtn" disabled>
-                  <i class="bi bi-trash me-1"></i>Xóa đã chọn
-                </button>
+        <section id="education" class="app-panel-frame">
+          <div class="container">
+            <div class="content-header">
+              <div class="row align-text-center">
+                <div class="col-sm-8">
+                  <h1>Quá trình đào tạo</h1>
+                </div>
+                <div class="col-sm-4 justify-content-center d-flex align-items-center">
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i
+                        class="bi bi-plus-circle"></i> Add</button>
+                    <div class="dropdown-menu">
+                      <a class="dropdown-item credential-open" href="#" data-bs-toggle="modal"
+                        data-bs-target="#addCredential" data-kind="degree">Học vị</a>
+                      <a class="dropdown-item credential-open" href="#" data-bs-toggle="modal"
+                        data-bs-target="#addCredential" data-kind="title">Học hàm</a>
+                      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addLanguage">Ngoại
+                        ngữ</a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="language">
-              <table class="table table-hover managed-table" id="languageTable"><thead class="table-light"><tr class="text-center"><th class="select-col"><input class="form-check-input" type="checkbox" id="languageSelectAll"></th><th>Ngoại ngữ</th><th>Mức độ thành thạo</th><th>Chứng chỉ</th><th>Thao tác</th></tr></thead><tbody id="languageBody"><tr class="empty-row"><td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table><div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="languageDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
-            </div>
-          </div>
-        </div>
-        <hr class="fixed-hr">
-      </section>
 
-      <section id="work_exp" class="full-screen-section">
-        <div class="container">
-          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Quá trình công tác</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWork"><i class="bi bi-plus-circle"></i> Add</button></div></div></div>
-          <div class="content-body table-wrapper">
-            <table class="table table-hover managed-table" id="workTable"><thead class="text-center align-middle table-light"><tr><th class="select-col"><input class="form-check-input" type="checkbox" id="workSelectAll"></th><th>Từ</th><th>Đến</th><th>Đơn vị công tác</th><th>Chức danh</th><th>Mô tả công việc</th><th>Thao tác</th></tr></thead><tbody id="workBody"><tr class="empty-row"><td colspan="7" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table><div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="workDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
-          </div>
-        </div>
-        <hr class="fixed-hr">
-      </section>
-
-      <section id="participate" class="full-screen-section">
-        <div class="container">
-          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Đề tài tham gia</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject"><i class="bi bi-plus-circle"></i> Add</button></div></div></div>
-          <div class="content-body table-wrapper">
-            <table class="table table-hover managed-table" id="projectTable"><thead class="align-middle table-light"><tr class="text-center"><th class="select-col"><input class="form-check-input" type="checkbox" id="projectSelectAll"></th><th>TT</th><th>Tên đề tài nghiên cứu</th><th>Ngày bắt đầu</th><th>Ngày nghiệm thu</th><th>Đề tài cấp</th><th>Chức vụ</th><th>Kinh phí</th><th>Đơn vị kinh phí</th><th>Thao tác</th></tr></thead><tbody id="projectBody"><tr class="empty-row"><td colspan="10" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table><div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="projectDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
-          </div>
-        </div>
-        <hr class="fixed-hr">
-      </section>
-
-      <section id="publishedPaper" class="full-screen-section">
-        <div class="container">
-          <div class="content-header">
-            <div class="row">
-              <div class="col-sm-8"><h1>Công bố khoa học</h1></div>
-              <div class="col-sm-4 justify-content-center d-flex align-items-center">
-                <div class="btn-group">
-                  <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-plus-circle"></i> Add
+            <ul class="nav nav-tabs">
+              <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#degree">Học hàm
+                  - Học vị</button></li>
+              <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#language">Ngoại
+                  ngữ</button></li>
+            </ul>
+            <div class="tab-content table-wrapper">
+              <div class="tab-pane fade show active" id="degree">
+                <table class="table table-hover" id="credentialTable">
+                  <thead class="align-middle table-light">
+                    <tr class="text-center">
+                      <th style="width:54px"><input class="form-check-input" type="checkbox" id="credentialSelectAll"
+                          aria-label="Chọn tất cả"></th>
+                      <th>Học hàm/Học vị</th>
+                      <th>Ngành/Chuyên ngành</th>
+                      <th>Năm</th>
+                      <th>Khóa luận/Luận văn/Luận án - Chi tiết</th>
+                    </tr>
+                  </thead>
+                  <tbody id="credentialBody">
+                    <tr class="empty-row">
+                      <td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="credential-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                  <button type="button" class="btn btn-outline-danger btn-sm" id="credentialDeleteSelectedBtn" disabled>
+                    <i class="bi bi-trash me-1"></i>Xóa đã chọn
                   </button>
-                  <div class="dropdown-menu">
-                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addPublication">Bài báo khoa học</a>
-                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addSeminar">Seminar - Hội thảo</a>
-                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addTextbook">Sách giáo trình</a>
-                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <ul class="nav nav-tabs publication-tabs" id="publicationTabs">
-            <li class="nav-item">
-              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#articleTab">Bài báo khoa học</button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#seminarTab">Seminar - Hội thảo</button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#textbookTab">Sách giáo trình</button>
-            </li>
-          </ul>
-
-          <div class="tab-content publication-tab-content">
-            <div class="tab-pane fade show active" id="articleTab">
-              <div class="saved-publication-search mb-4">
-                <i class="bi bi-search"></i>
-                <input type="text" id="savedArticleSearch" placeholder="Tìm kiếm bài báo đã lưu bằng Tên tác giả hoặc Tên tạp chí">
-              </div>
-              <div class="table-wrapper">
-                <table class="table table-hover">
+              <div class="tab-pane fade" id="language">
+                <table class="table table-hover managed-table" id="languageTable">
                   <thead class="table-light">
                     <tr class="text-center">
-                      <th class="select-col"><input class="form-check-input" type="checkbox" id="articleSelectAll"></th>
-                      <th>TT</th>
-                      <th>Tên công trình</th>
-                      <th>Tác giả</th>
-                      <th>Năm xuất bản</th>
-                      <th>ISSN</th>
-                      <th>Tên tạp chí</th>
-                      <th>Minh chứng</th>
+                      <th class="select-col"><input class="form-check-input" type="checkbox" id="languageSelectAll">
+                      </th>
+                      <th>Ngoại ngữ</th>
+                      <th>Mức độ thành thạo</th>
+                      <th>Chứng chỉ</th>
                       <th>Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody id="articleBody"><tr class="empty-row"><td colspan="9" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody>
+                  <tbody id="languageBody">
+                    <tr class="empty-row">
+                      <td colspan="5" class="text-center text-muted">Chưa có dữ liệu</td>
+                    </tr>
+                  </tbody>
                 </table>
                 <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="articleDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
+                  <button type="button" class="btn btn-outline-danger btn-sm" id="languageDeleteSelectedBtn" disabled><i
+                      class="bi bi-trash me-1"></i>Xóa đã chọn</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="fixed-hr">
+        </section>
+
+        <section id="work_exp" class="app-panel-frame">
+          <div class="container">
+            <div class="content-header">
+              <div class="row">
+                <div class="col-sm-8">
+                  <h1>Quá trình công tác</h1>
+                </div>
+                <div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary"
+                    data-bs-toggle="modal" data-bs-target="#addWork"><i class="bi bi-plus-circle"></i> Add</button>
+                </div>
+              </div>
+            </div>
+            <div class="content-body table-wrapper">
+              <table class="table table-hover managed-table" id="workTable">
+                <thead class="text-center align-middle table-light">
+                  <tr>
+                    <th class="select-col"><input class="form-check-input" type="checkbox" id="workSelectAll"></th>
+                    <th>Từ</th>
+                    <th>Đến</th>
+                    <th>Đơn vị công tác</th>
+                    <th>Chức danh</th>
+                    <th>Mô tả công việc</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="workBody">
+                  <tr class="empty-row">
+                    <td colspan="7" class="text-center text-muted">Chưa có dữ liệu</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                <button type="button" class="btn btn-outline-danger btn-sm" id="workDeleteSelectedBtn" disabled><i
+                    class="bi bi-trash me-1"></i>Xóa đã chọn</button>
+              </div>
+            </div>
+          </div>
+          <hr class="fixed-hr">
+        </section>
+
+        <section id="participate" class="app-panel-frame">
+          <div class="container">
+            <div class="content-header">
+              <div class="row">
+                <div class="col-sm-8">
+                  <h1>Đề tài tham gia</h1>
+                </div>
+                <div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary"
+                    data-bs-toggle="modal" data-bs-target="#addProject"><i class="bi bi-plus-circle"></i> Add</button>
+                </div>
+              </div>
+            </div>
+            <div class="content-body table-wrapper">
+              <table class="table table-hover managed-table" id="projectTable">
+                <thead class="align-middle table-light">
+                  <tr class="text-center">
+                    <th class="select-col"><input class="form-check-input" type="checkbox" id="projectSelectAll"></th>
+                    <th>TT</th>
+                    <th>Tên đề tài nghiên cứu</th>
+                    <th>Ngày bắt đầu</th>
+                    <th>Ngày nghiệm thu</th>
+                    <th>Đề tài cấp</th>
+                    <th>Chức vụ</th>
+                    <th>Kinh phí</th>
+                    <th>Đơn vị kinh phí</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="projectBody">
+                  <tr class="empty-row">
+                    <td colspan="10" class="text-center text-muted">Chưa có dữ liệu</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                <button type="button" class="btn btn-outline-danger btn-sm" id="projectDeleteSelectedBtn" disabled><i
+                    class="bi bi-trash me-1"></i>Xóa đã chọn</button>
+              </div>
+            </div>
+          </div>
+          <hr class="fixed-hr">
+        </section>
+
+        <section id="publishedPaper" class="app-panel-frame">
+          <div class="container">
+            <div class="content-header">
+              <div class="row">
+                <div class="col-sm-8">
+                  <h1>Công bố khoa học</h1>
+                </div>
+                <div class="col-sm-4 justify-content-center d-flex align-items-center">
+                  <div class="btn-group">
+                    <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                      <i class="bi bi-plus-circle"></i> Add
+                    </button>
+                    <div class="dropdown-menu">
+                      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addPublication">Bài báo
+                        khoa học</a>
+                      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addSeminar">Seminar -
+                        Hội thảo</a>
+                      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addTextbook">Sách giáo
+                        trình</a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="tab-pane fade table-wrapper" id="seminarTab">
-              <table class="table table-hover managed-table" id="seminarTable">
+            <ul class="nav nav-tabs publication-tabs" id="publicationTabs">
+              <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#articleTab">Bài báo khoa
+                  học</button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#seminarTab">Seminar - Hội thảo</button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#textbookTab">Sách giáo trình</button>
+              </li>
+            </ul>
+
+            <div class="tab-content publication-tab-content">
+              <div class="tab-pane fade show active" id="articleTab">
+                <div class="saved-publication-search mb-4">
+                  <i class="bi bi-search"></i>
+                  <input type="text" id="savedArticleSearch"
+                    placeholder="Tìm kiếm bài báo đã lưu bằng Tên tác giả hoặc Tên tạp chí">
+                </div>
+                <div class="table-wrapper">
+                  <table class="table table-hover">
+                    <thead class="table-light">
+                      <tr class="text-center">
+                        <th class="select-col"><input class="form-check-input" type="checkbox" id="articleSelectAll">
+                        </th>
+                        <th>TT</th>
+                        <th>Tên công trình</th>
+                        <th>Tác giả</th>
+                        <th>Năm xuất bản</th>
+                        <th>ISSN</th>
+                        <th>Tên tạp chí</th>
+                        <th>Minh chứng</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody id="articleBody">
+                      <tr class="empty-row">
+                        <td colspan="9" class="text-center text-muted">Chưa có dữ liệu</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="articleDeleteSelectedBtn"
+                      disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tab-pane fade table-wrapper" id="seminarTab">
+                <table class="table table-hover managed-table" id="seminarTable">
+                  <thead class="table-light">
+                    <tr class="text-center">
+                      <th class="select-col"><input class="form-check-input" type="checkbox" id="seminarSelectAll"></th>
+                      <th>TT</th>
+                      <th>Tên Seminar/Hội thảo</th>
+                      <th>Thời gian</th>
+                      <th>Địa điểm</th>
+                      <th>Vai trò</th>
+                      <th>Thông tin</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="seminarBody">
+                    <tr class="empty-row">
+                      <td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                  <button type="button" class="btn btn-outline-danger btn-sm" id="seminarDeleteSelectedBtn" disabled><i
+                      class="bi bi-trash me-1"></i>Xóa đã chọn</button>
+                </div>
+              </div>
+
+              <div class="tab-pane fade table-wrapper" id="textbookTab">
+                <table class="table table-hover managed-table" id="textbookTable">
+                  <thead class="table-light">
+                    <tr class="text-center">
+                      <th class="select-col"><input class="form-check-input" type="checkbox" id="textbookSelectAll">
+                      </th>
+                      <th>TT</th>
+                      <th>Tên giáo trình</th>
+                      <th>Năm xuất bản</th>
+                      <th>Nơi xuất bản</th>
+                      <th>Vai trò/Tác giả</th>
+                      <th>Thông tin</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="textbookBody">
+                    <tr class="empty-row">
+                      <td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                  <button type="button" class="btn btn-outline-danger btn-sm" id="textbookDeleteSelectedBtn" disabled><i
+                      class="bi bi-trash me-1"></i>Xóa đã chọn</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="fixed-hr">
+        </section>
+
+        <section id="award" class="app-panel-frame">
+          <div class="container">
+            <div class="content-header">
+              <div class="row">
+                <div class="col-sm-8">
+                  <h1>Giải thưởng</h1>
+                </div>
+                <div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary"
+                    data-bs-toggle="modal" data-bs-target="#addAward"><i class="bi bi-plus-circle"></i> Add</button>
+                </div>
+              </div>
+            </div>
+            <div class="content-body table-wrapper">
+              <table class="table table-hover managed-table" id="awardTable">
                 <thead class="table-light">
                   <tr class="text-center">
-                    <th class="select-col"><input class="form-check-input" type="checkbox" id="seminarSelectAll"></th><th>TT</th><th>Tên Seminar/Hội thảo</th><th>Thời gian</th><th>Địa điểm</th><th>Vai trò</th><th>Thông tin</th><th>Thao tác</th>
+                    <th class="select-col"><input class="form-check-input" type="checkbox" id="awardSelectAll"></th>
+                    <th>TT</th>
+                    <th>Loại</th>
+                    <th>Tên giải thưởng/Công nghệ</th>
+                    <th>Nơi cấp/Áp dụng</th>
+                    <th>Năm</th>
+                    <th>Mô tả</th>
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
-                <tbody id="seminarBody"><tr class="empty-row"><td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody>
-              </table><div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="seminarDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
-            </div>
-
-            <div class="tab-pane fade table-wrapper" id="textbookTab">
-              <table class="table table-hover managed-table" id="textbookTable">
-                <thead class="table-light">
-                  <tr class="text-center">
-                    <th class="select-col"><input class="form-check-input" type="checkbox" id="textbookSelectAll"></th><th>TT</th><th>Tên giáo trình</th><th>Năm xuất bản</th><th>Nơi xuất bản</th><th>Vai trò/Tác giả</th><th>Thông tin</th><th>Thao tác</th>
+                <tbody id="awardBody">
+                  <tr class="empty-row">
+                    <td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td>
                   </tr>
-                </thead>
-                <tbody id="textbookBody"><tr class="empty-row"><td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody>
-              </table><div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="textbookDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
+                </tbody>
+              </table>
+              <div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
+                <button type="button" class="btn btn-outline-danger btn-sm" id="awardDeleteSelectedBtn" disabled><i
+                    class="bi bi-trash me-1"></i>Xóa đã chọn</button>
+              </div>
             </div>
           </div>
-        </div>
-        <hr class="fixed-hr">
-      </section>
+          <hr class="fixed-hr">
+        </section>
 
-      <section id="award" class="full-screen-section">
-        <div class="container">
-          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Giải thưởng</h1></div><div class="col-sm-4 justify-content-center d-flex align-items-center"><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAward"><i class="bi bi-plus-circle"></i> Add</button></div></div></div>
-          <div class="content-body table-wrapper">
-            <table class="table table-hover managed-table" id="awardTable"><thead class="table-light"><tr class="text-center"><th class="select-col"><input class="form-check-input" type="checkbox" id="awardSelectAll"></th><th>TT</th><th>Loại</th><th>Tên giải thưởng/Công nghệ</th><th>Nơi cấp/Áp dụng</th><th>Năm</th><th>Mô tả</th><th>Thao tác</th></tr></thead><tbody id="awardBody"><tr class="empty-row"><td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td></tr></tbody></table><div class="data-bulk-actions d-flex flex-wrap gap-2 justify-content-end p-2 border-top">
-  <button type="button" class="btn btn-outline-danger btn-sm" id="awardDeleteSelectedBtn" disabled><i class="bi bi-trash me-1"></i>Xóa đã chọn</button>
-</div>
-          </div>
-        </div>
-        <hr class="fixed-hr">
-      </section>
 
-      <section id="support" class="full-screen-section">
-        <div class="container">
-          <div class="content-header"><div class="row"><div class="col-sm-8"><h1>Hỗ trợ</h1></div></div></div>
-          <div class="content-body">
-            <h5 class="p-3">Chúng tôi sẽ hỗ trợ chuyển dữ liệu từ file lý lịch khoa học của bạn lên hệ thống!</h5>
-            <form id="supportForm" class="p-5">
-              <p>Hãy gửi file Lý lịch khoa học của bạn ở đây! (chỉ PDF)</p>
-              <div class="input-group"><input type="file" accept="application/pdf,.pdf" id="supportFile" class="form-control" required><button type="submit" class="btn btn-info">Lưu PDF</button></div>
-            <p class="small text-muted">PDF được lưu trong trình duyệt này, theo tài khoản đang sử dụng. Không gửi đến Google Drive hoặc quản trị viên.</p><div id="supportFileStatus" role="status" aria-live="polite"></div>
-            </form>
+        <!-- MÀN HÌNH XUẤT CV CHUẨN ẢNH 1 -->
+        <section id="exportCvPanel" class="app-panel-frame">
+          <div class="container-fluid px-0">
+            <div class="row g-4 cv-export-layout">
+              <!-- Cột Trái: Cấu hình xuất CV (Ảnh 1) -->
+              <div class="col-xl-5 col-lg-5 col-md-12">
+                <div class="cv-config-card p-4 rounded-3 shadow-sm">
+                  <h2 class="cv-config-title mb-1">Lý lịch khoa học</h2>
+                  <p class="text-muted small mb-4">Xuất theo mẫu Lý lịch khoa học của Bộ Giáo dục và Đào tạo từ dữ liệu
+                    đã lưu.</p>
+
+                  <div class="cv-extra-box p-3 rounded-3 mb-4">
+                    <h5 class="cv-extra-title mb-3">Nội dung bổ sung (in sau mục IV, trước ngày ký)</h5>
+
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" id="cvExtraSelectAll">
+                      <label class="form-check-label fw-bold" for="cvExtraSelectAll">Chọn tất cả</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input class="form-check-input cv-extra-item" type="checkbox" id="cvExtraTeaching"
+                        data-section="teaching">
+                      <label class="form-check-label" for="cvExtraTeaching">Môn học có thể giảng dạy (<span
+                          id="cvCountTeaching">0</span> mục)</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input class="form-check-input cv-extra-item" type="checkbox" id="cvExtraResearch"
+                        data-section="research">
+                      <label class="form-check-label" for="cvExtraResearch">Hướng nghiên cứu (<span
+                          id="cvCountResearch">0</span> mục)</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input class="form-check-input cv-extra-item" type="checkbox" id="cvExtraAwards"
+                        data-section="awards">
+                      <label class="form-check-label" for="cvExtraAwards">Giải thưởng khoa học và công nghệ (<span
+                          id="cvCountAwards">0</span> mục)</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input class="form-check-input cv-extra-item" type="checkbox" id="cvExtraTechTransfer"
+                        data-section="techTransfer">
+                      <label class="form-check-label" for="cvExtraTechTransfer">Chuyển giao công nghệ (<span
+                          id="cvCountTechTransfer">0</span> mục)</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input class="form-check-input cv-extra-item" type="checkbox" id="cvExtraProjects"
+                        data-section="projects">
+                      <label class="form-check-label" for="cvExtraProjects">Dự án doanh nghiệp (<span
+                          id="cvCountProjects">0</span> mục)</label>
+                    </div>
+
+                    <small class="text-muted d-block mt-3 fst-italic">Tích mục cần in để thêm bảng V, VI... trước phần
+                      ngày ký.</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <label for="cvSignLocation" class="form-label fw-semibold">Địa danh ký:</label>
+                    <input type="text" class="form-control" id="cvSignLocation"
+                      placeholder="Ví dụ: Thành phố Hồ Chí Minh" value="Thành phố Hồ Chí Minh">
+                  </div>
+
+                  <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary btn-lg shadow-sm" id="cvDownloadWordDirect">
+                      <i class="bi bi-file-earmark-word me-2"></i> Xuất file Word (.docx)
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="cvRefreshPreviewDirect">
+                      <i class="bi bi-arrow-clockwise me-1"></i> Làm mới bản xem trước
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cột Phải: Xem trước Lý lịch khoa học A4 (Ảnh 1) -->
+              <div class="col-xl-7 col-lg-7 col-md-12">
+                <div class="cv-preview-card p-3 rounded-3 shadow-sm d-flex flex-column h-100">
+                  <div
+                    class="cv-preview-toolbar d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                      <h5 class="m-0 fw-bold">Xem trước Lý lịch khoa học</h5>
+                      <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">
+                        <i class="bi bi-circle-fill me-1" style="font-size: 6px;"></i> Đã cập nhật <span
+                          id="cvPreviewClock">--:--:--</span>
+                      </span>
+                    </div>
+
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-outline-secondary" id="cvZoomOut" title="Thu nhỏ"><i
+                          class="bi bi-dash"></i></button>
+                      <button type="button" class="btn btn-outline-secondary" id="cvZoomFit" title="Vừa khung">Vừa
+                        khung</button>
+                      <button type="button" class="btn btn-outline-secondary" id="cvZoomIn" title="Phóng to"><i
+                          class="bi bi-plus"></i></button>
+                      <button type="button" class="btn btn-outline-secondary" id="cvReloadPreview" title="Làm mới"><i
+                          class="bi bi-arrow-clockwise"></i> Làm mới</button>
+                    </div>
+                  </div>
+
+                  <div class="cv-preview-viewport" id="cvPreviewViewport">
+                    <div class="cv-preview-scale-wrapper" id="cvPreviewScaleWrapper">
+                      <div id="cvPreviewPaperSheet" class="cv-a4-paper-sheet">
+                        <!-- Render A4 paper live preview -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <hr class="fixed-hr">
-      </section>
-    </main>
+        </section>
+
+        <!-- MÀN HÌNH TỰ ĐỘNG TRÍCH XUẤT TỪ FILE PDF/WORD -->
+        <section id="importFilePanel" class="app-panel-frame">
+          <div class="container-fluid px-0">
+            <div class="card shadow-sm p-4 mb-4 border-0 rounded-3">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-circle bg-primary-subtle text-primary p-3">
+                  <i class="bi bi-cloud-arrow-up-fill fs-2"></i>
+                </div>
+                <div>
+                  <h3 class="m-0 fw-bold">Tự động trích xuất thông tin từ tệp (PDF / Word)</h3>
+                  <p class="text-muted m-0">Tải lên tệp Lý lịch khoa học hoặc CV cũ định dạng <strong>.docx</strong>
+                    hoặc <strong>.pdf</strong>, hệ thống sẽ tự động quét và điền các trường tương ứng.</p>
+                </div>
+              </div>
+
+              <div class="dropzone-area p-5 text-center border border-2 border-dashed rounded-3 my-3" id="cvDropzone">
+                <i class="bi bi-file-earmark-arrow-up text-primary display-4"></i>
+                <h5 class="mt-3">Kéo & thả file PDF hoặc Word (.docx) vào đây</h5>
+                <p class="text-muted small">Hỗ trợ tệp Microsoft Word (.docx) và PDF (tối đa 25MB)</p>
+                <label class="btn btn-primary px-4 mt-2">
+                  <i class="bi bi-folder2-open me-2"></i> Chọn tệp từ máy tính
+                  <input type="file" id="cvUploadFileInput"
+                    accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,application/pdf"
+                    hidden>
+                </label>
+              </div>
+
+              <div id="cvExtractProgress" class="d-none text-center my-4 p-4 bg-light rounded-3">
+                <div class="spinner-border text-primary mb-2" role="status"></div>
+                <div class="fw-semibold text-primary" id="cvExtractStatusText">Đang phân tích cấu trúc tệp văn bản...
+                </div>
+              </div>
+
+              <div id="cvExtractReviewArea" class="d-none mt-4">
+                <div class="alert alert-success d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                  <div><i class="bi bi-check-circle-fill me-2"></i> <strong>Đã trích xuất thành công dữ liệu từ
+                      tệp!</strong> Vui lòng đối chiếu các trường bên dưới trước khi áp dụng:</div>
+                  <button type="button" class="btn btn-success" id="btnApplyExtractedData">
+                    <i class="bi bi-check2-all me-1"></i> Áp dụng vào hồ sơ
+                  </button>
+                </div>
+
+                <div class="card p-3 mb-3">
+                  <h5 class="border-bottom pb-2 fw-bold text-primary"><i class="bi bi-person-lines-fill me-2"></i>Thông
+                    tin cá nhân phát hiện được</h5>
+                  <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle" id="extractedGeneralTable">
+                      <thead class="table-light">
+                        <tr>
+                          <th width="40" class="text-center"><input type="checkbox" class="form-check-input"
+                              id="checkAllExtracted" checked></th>
+                          <th>Trường dữ liệu</th>
+                          <th>Giá trị phát hiện được</th>
+                        </tr>
+                      </thead>
+                      <tbody id="extractedGeneralBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="card p-3 mb-3" id="extractedTablesCard">
+                  <h5 class="border-bottom pb-2 fw-bold text-primary"><i class="bi bi-table me-2"></i>Bảng biểu & Quá
+                    trình phát hiện được</h5>
+                  <div id="extractedTablesSummary" class="text-muted"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="support" class="app-panel-frame">
+          <div class="container">
+            <div class="content-header">
+              <div class="row">
+                <div class="col-sm-8">
+                  <h1>Hỗ trợ</h1>
+                </div>
+              </div>
+            </div>
+            <div class="content-body">
+              <h5 class="p-3">Chúng tôi sẽ hỗ trợ chuyển dữ liệu từ file lý lịch khoa học của bạn lên hệ thống!</h5>
+              <form id="supportForm" class="p-5">
+                <p>Hãy gửi file Lý lịch khoa học của bạn ở đây! (chỉ PDF)</p>
+                <div class="input-group"><input type="file" accept="application/pdf,.pdf" id="supportFile"
+                    class="form-control" required><button type="submit" class="btn btn-info">Lưu PDF</button></div>
+                <p class="small text-muted">PDF được lưu trong trình duyệt này, theo tài khoản đang sử dụng. Không gửi
+                  đến Google Drive hoặc quản trị viên.</p>
+                <div id="supportFileStatus" role="status" aria-live="polite"></div>
+              </form>
+            </div>
+          </div>
+          <hr class="fixed-hr">
+        </section>
+      </main>
+    </div>
   </div>
-</div>
 
-<div class="modal fade" id="addAddition" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <form id="additionForm"><input type="hidden" name="edit_key" id="additionFormEditKey" value="">
-      <div class="modal-header"><h5 class="modal-title">Thêm thông tin bổ sung</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <select class="form-select mb-3" name="type"><option value="teaching">Môn học có thể giảng dạy</option><option value="research">Hướng nghiên cứu</option></select>
-        <input class="form-control mb-3" name="major" placeholder="Ngành/Chuyên ngành">
-        <input class="form-control mb-3" name="title" placeholder="Tên môn học/Hướng nghiên cứu" required>
-        <textarea class="form-control" name="description" placeholder="Mô tả"></textarea>
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
-    </form>
-  </div></div>
-</div>
-
-<div class="modal fade" id="addCredential" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
-    <form id="credentialForm">
-      <input type="hidden" name="credential_edit_key" id="credentialEditKey" value="">
-      <div class="modal-header"><h5 class="modal-title">Thêm học vị</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <input type="hidden" name="kind" id="credentialKind" value="degree">
-
-        <div id="degreeFields">
-          <div class="input-group mb-3">
-            <span class="input-group-text">Bậc học</span>
-            <select class="form-select" name="study_level" id="studyLevel">
-              <option value="">Chọn bậc học</option>
-              <option value="undergraduate">Đại học</option>
-              <option value="postgraduate">Sau đại học</option>
+  <div class="modal fade" id="addAddition" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="additionForm"><input type="hidden" name="edit_key" id="additionFormEditKey" value="">
+          <div class="modal-header">
+            <h5 class="modal-title">Thêm thông tin bổ sung</h5><button type="button" class="btn-close"
+              data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <select class="form-select mb-3" name="type">
+              <option value="teaching">Môn học có thể giảng dạy</option>
+              <option value="research">Hướng nghiên cứu</option>
             </select>
+            <input class="form-control mb-3" name="major" placeholder="Ngành/Chuyên ngành">
+            <input class="form-control mb-3" name="title" placeholder="Tên môn học/Hướng nghiên cứu" required>
+            <textarea class="form-control" name="description" placeholder="Mô tả"></textarea>
           </div>
-          <div class="input-group mb-4">
-            <span class="input-group-text">Học vị</span>
-            <select class="form-select" name="degree_level" id="degreeLevel" disabled>
-              <option value="">Chọn học vị</option>
-            </select>
-          </div>
-          <div class="input-group mb-4">
-            <span class="input-group-text">Ngành/Chuyên ngành:</span>
-            <input class="form-control" name="degree_major">
-          </div>
-          <div class="row">
-            <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Nơi đào tạo:</span><input class="form-control smart-titlecase" name="degree_institution"></div></div>
-            <div class="col-md-6">
-              <div class="input-group mb-2"><span class="input-group-text">Năm tốt nghiệp:</span><input class="form-control" type="number" name="degree_year" id="degreeYear" min="1900"></div>
-              <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="degreeNotGraduated" name="degree_not_graduated"><label class="form-check-label" for="degreeNotGraduated">Chưa tốt nghiệp</label></div>
-            </div>
-          </div>
-          <div class="input-group mb-3" id="degreeThesisGroup">
-            <span class="input-group-text" id="degreeThesisLabel">Khóa luận/Luận văn/Luận án</span>
-            <input class="form-control smart-titlecase" name="degree_thesis" id="degreeThesis" placeholder="Tên công trình tốt nghiệp">
-          </div>
-        </div>
-
-        <div id="titleFields" class="d-none">
-          <div class="input-group mb-4">
-            <span class="input-group-text">Chức danh</span>
-            <select class="form-select" name="title_level" id="titleLevel">
-              <option value="">Chọn chức danh khoa học</option>
-              <option value="Giáo sư">Giáo sư</option>
-              <option value="Phó giáo sư">Phó giáo sư</option>
-            </select>
-          </div>
-          <div class="row">
-            <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Ngành/Chuyên ngành:</span><input class="form-control" name="title_major"></div></div>
-            <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Năm phong:</span><input class="form-control" type="number" name="title_year" min="1900" max="2100"></div></div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
-    </form>
-  </div></div>
-</div>
-
-<div class="modal fade" id="addLanguage" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <form id="languageForm"><input type="hidden" name="edit_key" id="languageFormEditKey" value="">
-      <div class="modal-header"><h5 class="modal-title">Thêm ngoại ngữ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <input class="form-control mb-3" name="name" placeholder="Ngoại ngữ" required>
-        <input class="form-control mb-3" name="proficiency" placeholder="Mức độ thành thạo">
-        <select class="form-select mb-3" name="certificate" id="languageCertificate">
-          <option value="">Chọn chứng chỉ</option>
-          <option value="IELTS">IELTS</option>
-          <option value="TOEIC">TOEIC</option>
-          <option value="VSTEP">VSTEP</option>
-          <option value="SAT">SAT</option>
-          <option value="TOEFL">TOEFL</option>
-          <option value="Khác">Chứng chỉ khác</option>
-        </select>
-        <input class="form-control d-none" name="certificate_other" id="certificateOther" placeholder="Nhập tên chứng chỉ khác">
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
-    </form>
-  </div></div>
-</div>
-
-<div class="modal fade" id="addWork" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <form id="workForm"><input type="hidden" name="edit_key" id="workFormEditKey" value="">
-      <div class="modal-header"><h5 class="modal-title">Thêm quá trình công tác</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <label class="form-label">Từ</label><input class="form-control mb-3" type="date" name="start" data-no-future-date required>
-        <label class="form-label">Đến</label><input class="form-control mb-2" type="date" name="end" id="workEndDate">
-        <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="workCurrent" name="current"><label class="form-check-label" for="workCurrent">Hiện tại</label></div>
-        <input class="form-control mb-3" name="institution" placeholder="Đơn vị công tác" required>
-        <input class="form-control mb-3" name="position" placeholder="Chức danh">
-        <textarea class="form-control" name="description" placeholder="Mô tả công việc"></textarea>
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
-    </form>
-  </div></div>
-</div>
-
-<div class="modal fade" id="addProject" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
-    <form id="projectForm"><input type="hidden" name="edit_key" id="projectFormEditKey" value="">
-      <div class="modal-header"><h5 class="modal-title">Thêm đề tài đang tham gia</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <div class="input-group mb-4"><span class="input-group-text">Tên đề tài:</span><input class="form-control" name="title" required></div>
-        <div class="row">
-          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Ngày bắt đầu:</span><input class="form-control" type="date" name="start_year" required></div></div>
-          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Ngày nghiệm thu:</span><input class="form-control" type="date" name="end_year"></div></div>
-        </div>
-        <div class="row">
-          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Đề tài cấp:</span><input class="form-control" name="level"></div></div>
-          <div class="col-md-6"><div class="input-group mb-3"><span class="input-group-text">Chức vụ:</span><input class="form-control" name="position"></div></div>
-        </div>
-        <div class="row">
-          <div class="col-md-7"><div class="input-group mb-3"><span class="input-group-text">Kinh phí:</span><input class="form-control" name="budget" inputmode="decimal"></div></div>
-          <div class="col-md-5"><div class="input-group mb-3"><span class="input-group-text">Đơn vị kinh phí:</span><select class="form-select" name="budget_unit"><option value="triệu VND">triệu VND</option><option value="VND">VND</option><option value="USD">USD</option></select></div></div>
-        </div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
-    </form>
-  </div></div>
-</div>
-
-<div class="modal fade" id="addPublication" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered publication-original-dialog">
-    <div class="modal-content publication-search-modal">
-      <div class="original-modal-header">
-        <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
-        <h5 class="modal-title">Thêm công bố khoa học</h5>
-        <button type="button" class="btn btn-primary original-add-btn" id="articleSearchAddBtn" disabled>Add</button>
-      </div>
-
-      <div class="modal-body publication-search-body">
-        <div class="input-group publication-search">
-          <input class="form-control" id="publicationSearch" placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo" autocomplete="off">
-          <button class="btn btn-outline-success" type="button" id="paperSearchBtn" aria-label="Tìm kiếm"><i class="bi bi-search"></i></button>
-        </div>
-
-        <div id="publicationSearchStatus" class="publication-search-status d-none"></div>
-
-        <div id="publicationSearchResults" class="publication-search-results">
-          <div class="text-muted text-center publication-search-empty">
-            Nhập DOI, đường dẫn DOI hoặc tên bài báo để tìm.
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer publication-search-footer">
-        <button type="button" class="btn btn-link p-0 publication-manual-link" id="openManualPublication">
-          Bạn có thể tạo bài báo bằng cách nhập liệu ở đây
-        </button>
-
-        <div class="publication-pagination ms-auto">
-          <button type="button" class="btn btn-outline-primary publication-page-btn" id="publicationPrevPage" disabled aria-label="Trang trước">
-            <i class="bi bi-caret-left-fill"></i>
-          </button>
-          <strong id="publicationPageLabel">Trang 1</strong>
-          <button type="button" class="btn btn-outline-primary publication-page-btn" id="publicationNextPage" disabled aria-label="Trang sau">
-            <i class="bi bi-caret-right-fill"></i>
-          </button>
-        </div>
+          <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+        </form>
       </div>
     </div>
   </div>
-</div>
 
-<div class="modal fade" id="addPublicationManual" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
-    <form id="publicationForm"><input type="hidden" name="edit_index" id="publicationEditIndex" value="">
-      <div class="modal-header">
-        <div>
-          <h5 class="modal-title mb-1">Thêm bài báo khoa học</h5>
-          <div class="small text-muted">Nhập thông tin bài báo thủ công</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <div class="input-group mb-3">
-          <span class="input-group-text">Tên bài báo:</span>
-          <input class="form-control" name="title" placeholder="Nhập tên bài báo" required>
-        </div>
-
-        <div class="row">
-          <div class="col-md-7">
-            <div class="input-group mb-3"><span class="input-group-text">Tác giả:</span><input class="form-control smart-titlecase" name="authors" placeholder="Nguyễn Văn A, Trần Thị B..."></div>
+  <div class="modal fade" id="addCredential" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form id="credentialForm">
+          <input type="hidden" name="credential_edit_key" id="credentialEditKey" value="">
+          <div class="modal-header">
+            <h5 class="modal-title">Thêm học vị</h5><button type="button" class="btn-close"
+              data-bs-dismiss="modal"></button>
           </div>
-          <div class="col-md-5">
-            <div class="input-group mb-3"><span class="input-group-text">ISSN:</span><input class="form-control" name="issn" placeholder="Ví dụ: 1234-5678"></div>
-          </div>
-        </div>
-        <div class="input-group mb-3">
-          <span class="input-group-text">Tạp chí/Nơi công bố:</span>
-          <input class="form-control smart-titlecase" name="location" placeholder="Tên tạp chí hoặc nơi công bố">
-        </div>
+          <div class="modal-body">
+            <input type="hidden" name="kind" id="credentialKind" value="degree">
 
-        <div class="row">
-          <div class="col-md-6">
-            <div class="input-group mb-3">
-              <span class="input-group-text">Thời gian công bố</span>
-              <input class="form-control" type="month" name="published_month">
+            <div id="degreeFields">
+              <div class="input-group mb-3">
+                <span class="input-group-text">Bậc học</span>
+                <select class="form-select" name="study_level" id="studyLevel">
+                  <option value="">Chọn bậc học</option>
+                  <option value="undergraduate">Đại học</option>
+                  <option value="postgraduate">Sau đại học</option>
+                </select>
+              </div>
+              <div class="input-group mb-4">
+                <span class="input-group-text">Học vị</span>
+                <select class="form-select" name="degree_level" id="degreeLevel" disabled>
+                  <option value="">Chọn học vị</option>
+                </select>
+              </div>
+              <div class="input-group mb-4">
+                <span class="input-group-text">Ngành/Chuyên ngành:</span>
+                <input class="form-control" name="degree_major">
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="input-group mb-3"><span class="input-group-text">Nơi đào tạo:</span><input
+                      class="form-control smart-titlecase" name="degree_institution"></div>
+                </div>
+                <div class="col-md-6">
+                  <div class="input-group mb-2"><span class="input-group-text">Năm tốt nghiệp:</span><input
+                      class="form-control" type="number" name="degree_year" id="degreeYear" min="1900"></div>
+                  <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="degreeNotGraduated"
+                      name="degree_not_graduated"><label class="form-check-label" for="degreeNotGraduated">Chưa tốt
+                      nghiệp</label></div>
+                </div>
+              </div>
+              <div class="input-group mb-3" id="degreeThesisGroup">
+                <span class="input-group-text" id="degreeThesisLabel">Khóa luận/Luận văn/Luận án</span>
+                <input class="form-control smart-titlecase" name="degree_thesis" id="degreeThesis"
+                  placeholder="Tên công trình tốt nghiệp">
+              </div>
+            </div>
+
+            <div id="titleFields" class="d-none">
+              <div class="input-group mb-4">
+                <span class="input-group-text">Chức danh</span>
+                <select class="form-select" name="title_level" id="titleLevel">
+                  <option value="">Chọn chức danh khoa học</option>
+                  <option value="Giáo sư">Giáo sư</option>
+                  <option value="Phó giáo sư">Phó giáo sư</option>
+                </select>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="input-group mb-3"><span class="input-group-text">Ngành/Chuyên ngành:</span><input
+                      class="form-control" name="title_major"></div>
+                </div>
+                <div class="col-md-6">
+                  <div class="input-group mb-3"><span class="input-group-text">Năm phong:</span><input
+                      class="form-control" type="number" name="title_year" min="1900" max="2100"></div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="input-group mb-3">
-              <span class="input-group-text">DOI/Link</span>
-              <input class="form-control" name="doi_or_url" placeholder="DOI hoặc đường dẫn bài báo">
+          <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addLanguage" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="languageForm"><input type="hidden" name="edit_key" id="languageFormEditKey" value="">
+          <div class="modal-header">
+            <h5 class="modal-title">Thêm ngoại ngữ</h5><button type="button" class="btn-close"
+              data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input class="form-control mb-3" name="name" placeholder="Ngoại ngữ" required>
+            <input class="form-control mb-3" name="proficiency" placeholder="Mức độ thành thạo">
+            <select class="form-select mb-3" name="certificate" id="languageCertificate">
+              <option value="">Chọn chứng chỉ</option>
+              <option value="IELTS">IELTS</option>
+              <option value="TOEIC">TOEIC</option>
+              <option value="VSTEP">VSTEP</option>
+              <option value="SAT">SAT</option>
+              <option value="TOEFL">TOEFL</option>
+              <option value="Khác">Chứng chỉ khác</option>
+            </select>
+            <input class="form-control d-none" name="certificate_other" id="certificateOther"
+              placeholder="Nhập tên chứng chỉ khác">
+          </div>
+          <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addWork" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="workForm"><input type="hidden" name="edit_key" id="workFormEditKey" value="">
+          <div class="modal-header">
+            <h5 class="modal-title">Thêm quá trình công tác</h5><button type="button" class="btn-close"
+              data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label">Từ</label><input class="form-control mb-3" type="date" name="start"
+              data-no-future-date required>
+            <label class="form-label">Đến</label><input class="form-control mb-2" type="date" name="end"
+              id="workEndDate">
+            <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="workCurrent"
+                name="current"><label class="form-check-label" for="workCurrent">Hiện tại</label></div>
+            <input class="form-control mb-3" name="institution" placeholder="Đơn vị công tác" required>
+            <input class="form-control mb-3" name="position" placeholder="Chức danh">
+            <textarea class="form-control" name="description" placeholder="Mô tả công việc"></textarea>
+          </div>
+          <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addProject" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form id="projectForm"><input type="hidden" name="edit_key" id="projectFormEditKey" value="">
+          <div class="modal-header">
+            <h5 class="modal-title">Thêm đề tài đang tham gia</h5><button type="button" class="btn-close"
+              data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="input-group mb-4"><span class="input-group-text">Tên đề tài:</span><input class="form-control"
+                name="title" required></div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="input-group mb-3"><span class="input-group-text">Ngày bắt đầu:</span><input
+                    class="form-control" type="date" name="start_year" required></div>
+              </div>
+              <div class="col-md-6">
+                <div class="input-group mb-3"><span class="input-group-text">Ngày nghiệm thu:</span><input
+                    class="form-control" type="date" name="end_year"></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="input-group mb-3"><span class="input-group-text">Đề tài cấp:</span><input
+                    class="form-control" name="level"></div>
+              </div>
+              <div class="col-md-6">
+                <div class="input-group mb-3"><span class="input-group-text">Chức vụ:</span><input class="form-control"
+                    name="position"></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-7">
+                <div class="input-group mb-3"><span class="input-group-text">Kinh phí:</span><input class="form-control"
+                    name="budget" inputmode="decimal"></div>
+              </div>
+              <div class="col-md-5">
+                <div class="input-group mb-3"><span class="input-group-text">Đơn vị kinh phí:</span><select
+                    class="form-select" name="budget_unit">
+                    <option value="triệu VND">triệu VND</option>
+                    <option value="VND">VND</option>
+                    <option value="USD">USD</option>
+                  </select></div>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="input-group mb-3">
-          <span class="input-group-text">PDF minh chứng</span>
-          <input class="form-control" type="file" name="evidence_pdf" id="publicationEvidencePdf" accept="application/pdf,.pdf">
-        </div>
-        <textarea class="form-control" name="description" rows="5" placeholder="Thông tin khác"></textarea>
+          <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+        </form>
       </div>
+    </div>
+  </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary me-auto" id="backToPublicationSearch">
-          <i class="bi bi-arrow-left me-1"></i>Quay lại tìm kiếm
-        </button>
-        <button class="btn btn-primary">Add</button>
-      </div>
-    </form>
-  </div></div>
-</div>
-
-<div class="modal fade" id="addSeminar" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered publication-original-dialog">
-    <div class="modal-content">
-      <form id="seminarForm"><input type="hidden" name="edit_key" id="seminarFormEditKey" value="">
+  <div class="modal fade" id="addPublication" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered publication-original-dialog">
+      <div class="modal-content publication-search-modal">
         <div class="original-modal-header">
-          <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+          <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i
+              class="bi bi-x-lg"></i></button>
           <h5 class="modal-title">Thêm công bố khoa học</h5>
-          <button class="btn btn-primary original-add-btn" type="submit">Add</button>
+          <button type="button" class="btn btn-primary original-add-btn" id="articleSearchAddBtn" disabled>Add</button>
         </div>
 
-        <div class="modal-body original-simple-form">
-          <div class="input-group mb-4">
-            <span class="input-group-text">Hình thức công bố</span>
-            <select class="form-select" name="publication_type" required>
-              <option value="">Chọn hình thức công bố</option>
-              <option value="Hội thảo">Hội thảo</option>
-              <option value="Báo cáo chuyên đề">Báo cáo chuyên đề</option>
+        <div class="modal-body publication-search-body">
+          <div class="input-group publication-search">
+            <input class="form-control" id="publicationSearch"
+              placeholder="Tìm kiếm bài báo bằng Mã DOI, Link website hoặc Tên bài báo" autocomplete="off">
+            <button class="btn btn-outline-success" type="button" id="paperSearchBtn" aria-label="Tìm kiếm"><i
+                class="bi bi-search"></i></button>
+          </div>
+
+          <div id="publicationSearchStatus" class="publication-search-status d-none"></div>
+
+          <div id="publicationSearchResults" class="publication-search-results">
+            <div class="text-muted text-center publication-search-empty">
+              Nhập DOI, đường dẫn DOI hoặc tên bài báo để tìm.
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer publication-search-footer">
+          <button type="button" class="btn btn-link p-0 publication-manual-link" id="openManualPublication">
+            Bạn có thể tạo bài báo bằng cách nhập liệu ở đây
+          </button>
+
+          <div class="publication-pagination ms-auto">
+            <button type="button" class="btn btn-outline-primary publication-page-btn" id="publicationPrevPage" disabled
+              aria-label="Trang trước">
+              <i class="bi bi-caret-left-fill"></i>
+            </button>
+            <strong id="publicationPageLabel">Trang 1</strong>
+            <button type="button" class="btn btn-outline-primary publication-page-btn" id="publicationNextPage" disabled
+              aria-label="Trang sau">
+              <i class="bi bi-caret-right-fill"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addPublicationManual" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form id="publicationForm"><input type="hidden" name="edit_index" id="publicationEditIndex" value="">
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title mb-1">Thêm bài báo khoa học</h5>
+              <div class="small text-muted">Nhập thông tin bài báo thủ công</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="input-group mb-3">
+              <span class="input-group-text">Tên bài báo:</span>
+              <input class="form-control" name="title" placeholder="Nhập tên bài báo" required>
+            </div>
+
+            <div class="row">
+              <div class="col-md-7">
+                <div class="input-group mb-3"><span class="input-group-text">Tác giả:</span><input
+                    class="form-control smart-titlecase" name="authors" placeholder="Nguyễn Văn A, Trần Thị B..."></div>
+              </div>
+              <div class="col-md-5">
+                <div class="input-group mb-3"><span class="input-group-text">ISSN:</span><input class="form-control"
+                    name="issn" placeholder="Ví dụ: 1234-5678"></div>
+              </div>
+            </div>
+            <div class="input-group mb-3">
+              <span class="input-group-text">Tạp chí/Nơi công bố:</span>
+              <input class="form-control smart-titlecase" name="location" placeholder="Tên tạp chí hoặc nơi công bố">
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="input-group mb-3">
+                  <span class="input-group-text">Thời gian công bố</span>
+                  <input class="form-control" type="month" name="published_month">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="input-group mb-3">
+                  <span class="input-group-text">DOI/Link</span>
+                  <input class="form-control" name="doi_or_url" placeholder="DOI hoặc đường dẫn bài báo">
+                </div>
+              </div>
+            </div>
+
+            <div class="input-group mb-3">
+              <span class="input-group-text">PDF minh chứng</span>
+              <input class="form-control" type="file" name="evidence_pdf" id="publicationEvidencePdf"
+                accept="application/pdf,.pdf">
+            </div>
+            <textarea class="form-control" name="description" rows="5" placeholder="Thông tin khác"></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary me-auto" id="backToPublicationSearch">
+              <i class="bi bi-arrow-left me-1"></i>Quay lại tìm kiếm
+            </button>
+            <button class="btn btn-primary">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addSeminar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered publication-original-dialog">
+      <div class="modal-content">
+        <form id="seminarForm"><input type="hidden" name="edit_key" id="seminarFormEditKey" value="">
+          <div class="original-modal-header">
+            <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i
+                class="bi bi-x-lg"></i></button>
+            <h5 class="modal-title">Thêm công bố khoa học</h5>
+            <button class="btn btn-primary original-add-btn" type="submit">Add</button>
+          </div>
+
+          <div class="modal-body original-simple-form">
+            <div class="input-group mb-4">
+              <span class="input-group-text">Hình thức công bố</span>
+              <select class="form-select" name="publication_type" required>
+                <option value="">Chọn hình thức công bố</option>
+                <option value="Hội thảo">Hội thảo</option>
+                <option value="Báo cáo chuyên đề">Báo cáo chuyên đề</option>
+              </select>
+            </div>
+
+            <div class="input-group mb-4">
+              <span class="input-group-text">Tên giáo trình</span>
+              <input class="form-control" name="title" required>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="input-group mb-4">
+                  <span class="input-group-text">Nơi xuất bản</span>
+                  <input class="form-control" name="publisher">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="input-group mb-4">
+                  <span class="input-group-text">Năm xuất bản</span>
+                  <select class="form-select" name="month">
+                    <option value="">Tháng</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                  </select>
+                  <input class="form-control" name="year" type="number" min="1900" max="2100" data-no-future-year
+                    placeholder="Năm">
+                </div>
+              </div>
+            </div>
+
+            <textarea class="form-control" name="description" rows="7" placeholder="Thông tin khác"></textarea>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addTextbook" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered publication-original-dialog">
+      <div class="modal-content">
+        <form id="textbookForm"><input type="hidden" name="edit_key" id="textbookFormEditKey" value="">
+          <div class="original-modal-header">
+            <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i
+                class="bi bi-x-lg"></i></button>
+            <h5 class="modal-title">Thêm sách giáo trình</h5>
+            <button class="btn btn-primary original-add-btn" type="submit">Add</button>
+          </div>
+
+          <div class="modal-body original-simple-form">
+            <div class="input-group mb-4">
+              <span class="input-group-text">Tên giáo trình</span>
+              <input class="form-control" name="title" required>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="input-group mb-4">
+                  <span class="input-group-text">Nơi xuất bản</span>
+                  <input class="form-control" name="publisher">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="input-group mb-4">
+                  <span class="input-group-text">Năm xuất bản</span>
+                  <select class="form-select" name="month">
+                    <option value="">Tháng</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                  </select>
+                  <input class="form-control" name="year" type="number" min="1900" max="2100" data-no-future-year
+                    placeholder="Năm">
+                </div>
+              </div>
+            </div>
+
+            <textarea class="form-control" name="description" rows="7" placeholder="Thông tin khác"></textarea>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addAward" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="awardForm"><input type="hidden" name="edit_key" id="awardFormEditKey" value="">
+          <div class="modal-header">
+            <h5 class="modal-title">Thêm giải thưởng</h5><button type="button" class="btn-close"
+              data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <select class="form-select mb-3" name="category" id="awardCategory">
+              <option value="science_award">Giải thưởng Khoa học và Công nghệ</option>
+              <option value="tech_transfer">Chuyển giao công nghệ</option>
             </select>
+            <input class="form-control mb-3" name="name" id="awardName" placeholder="Tên giải thưởng" required>
+            <input class="form-control mb-3" name="organization" id="awardOrg" placeholder="Nơi cấp">
+            <input class="form-control mb-3" type="number" name="year" id="awardYear" placeholder="Năm cấp">
+            <textarea class="form-control" name="description" placeholder="Mô tả"></textarea>
           </div>
-
-          <div class="input-group mb-4">
-            <span class="input-group-text">Tên giáo trình</span>
-            <input class="form-control" name="title" required>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6">
-              <div class="input-group mb-4">
-                <span class="input-group-text">Nơi xuất bản</span>
-                <input class="form-control" name="publisher">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="input-group mb-4">
-                <span class="input-group-text">Năm xuất bản</span>
-                <select class="form-select" name="month">
-                  <option value="">Tháng</option>
-                  <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
-                </select>
-                <input class="form-control" name="year" type="number" min="1900" max="2100" data-no-future-year placeholder="Năm">
-              </div>
-            </div>
-          </div>
-
-          <textarea class="form-control" name="description" rows="7" placeholder="Thông tin khác"></textarea>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="addTextbook" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered publication-original-dialog">
-    <div class="modal-content">
-      <form id="textbookForm"><input type="hidden" name="edit_key" id="textbookFormEditKey" value="">
-        <div class="original-modal-header">
-          <button type="button" class="btn original-close-btn" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
-          <h5 class="modal-title">Thêm sách giáo trình</h5>
-          <button class="btn btn-primary original-add-btn" type="submit">Add</button>
-        </div>
-
-        <div class="modal-body original-simple-form">
-          <div class="input-group mb-4">
-            <span class="input-group-text">Tên giáo trình</span>
-            <input class="form-control" name="title" required>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6">
-              <div class="input-group mb-4">
-                <span class="input-group-text">Nơi xuất bản</span>
-                <input class="form-control" name="publisher">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="input-group mb-4">
-                <span class="input-group-text">Năm xuất bản</span>
-                <select class="form-select" name="month">
-                  <option value="">Tháng</option>
-                  <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
-                </select>
-                <input class="form-control" name="year" type="number" min="1900" max="2100" data-no-future-year placeholder="Năm">
-              </div>
-            </div>
-          </div>
-
-          <textarea class="form-control" name="description" rows="7" placeholder="Thông tin khác"></textarea>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="addAward" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <form id="awardForm"><input type="hidden" name="edit_key" id="awardFormEditKey" value="">
-      <div class="modal-header"><h5 class="modal-title">Thêm giải thưởng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <select class="form-select mb-3" name="category" id="awardCategory"><option value="science_award">Giải thưởng Khoa học và Công nghệ</option><option value="tech_transfer">Chuyển giao công nghệ</option></select>
-        <input class="form-control mb-3" name="name" id="awardName" placeholder="Tên giải thưởng" required>
-        <input class="form-control mb-3" name="organization" id="awardOrg" placeholder="Nơi cấp">
-        <input class="form-control mb-3" type="number" name="year" id="awardYear" placeholder="Năm cấp">
-        <textarea class="form-control" name="description" placeholder="Mô tả"></textarea>
+          <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
+        </form>
       </div>
-      <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
-    </form>
-  </div></div>
-</div>
+    </div>
+  </div>
 
 
-<div class="modal fade" id="exportCvModal" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title">Xem trước và xuất lý lịch khoa học</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body">
-      <div class="row g-3">
-        <div class="col-lg-4">
-          <fieldset class="export-template-picker"><legend>Chọn mẫu xuất — 4 mẫu</legend>
-            <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="standard" checked><span><strong>1. Mẫu Bộ nguyên bản</strong><small>Giữ nguyên các mục I–IV của mẫu bạn gửi.</small></span></label>
-            <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="textbooks"><span><strong>2. Thêm giáo trình</strong><small>Bổ sung sách và giáo trình tại mục IV.3.</small></span></label>
-            <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="awards"><span><strong>3. Thêm giải thưởng</strong><small>Bổ sung giải thưởng và thành tích tại phần V.</small></span></label>
-            <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="full"><span><strong>4. Giáo trình và giải thưởng</strong><small>Có đầy đủ mục IV.3 và phần V.</small></span></label>
-          </fieldset>
-          <select id="exportTemplateSelect" hidden aria-hidden="true" tabindex="-1"><option value="standard">Mẫu chuẩn</option><option value="textbooks">Giáo trình</option><option value="awards">Giải thưởng</option><option value="full">Cả hai</option></select>
-          <p class="small text-muted mt-2">Theo tệp mẫu Bộ đã cung cấp. Giáo trình bổ sung ở mục IV.3; giải thưởng bổ sung ở phần V. Số trang tùy nội dung hồ sơ.</p>
-          <button type="button" class="btn btn-outline-primary w-100 mt-3" id="refreshExportPreview"><i class="bi bi-eye me-1"></i>Xem trước</button>
-          <button type="button" class="btn btn-primary w-100 mt-2" id="downloadExportDoc"><i class="bi bi-file-earmark-word me-1"></i>Xuất file Word</button>
+  <div class="modal fade" id="exportCvModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Xem trước và xuất lý lịch khoa học</h5><button type="button" class="btn-close"
+            data-bs-dismiss="modal"></button>
         </div>
-        <div class="col-lg-8">
-          <div id="exportPreview" class="export-preview-paper"></div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <fieldset class="export-template-picker">
+                <legend>Chọn mẫu xuất — 4 mẫu</legend>
+                <label class="export-template-card"><input type="radio" name="exportTemplateChoice" value="standard"
+                    checked><span><strong>1. Mẫu Bộ nguyên bản</strong><small>Giữ nguyên các mục I–IV của mẫu bạn
+                      gửi.</small></span></label>
+                <label class="export-template-card"><input type="radio" name="exportTemplateChoice"
+                    value="textbooks"><span><strong>2. Thêm giáo trình</strong><small>Bổ sung sách và giáo trình tại mục
+                      IV.3.</small></span></label>
+                <label class="export-template-card"><input type="radio" name="exportTemplateChoice"
+                    value="awards"><span><strong>3. Thêm giải thưởng</strong><small>Bổ sung giải thưởng và thành tích
+                      tại phần V.</small></span></label>
+                <label class="export-template-card"><input type="radio" name="exportTemplateChoice"
+                    value="full"><span><strong>4. Giáo trình và giải thưởng</strong><small>Có đầy đủ mục IV.3 và phần
+                      V.</small></span></label>
+              </fieldset>
+              <select id="exportTemplateSelect" hidden aria-hidden="true" tabindex="-1">
+                <option value="standard">Mẫu chuẩn</option>
+                <option value="textbooks">Giáo trình</option>
+                <option value="awards">Giải thưởng</option>
+                <option value="full">Cả hai</option>
+              </select>
+              <p class="small text-muted mt-2">Theo tệp mẫu Bộ đã cung cấp. Giáo trình bổ sung ở mục IV.3; giải thưởng
+                bổ sung ở phần V. Số trang tùy nội dung hồ sơ.</p>
+              <button type="button" class="btn btn-outline-primary w-100 mt-3" id="refreshExportPreview"><i
+                  class="bi bi-eye me-1"></i>Xem trước</button>
+              <button type="button" class="btn btn-primary w-100 mt-2" id="downloadExportDoc"><i
+                  class="bi bi-file-earmark-word me-1"></i>Xuất file Word</button>
+            </div>
+            <div class="col-lg-8">
+              <div id="exportPreview" class="export-preview-paper"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div></div>
-</div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<?!= include('Script'); ?>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <?!= include('Script'); ?>
 </body>
+
 </html>
