@@ -540,6 +540,53 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
 
+  // Chặng 1: xử lý chuẩn học hàm/học vị và xem trước danh xưng.
+  const formatAcademicTitle = (name, degree, rank) => {
+    const n = String(name || '').trim();
+    const d = ['CN','KS','BS','ThS','TS','TSKH'].includes(degree) ? degree : '';
+    const r = ['TS','TSKH'].includes(d) && ['PGS','GS'].includes(rank) ? rank : '';
+    return [r, d].filter(Boolean).join('.') + (r || d ? '. ' : '') + n;
+  };
+  window.formatAcademicTitle = formatAcademicTitle;
+  const academicDegree = document.getElementById('personAcademicDegree');
+  const academicRank = document.getElementById('personAcademicRank');
+  const academicRankYear = document.getElementById('personRankYear');
+  let academicEditing = false;
+  const updateAcademicFields = () => {
+    if (!academicDegree || !academicRank || !academicRankYear) return;
+    const eligible = ['TS','TSKH'].includes(academicDegree.value);
+    if (!eligible) { academicRank.value=''; academicRankYear.value=''; }
+    academicRank.disabled = !academicEditing || !eligible;
+    academicRankYear.disabled = !academicEditing || !eligible || !academicRank.value;
+    academicRankYear.required = academicEditing && eligible && Boolean(academicRank.value);
+    const title = document.getElementById('academicTitlePreview');
+    if (title) title.textContent = formatAcademicTitle(document.querySelector('[name="person_name"]')?.value, academicDegree.value, academicRank.value) || 'Chưa có danh xưng';
+  };
+  academicDegree?.addEventListener('change', updateAcademicFields);
+  academicRank?.addEventListener('change', () => {
+    if (!academicRank.value) academicRankYear.value = '';
+    updateAcademicFields();
+  });
+  document.querySelector('[name="person_name"]')?.addEventListener('input', updateAcademicFields);
+  const validateAcademicGeneral = data => {
+    const now = new Date(), currentYear = now.getFullYear();
+    if (!String(data.person_name || '').trim()) return 'Vui lòng nhập họ và tên.';
+    if (!['CN','KS','BS','ThS','TS','TSKH'].includes(data.person_academic_degree)) return 'Vui lòng chọn học vị cao nhất.';
+    if (!/^\d{4}$/.test(data.person_degree_year || '') || +data.person_degree_year > currentYear || +data.person_degree_year < 1900) return 'Năm nhận bằng không hợp lệ.';
+    if (!String(data.person_major || '').trim()) return 'Vui lòng nhập chuyên ngành/lĩnh vực chính.';
+    if (data.person_academic_rank && !['TS','TSKH'].includes(data.person_academic_degree)) return 'PGS/GS yêu cầu bằng tiến sĩ.';
+    if (data.person_academic_rank && !['PGS','GS'].includes(data.person_academic_rank)) return 'Học hàm không hợp lệ.';
+    if (data.person_academic_rank && (!/^\d{4}$/.test(data.person_rank_year || '') || +data.person_rank_year < +data.person_degree_year || +data.person_rank_year > currentYear)) return 'Năm bổ nhiệm phải từ năm nhận bằng tiến sĩ đến năm hiện tại.';
+    if (data.person_lecturer_grade && !['TG','GV','GVC','GVCC'].includes(data.person_lecturer_grade)) return 'Ngạch giảng viên không hợp lệ.';
+    if (!data.person_dob || !/^\d{4}-\d{2}-\d{2}$/.test(data.person_dob)) return 'Vui lòng nhập ngày sinh hợp lệ.';
+    const dob = new Date(data.person_dob+'T00:00:00');
+    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0,10)!==data.person_dob) return 'Ngày sinh không tồn tại.';
+    let age = currentYear - dob.getFullYear();
+    if (now.getMonth() < dob.getMonth() || (now.getMonth()===dob.getMonth() && now.getDate()<dob.getDate())) age--;
+    if (age < 22) return 'Người kê khai phải đủ 22 tuổi.';
+    return '';
+  };
+
   const editBtn = document.getElementById('editGeneralBtn');
   const saveBtn = document.getElementById('saveGeneralBtn');
   const fields = document.querySelectorAll('.general-field');
@@ -547,6 +594,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const enableGeneralEditing = () => {
     fields.forEach(el => el.disabled = false);
+    academicEditing = true;
+    updateAcademicFields();
     if (editBtn) {
       editBtn.disabled = false;
       editBtn.style.display = 'none';
@@ -594,6 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
       el.checked = String((data || {})[el.name] || '0') === '1';
     });
     syncAccountIdentity();
+    updateAcademicFields();
   };
 
   const readPreferences = () => Object.fromEntries(
@@ -659,6 +709,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!generalForm.reportValidity()) return;
 
     const data = readGeneral();
+    const academicError = validateAcademicGeneral(data);
+    if (academicError) { toast(academicError, 'warning'); return; }
     if (data.person_dob && data.person_dob >= todayYmd) {
       toast('Ngày sinh phải trước ngày hiện tại.', 'warning'); return;
     }
@@ -675,6 +727,8 @@ document.addEventListener('DOMContentLoaded', () => {
       writeLocalGeneral(persisted);
       applyGeneral(persisted);
       fields.forEach(el => el.disabled = true);
+      academicEditing = false;
+      updateAcademicFields();
       editBtn.style.display = '';
       saveBtn.style.display = 'none';
       saveBtn.disabled = false;
@@ -916,6 +970,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const sortYear = (body, ascending = false) => {
+    if (!body) return;
+    const rows = [...body.querySelectorAll('tr:not(.empty-row)')];
+    const sortValue = row => {
+      const d = row.dataset;
+      const raw = d.start || d.startYear || d.year || d.sortYear || '';
+      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(raw)) return Number(raw.replace(/-/g,''));
+      return Number(String(raw).replace(/-/g,'').slice(0,8)) || 0;
+    };
+    rows.sort((a,b) => ascending ? sortValue(a)-sortValue(b) : sortValue(b)-sortValue(a));
+    rows.forEach(row => body.appendChild(row));
+  };
+  window.sortYear = sortYear;
   const sortRowsByNumericColumn = (body, columnIndex) => {
     if (!body) return;
     const rows = [...body.querySelectorAll('tr:not(.empty-row)')];
@@ -1210,6 +1277,25 @@ document.addEventListener('DOMContentLoaded', () => {
   setupManagedTable('textbook','textbookBody',8,1);
   setupManagedTable('award','awardBody',8,1);
 
+  // Kiểm tra toàn bộ mẫu thêm/sửa trước khi sự kiện riêng ghi dòng mới.
+  const stage1Required = {
+    additionForm:['title','major'],languageForm:['name','proficiency'],
+    workForm:['start','institution','position'],projectForm:['title','start_year','level','position'],
+    seminarForm:['title','publication_type','year'],textbookForm:['title','year'],
+    awardForm:['name','year']
+  };
+  Object.entries(stage1Required).forEach(([formId,names]) => {
+    document.getElementById(formId)?.addEventListener('submit', event => {
+      const form = event.currentTarget, data = new FormData(form);
+      const missing = names.find(name => !String(data.get(name) || '').trim());
+      const a = String(data.get('start_year') || data.get('start') || '');
+      const b = String(data.get('end_year') || data.get('end') || '');
+      let message = missing ? 'Vui lòng nhập trường bắt buộc: '+missing : '';
+      if (!message && a && b && a>b) message='Thời điểm bắt đầu phải không sau thời điểm kết thúc.';
+      if (message) { event.preventDefault();event.stopImmediatePropagation();toast(message,'warning'); }
+    },true);
+  });
+
   // Thông tin bổ sung: môn giảng dạy / hướng nghiên cứu
   const additionForm = document.getElementById('additionForm');
   if (additionForm) additionForm.addEventListener('submit', e => {
@@ -1311,7 +1397,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addWork')).show();
     });
     if(editKey){managedRows('workBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
-    sortRowsByNumericColumn(body,1);
+    sortYear(body,true);
     workForm.reset(); resetEditKey('workForm'); workEndDate.disabled=false;
     document.querySelector('#addWork .modal-title').textContent='Thêm quá trình công tác';
     closeModal(workForm); managedUpdateSelection('work'); toast(editKey?'Đã cập nhật quá trình công tác.':'Đã thêm quá trình công tác.');
@@ -2004,6 +2090,11 @@ restoredHandlers.set('award', r=>{
     });
   const collectTables = () => Object.fromEntries(profileBodies.map(body => [body.id,
     [...body.querySelectorAll('tr:not(.empty-row)')].map(row => ({data:{...row.dataset},cells:[...row.children].map(cell=>cell.textContent)}))]));
+  const sortExistingTables = () => {
+    ['workBody','projectBody','seminarBody','textbookBody','awardBody'].forEach(id => {
+      sortYear(document.getElementById(id), id==='workBody');
+    });
+  };
   const restoreTables = snapshot => {
     profileBodies.forEach(body => {
       const rows=snapshot?.[body.id]; if(!Array.isArray(rows)) return;
@@ -2032,6 +2123,7 @@ restoredHandlers.set('award', r=>{
         body.appendChild(row);
       });
     });
+    sortExistingTables();
   };
   let tablesReady=!window.google?.script?.run, tablesLoading=false, saveTimer, saving=false, pending=false;
   const flushTables = () => {
