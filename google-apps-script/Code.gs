@@ -642,6 +642,17 @@ function saveTables(data, token) {
     'teachingBody','researchBody','credentialBody','languageBody','workBody',
     'projectBody','articleBody','seminarBody','textbookBody','awardBody'
   ];
+  // Validate education records in the server, even if the client is bypassed.
+  if (Array.isArray(data.credentialBody)) {
+    const entries=data.credentialBody.map(item=>item && item.data ? item.data : (item||{}));
+    const completed=entries.filter(d=>d.kind==='degree' && String(d.unfinished||'0')!=='1' &&
+      /tiến sĩ|phd|ph\.d|dba|tskh/i.test(String(d.level||'')))
+      .map(d=>Number(d.year||d.rawYear||0)).filter(y=>y>=1900);
+    const appointments=entries.filter(d=>d.kind==='title' && /giáo sư/i.test(String(d.level||'')));
+    if(appointments.some(d=>!Number(d.year||d.rawYear||0) ||
+      !completed.some(year=>year<=Number(d.year||d.rawYear||0))))
+      throw new Error('Chỉ được khai GS/PGS sau khi đã có bằng Tiến sĩ.');
+  }
   const clean = {};
   allowed.forEach(k => { if (Array.isArray(data[k])) clean[k] = data[k]; });
 
