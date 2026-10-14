@@ -392,6 +392,42 @@ function sessionUser_(token) {
   return localSession_(token);
 }
 
+// Stage 1 - canonical academic credentials; shared server-side validation.
+function formatAcademicTitle(name, degree, rank) {
+  const accepted = ['CN','KS','BS','ThS','TS','TSKH'];
+  const d = accepted.indexOf(String(degree || '')) >= 0 ? String(degree) : '';
+  const r = ['TS','TSKH'].indexOf(d) >= 0 && ['PGS','GS'].indexOf(rank) >= 0 ? String(rank) : '';
+  return [r,d].filter(Boolean).join('.') + (r || d ? '. ' : '') + String(name || '').trim();
+}
+
+function validateAcademicGeneral_(data) {
+  const currentYear = Number(Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'yyyy'));
+  const allowed = ['CN','KS','BS','ThS','TS','TSKH'];
+  const degree = String(data.person_academic_degree || '').trim();
+  const rank = String(data.person_academic_rank || '').trim();
+  const degreeYear = String(data.person_degree_year || '').trim();
+  const rankYear = String(data.person_rank_year || '').trim();
+  if (!String(data.person_name || '').trim()) throw new Error('Vui lòng nhập họ và tên.');
+  if (allowed.indexOf(degree) < 0) throw new Error('Vui lòng chọn học vị cao nhất hợp lệ.');
+  if (!/^\d{4}$/.test(degreeYear) || Number(degreeYear) < 1900 || Number(degreeYear) > currentYear)
+    throw new Error('Năm nhận bằng cao nhất không hợp lệ.');
+  if (!String(data.person_major || '').trim()) throw new Error('Vui lòng nhập chuyên ngành/lĩnh vực chính.');
+  if (rank && ['TS','TSKH'].indexOf(degree) < 0) throw new Error('PGS/GS yêu cầu học vị từ Tiến sĩ.');
+  if (rank && ['PGS','GS'].indexOf(rank) < 0) throw new Error('Học hàm không hợp lệ.');
+  if (rank && (!/^\d{4}$/.test(rankYear) || Number(rankYear) < Number(degreeYear) || Number(rankYear) > currentYear))
+    throw new Error('Năm bổ nhiệm PGS/GS phải từ năm nhận bằng tiến sĩ đến năm hiện tại.');
+  if (!rank && rankYear) throw new Error('Không được khai năm bổ nhiệm khi chưa có học hàm.');
+  if (data.person_lecturer_grade && ['TG','GV','GVC','GVCC'].indexOf(String(data.person_lecturer_grade)) < 0)
+    throw new Error('Ngạch giảng viên không hợp lệ.');
+  const dob = String(data.person_dob || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) throw new Error('Vui lòng khai đúng ngày sinh.');
+  const date = new Date(dob + 'T00:00:00Z');
+  if (isNaN(date.getTime()) || date.toISOString().slice(0,10) !== dob) throw new Error('Ngày sinh không hợp lệ.');
+  const nowText = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
+  const age = currentYear - Number(dob.slice(0,4)) - (nowText.slice(5) < dob.slice(5) ? 1 : 0);
+  if (age < 22) throw new Error('Người kê khai phải đủ 22 tuổi.');
+}
+
 function validateGeneralDates_(data) {
   const tz = Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
   const today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
@@ -406,6 +442,7 @@ function saveGeneral(data, token) {
   const user = sessionUser_(token);
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Hồ sơ không hợp lệ.');
   validateGeneralDates_(data);
+  validateAcademicGeneral_(data);
 
   const clean = {};
   Object.keys(data).forEach(key => {
@@ -487,6 +524,47 @@ function savePreferences(data, token) {
   return {ok:true};
 }
 
+function validateStage1Tables_(data) {
+  const nowYear = Number(Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'yyyy'));
+  const specs = {
+    teachingBody:['title','major'],researchBody:['title','major'],
+    languageBody:['name','proficiency'],workBody:['start','institution','position'],
+    projectBody:['title','startYear','level','position'],seminarBody:['title','publicationType','year'],
+    textbookBody:['title','year'],awardBody:['name','year']
+  };
+  const rowData = item => item && item.data ? item.data : (item || {});
+  Object.keys(specs).forEach(key => {
+    (data[key] || []).forEach((item,i) => {
+      const row=rowData(item);
+      specs[key].forEach(field => {
+        if (!String(row[field] || '').trim()) throw new Error(key + ' dòng ' + (i+1) + ' thiếu ' + field + '.');
+      });
+      const start = String(row.startYear || row.start || '');
+      const end = String(row.endYear || row.end || '');
+      if (start && end && start > end) throw new Error(key + ' dòng ' + (i+1) + ': bắt đầu sau kết thúc.');
+      const year = String(row.year || '');
+      if (year && (!/^\d{4}$/.test(year) || Number(year)<1900 || Number(year)>nowYear))
+        throw new Error(key + ' dòng ' + (i+1) + ': năm không hợp lệ.');
+    });
+  });
+}
+
+function sortYear(data) {
+  const sortable = {workBody:true,projectBody:false,seminarBody:false,textbookBody:false,awardBody:false};
+  const rowData = item => item && item.data ? item.data : (item || {});
+  Object.keys(sortable).forEach(key => {
+    if (!Array.isArray(data[key])) return;
+    const ascending = sortable[key];
+    const stamp = item => {
+      const d=rowData(item);
+      const raw=String(d.start || d.startYear || d.year || d.sortYear || '');
+      return Number(raw.replace(/-/g,'').slice(0,8)) || 0;
+    };
+    data[key].sort((a,b)=>ascending ? stamp(a)-stamp(b) : stamp(b)-stamp(a));
+  });
+  return data;
+}
+
 function validateTableDates_(data) {
   const tz = Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
   const now = new Date();
@@ -532,6 +610,7 @@ function saveTables(data, token) {
     throw new Error('Các mục hồ sơ không hợp lệ.');
   }
   validateTableDates_(data);
+  validateStage1Tables_(data);
 
   const allowed = [
     'teachingBody','researchBody','credentialBody','languageBody','workBody',
@@ -540,6 +619,7 @@ function saveTables(data, token) {
   const clean = {};
   allowed.forEach(k => { if (Array.isArray(data[k])) clean[k] = data[k]; });
 
+  sortYear(clean);
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
