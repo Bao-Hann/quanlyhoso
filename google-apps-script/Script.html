@@ -851,6 +851,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const removeEmpty = body => body?.querySelector('.empty-row')?.remove();
 
+  // Show dates consistently; ISO values continue to be used in storage.
+  const displayDate = raw => {
+    const m=String(raw||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m ? m[3]+'/'+m[2]+'/'+m[1].slice(-2) : String(raw||'');
+  };
+  const refreshDateDisplays=(scope=document)=>{
+    const root=scope.nodeType===1&&scope.tagName==='TBODY'?scope:scope;
+    root.querySelectorAll('tr:not(.empty-row)').forEach(row=>{
+      const bodyId=row.parentElement?.id;
+      if(bodyId==='workBody'){
+        if(row.cells[1])row.cells[1].textContent=displayDate(row.dataset.start);
+        if(row.cells[2])row.cells[2].textContent=row.dataset.current==='1'?'Hiện tại':displayDate(row.dataset.end);
+      }
+      if(bodyId==='projectBody'){
+        if(row.cells[3])row.cells[3].textContent=displayDate(row.dataset.startYear);
+        if(row.cells[4])row.cells[4].textContent=displayDate(row.dataset.endYear);
+      }
+    });
+  };
+  // Numeric input length caps, with a way to correct previously completed values.
+  [['person_mobile_phone',10],['person_citizen_id',12]].forEach(([name,limit])=>{
+    const el=document.querySelector('#editGeneral [name="'+name+'"]');
+    if(!el)return;
+    el.maxLength=limit;el.inputMode='numeric';
+    el.addEventListener('input',()=>{el.value=el.value.replace(/\D/g,'').slice(0,limit)});
+    el.addEventListener('blur',()=>{if(el.value.length===limit&&!el.disabled)el.readOnly=true});
+    el.addEventListener('focus',()=>{if(!el.disabled)el.readOnly=false});
+  });
+  document.querySelectorAll('input[type="date"]').forEach(el=>{
+    el.setAttribute('lang','en-GB');
+    el.title='Ngày/tháng/năm (dd/mm/yy)';
+  });
+
   const nowForLimits = new Date();
   const currentYear = nowForLimits.getFullYear();
   const currentMonth = nowForLimits.getMonth() + 1;
@@ -922,7 +955,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortValue = row => {
       const d = row.dataset;
       const raw = d.start || d.startYear || d.year || d.rawYear || d.sortYear || '';
-      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(raw)) return Number(raw.replace(/-/g,''));
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return Number(raw.replace(/-/g,''));
       return Number(String(raw).replace(/-/g,'').slice(0,8)) || 0;
     };
     rows.sort((a,b) => ascending ? sortValue(a)-sortValue(b) : sortValue(b)-sortValue(a));
@@ -1107,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', () => {
       body.appendChild(newRow);
     }
 
-    sortYear(body, true);
+    sortYear(body, false);
     updateCredentialSelectionUi();
 
     credentialForm.reset();
@@ -1234,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupManagedTable('research','researchBody',5,null);
   setupManagedTable('language','languageBody',5,null);
   setupManagedTable('work','workBody',7,null);
-  setupManagedTable('project','projectBody',10,1);
+  setupManagedTable('project','projectBody',9,1);
   setupManagedTable('article','articleBody',9,1);
   setupManagedTable('seminar','seminarBody',8,1);
   setupManagedTable('textbook','textbookBody',8,1);
@@ -1360,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addWork')).show();
     });
     if(editKey){managedRows('workBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
-    sortYear(body,true);
+    sortYear(body,false);refreshDateDisplays(body);
     workForm.reset(); resetEditKey('workForm'); workEndDate.disabled=false;
     document.querySelector('#addWork .modal-title').textContent='Thêm quá trình công tác';
     closeModal(workForm); managedUpdateSelection('work'); toast(editKey?'Đã cập nhật quá trình công tác.':'Đã thêm quá trình công tác.');
@@ -1382,19 +1415,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const body=document.getElementById('projectBody'); removeEmpty(body);
     const editKey=fd.get('edit_key')||'', key=editKey||('project-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
     const row=document.createElement('tr');
-    Object.assign(row.dataset,{key,title:fd.get('title')||'',startYear:fd.get('start_year')||'',endYear:fd.get('end_year')||'',level:fd.get('level')||'',position:fd.get('position')||'',budget:fd.get('budget')||'',budgetUnit:fd.get('budget_unit')||''});
+    Object.assign(row.dataset,{key,title:fd.get('title')||'',startYear:fd.get('start_year')||'',endYear:fd.get('end_year')||'',level:fd.get('level')||'',position:fd.get('position')||'',budget:fd.get('budget')||'',budgetUnit:'VND'});
     row.dataset.sortYear=(row.dataset.startYear||'').replaceAll('-','')||'0';
     row.innerHTML='<td class="text-center"><input class="form-check-input managed-row-check" type="checkbox"></td><td></td>'+
-      '<td>'+escapeHtml(row.dataset.title)+'</td><td>'+escapeHtml(row.dataset.startYear)+'</td><td>'+escapeHtml(row.dataset.endYear)+'</td><td>'+escapeHtml(row.dataset.level)+'</td><td>'+escapeHtml(row.dataset.position)+'</td><td>'+escapeHtml(row.dataset.budget)+'</td><td>'+escapeHtml(row.dataset.budgetUnit)+'</td>'+
+      '<td>'+escapeHtml(row.dataset.title)+'</td><td>'+escapeHtml(row.dataset.startYear)+'</td><td>'+escapeHtml(row.dataset.endYear)+'</td><td>'+escapeHtml(row.dataset.level)+'</td><td>'+escapeHtml(row.dataset.position)+'</td><td>'+escapeHtml(row.dataset.budget)+'</td>'+
       '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
     managedWireRow('project',row,r=>{
       projectForm.elements.edit_key.value=r.dataset.key; projectForm.elements.title.value=r.dataset.title; projectForm.elements.start_year.value=r.dataset.startYear; projectForm.elements.end_year.value=r.dataset.endYear;
-      projectForm.elements.level.value=r.dataset.level; projectForm.elements.position.value=r.dataset.position; projectForm.elements.budget.value=r.dataset.budget; projectForm.elements.budget_unit.value=r.dataset.budgetUnit;
+      projectForm.elements.level.value=r.dataset.level; projectForm.elements.position.value=r.dataset.position; projectForm.elements.budget.value=r.dataset.budget;
       document.querySelector('#addProject .modal-title').textContent='Chỉnh sửa đề tài';
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addProject')).show();
     });
     if(editKey){managedRows('projectBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
-    sortYear(body,false); managedRenumber('projectBody',1);
+    sortYear(body,false); managedRenumber('projectBody',1);refreshDateDisplays(body);
     projectForm.reset(); resetEditKey('projectForm'); document.querySelector('#addProject .modal-title').textContent='Thêm đề tài đang tham gia';
     closeModal(projectForm); managedUpdateSelection('project'); toast(editKey?'Đã cập nhật đề tài.':'Đã thêm đề tài.');
   });
@@ -2054,8 +2087,8 @@ restoredHandlers.set('award', r=>{
   const collectTables = () => Object.fromEntries(profileBodies.map(body => [body.id,
     [...body.querySelectorAll('tr:not(.empty-row)')].map(row => ({data:{...row.dataset},cells:[...row.children].map(cell=>cell.textContent)}))]));
   const sortExistingTables = () => {
-    ['credentialBody','workBody','projectBody','seminarBody','textbookBody','awardBody'].forEach(id => {
-      sortYear(document.getElementById(id), id==='workBody' || id==='credentialBody');
+    ['credentialBody','workBody','projectBody','articleBody','seminarBody','textbookBody','awardBody'].forEach(id => {
+      sortYear(document.getElementById(id), false);
     });
   };
   const restoreTables = snapshot => {
@@ -2087,6 +2120,7 @@ restoredHandlers.set('award', r=>{
       });
     });
     sortExistingTables();
+    refreshDateDisplays();
   };
   let tablesReady=!window.google?.script?.run, tablesLoading=false, saveTimer, saving=false, pending=false;
   const flushTables = () => {
