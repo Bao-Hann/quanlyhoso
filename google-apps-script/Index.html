@@ -255,147 +255,114 @@
                         type="date" name="person_dob" class="form-control general-field compact-date" disabled></div>
                   </div>
                   <div class="col">
-                    <div class="input-group"><span class="input-group-text">Nơi sinh:</span><select name="person_pob"
-                        class="form-select general-field compact-location" disabled>
-                        <option value="">Chọn tỉnh/thành phố</option>
-                        <option value="Hà Nội">Hà Nội</option>
-                        <option value="Huế">Huế</option>
-                        <option value="Hải Phòng">Hải Phòng</option>
-                        <option value="Đà Nẵng">Đà Nẵng</option>
-                        <option value="Cần Thơ">Cần Thơ</option>
-                        <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
-                        <option value="Cao Bằng">Cao Bằng</option>
-                        <option value="Điện Biên">Điện Biên</option>
-                        <option value="Hà Tĩnh">Hà Tĩnh</option>
-                        <option value="Lai Châu">Lai Châu</option>
-                        <option value="Lạng Sơn">Lạng Sơn</option>
-                        <option value="Nghệ An">Nghệ An</option>
-                        <option value="Quảng Ninh">Quảng Ninh</option>
-                        <option value="Thanh Hóa">Thanh Hóa</option>
-                        <option value="Sơn La">Sơn La</option>
-                        <option value="Tuyên Quang">Tuyên Quang</option>
-                        <option value="Lào Cai">Lào Cai</option>
-                        <option value="Thái Nguyên">Thái Nguyên</option>
-                        <option value="Phú Thọ">Phú Thọ</option>
-                        <option value="Bắc Ninh">Bắc Ninh</option>
-                        <option value="Hưng Yên">Hưng Yên</option>
-                        <option value="Ninh Bình">Ninh Bình</option>
-                        <option value="Quảng Trị">Quảng Trị</option>
-                        <option value="Quảng Ngãi">Quảng Ngãi</option>
-                        <option value="Gia Lai">Gia Lai</option>
-                        <option value="Khánh Hòa">Khánh Hòa</option>
-                        <option value="Lâm Đồng">Lâm Đồng</option>
-                        <option value="Đắk Lắk">Đắk Lắk</option>
-                        <option value="Đồng Nai">Đồng Nai</option>
-                        <option value="Tây Ninh">Tây Ninh</option>
-                        <option value="Vĩnh Long">Vĩnh Long</option>
-                        <option value="Đồng Tháp">Đồng Tháp</option>
-                        <option value="Cà Mau">Cà Mau</option>
-                        <option value="An Giang">An Giang</option>
-                      </select></div>
+                    <div class="input-group"><span class="input-group-text">Nơi sinh:</span><input type="text" name="person_pob" class="form-control general-field compact-location"
+                        list="profileProvinceSuggestions" placeholder="Gõ tên tỉnh/thành phố để tìm" autocomplete="off"
+                        aria-label="Nơi sinh" disabled>
+                        <datalist id="profileProvinceSuggestions">
+                          <option value="Hà Nội"></option>
+                          <option value="Huế"></option>
+                          <option value="Hải Phòng"></option>
+                          <option value="Đà Nẵng"></option>
+                          <option value="Cần Thơ"></option>
+                          <option value="Thành phố Hồ Chí Minh"></option>
+                          <option value="Cao Bằng"></option>
+                          <option value="Điện Biên"></option>
+                          <option value="Hà Tĩnh"></option>
+                          <option value="Lai Châu"></option>
+                          <option value="Lạng Sơn"></option>
+                          <option value="Nghệ An"></option>
+                          <option value="Quảng Ninh"></option>
+                          <option value="Thanh Hóa"></option>
+                          <option value="Sơn La"></option>
+                          <option value="Tuyên Quang"></option>
+                          <option value="Lào Cai"></option>
+                          <option value="Thái Nguyên"></option>
+                          <option value="Phú Thọ"></option>
+                          <option value="Bắc Ninh"></option>
+                          <option value="Hưng Yên"></option>
+                          <option value="Ninh Bình"></option>
+                          <option value="Quảng Trị"></option>
+                          <option value="Quảng Ngãi"></option>
+                          <option value="Gia Lai"></option>
+                          <option value="Khánh Hòa"></option>
+                          <option value="Lâm Đồng"></option>
+                          <option value="Đắk Lắk"></option>
+                          <option value="Đồng Nai"></option>
+                          <option value="Tây Ninh"></option>
+                          <option value="Vĩnh Long"></option>
+                          <option value="Đồng Tháp"></option>
+                          <option value="Cà Mau"></option>
+                          <option value="An Giang"></option>
+                        </datalist></div>
                   </div>
                 </div>
 
                 <div class="row mb-3">
                   <div class="col">
-                    <div class="input-group"><span class="input-group-text">Quê quán:</span><select
-                        name="person_hometown" class="form-select general-field compact-location" disabled>
-                        <option value="">Chọn tỉnh/thành phố</option>
-                        <option value="Hà Nội">Hà Nội</option>
-                        <option value="Huế">Huế</option>
-                        <option value="Hải Phòng">Hải Phòng</option>
-                        <option value="Đà Nẵng">Đà Nẵng</option>
-                        <option value="Cần Thơ">Cần Thơ</option>
-                        <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
-                        <option value="Cao Bằng">Cao Bằng</option>
-                        <option value="Điện Biên">Điện Biên</option>
-                        <option value="Hà Tĩnh">Hà Tĩnh</option>
-                        <option value="Lai Châu">Lai Châu</option>
-                        <option value="Lạng Sơn">Lạng Sơn</option>
-                        <option value="Nghệ An">Nghệ An</option>
-                        <option value="Quảng Ninh">Quảng Ninh</option>
-                        <option value="Thanh Hóa">Thanh Hóa</option>
-                        <option value="Sơn La">Sơn La</option>
-                        <option value="Tuyên Quang">Tuyên Quang</option>
-                        <option value="Lào Cai">Lào Cai</option>
-                        <option value="Thái Nguyên">Thái Nguyên</option>
-                        <option value="Phú Thọ">Phú Thọ</option>
-                        <option value="Bắc Ninh">Bắc Ninh</option>
-                        <option value="Hưng Yên">Hưng Yên</option>
-                        <option value="Ninh Bình">Ninh Bình</option>
-                        <option value="Quảng Trị">Quảng Trị</option>
-                        <option value="Quảng Ngãi">Quảng Ngãi</option>
-                        <option value="Gia Lai">Gia Lai</option>
-                        <option value="Khánh Hòa">Khánh Hòa</option>
-                        <option value="Lâm Đồng">Lâm Đồng</option>
-                        <option value="Đắk Lắk">Đắk Lắk</option>
-                        <option value="Đồng Nai">Đồng Nai</option>
-                        <option value="Tây Ninh">Tây Ninh</option>
-                        <option value="Vĩnh Long">Vĩnh Long</option>
-                        <option value="Đồng Tháp">Đồng Tháp</option>
-                        <option value="Cà Mau">Cà Mau</option>
-                        <option value="An Giang">An Giang</option>
-                      </select></div>
+                    <div class="input-group"><span class="input-group-text">Quê quán:</span><input type="text" name="person_hometown" class="form-control general-field compact-location"
+                        list="profileProvinceSuggestions" placeholder="Gõ tên tỉnh/thành phố để tìm" autocomplete="off"
+                        aria-label="Quê quán" disabled></div>
                   </div>
                   <div class="col">
-                    <div class="input-group"><span class="input-group-text">Dân tộc:</span><select
-                        name="person_ethnicity" class="form-select general-field compact-ethnicity" disabled>
-                        <option value="">Chọn dân tộc</option>
-                        <option value="Kinh">Kinh (đa số)</option>
-                        <option value="Tày">Tày</option>
-                        <option value="Thái">Thái</option>
-                        <option value="Hoa">Hoa</option>
-                        <option value="Khmer">Khmer</option>
-                        <option value="Mường">Mường</option>
-                        <option value="Nùng">Nùng</option>
-                        <option value="Mông">Mông</option>
-                        <option value="Dao">Dao</option>
-                        <option value="Gia Rai">Gia Rai</option>
-                        <option value="Ê Đê">Ê Đê</option>
-                        <option value="Ba Na">Ba Na</option>
-                        <option value="Sán Chay">Sán Chay</option>
-                        <option value="Chăm">Chăm</option>
-                        <option value="Cơ Ho">Cơ Ho</option>
-                        <option value="Xơ Đăng">Xơ Đăng</option>
-                        <option value="Sán Dìu">Sán Dìu</option>
-                        <option value="Hrê">Hrê</option>
-                        <option value="Ra Glai">Ra Glai</option>
-                        <option value="M'Nông">M'Nông</option>
-                        <option value="Thổ">Thổ</option>
-                        <option value="Xtiêng">Xtiêng</option>
-                        <option value="Khơ Mú">Khơ Mú</option>
-                        <option value="Bru - Vân Kiều">Bru - Vân Kiều</option>
-                        <option value="Cơ Tu">Cơ Tu</option>
-                        <option value="Giáy">Giáy</option>
-                        <option value="Tà Ôi">Tà Ôi</option>
-                        <option value="Mạ">Mạ</option>
-                        <option value="Giẻ Triêng">Giẻ Triêng</option>
-                        <option value="Co">Co</option>
-                        <option value="Chơ Ro">Chơ Ro</option>
-                        <option value="Xinh Mun">Xinh Mun</option>
-                        <option value="Hà Nhì">Hà Nhì</option>
-                        <option value="Chu Ru">Chu Ru</option>
-                        <option value="Lào">Lào</option>
-                        <option value="La Chí">La Chí</option>
-                        <option value="Kháng">Kháng</option>
-                        <option value="Phù Lá">Phù Lá</option>
-                        <option value="La Hủ">La Hủ</option>
-                        <option value="La Ha">La Ha</option>
-                        <option value="Pà Thẻn">Pà Thẻn</option>
-                        <option value="Chứt">Chứt</option>
-                        <option value="Lự">Lự</option>
-                        <option value="Lô Lô">Lô Lô</option>
-                        <option value="Mảng">Mảng</option>
-                        <option value="Cờ Lao">Cờ Lao</option>
-                        <option value="Bố Y">Bố Y</option>
-                        <option value="Cống">Cống</option>
-                        <option value="Ngái">Ngái</option>
-                        <option value="Si La">Si La</option>
-                        <option value="Pu Péo">Pu Péo</option>
-                        <option value="Rơ Măm">Rơ Măm</option>
-                        <option value="Brâu">Brâu</option>
-                        <option value="Ơ Đu">Ơ Đu</option>
-                      </select></div>
+                    <div class="input-group"><span class="input-group-text">Dân tộc:</span><input type="text" name="person_ethnicity" class="form-control general-field compact-ethnicity"
+                        list="profileEthnicitySuggestions" placeholder="Gõ dân tộc để tìm" autocomplete="off"
+                        aria-label="Dân tộc" disabled>
+                        <datalist id="profileEthnicitySuggestions">
+                          <option value="Kinh" label="Kinh (đa số)"></option>
+                          <option value="Tày"></option>
+                          <option value="Thái"></option>
+                          <option value="Hoa"></option>
+                          <option value="Khmer"></option>
+                          <option value="Mường"></option>
+                          <option value="Nùng"></option>
+                          <option value="Mông"></option>
+                          <option value="Dao"></option>
+                          <option value="Gia Rai"></option>
+                          <option value="Ê Đê"></option>
+                          <option value="Ba Na"></option>
+                          <option value="Sán Chay"></option>
+                          <option value="Chăm"></option>
+                          <option value="Cơ Ho"></option>
+                          <option value="Xơ Đăng"></option>
+                          <option value="Sán Dìu"></option>
+                          <option value="Hrê"></option>
+                          <option value="Ra Glai"></option>
+                          <option value="M'Nông"></option>
+                          <option value="Thổ"></option>
+                          <option value="Xtiêng"></option>
+                          <option value="Khơ Mú"></option>
+                          <option value="Bru - Vân Kiều"></option>
+                          <option value="Cơ Tu"></option>
+                          <option value="Giáy"></option>
+                          <option value="Tà Ôi"></option>
+                          <option value="Mạ"></option>
+                          <option value="Giẻ Triêng"></option>
+                          <option value="Co"></option>
+                          <option value="Chơ Ro"></option>
+                          <option value="Xinh Mun"></option>
+                          <option value="Hà Nhì"></option>
+                          <option value="Chu Ru"></option>
+                          <option value="Lào"></option>
+                          <option value="La Chí"></option>
+                          <option value="Kháng"></option>
+                          <option value="Phù Lá"></option>
+                          <option value="La Hủ"></option>
+                          <option value="La Ha"></option>
+                          <option value="Pà Thẻn"></option>
+                          <option value="Chứt"></option>
+                          <option value="Lự"></option>
+                          <option value="Lô Lô"></option>
+                          <option value="Mảng"></option>
+                          <option value="Cờ Lao"></option>
+                          <option value="Bố Y"></option>
+                          <option value="Cống"></option>
+                          <option value="Ngái"></option>
+                          <option value="Si La"></option>
+                          <option value="Pu Péo"></option>
+                          <option value="Rơ Măm"></option>
+                          <option value="Brâu"></option>
+                          <option value="Ơ Đu"></option>
+                        </datalist></div>
                   </div>
                 </div>
 
