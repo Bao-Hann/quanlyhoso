@@ -1431,7 +1431,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addProject')).show();
     });
     if(editKey){managedRows('projectBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
-    sortRowsByNumericColumn(body,3); managedRenumber('projectBody',1);
+    sortYear(body,false); managedRenumber('projectBody',1);
     projectForm.reset(); resetEditKey('projectForm'); document.querySelector('#addProject .modal-title').textContent='Thêm đề tài đang tham gia';
     closeModal(projectForm); managedUpdateSelection('project'); toast(editKey?'Đã cập nhật đề tài.':'Đã thêm đề tài.');
   });
@@ -1614,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addSeminar')).show();
     });
     if(editKey){managedRows('seminarBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
-    sortRowsByNumericColumn(body,3); managedRenumber('seminarBody',1);
+    sortYear(body,false); managedRenumber('seminarBody',1);
     seminarForm.reset(); resetEditKey('seminarForm'); document.querySelector('#addSeminar .modal-title').textContent='Thêm công bố khoa học';
     closeModal(seminarForm); managedUpdateSelection('seminar'); toast(editKey?'Đã cập nhật Seminar - Hội thảo.':'Đã thêm Seminar - Hội thảo.');
   });
@@ -1639,7 +1639,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addTextbook')).show();
     });
     if(editKey){managedRows('textbookBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
-    sortRowsByNumericColumn(body,3); managedRenumber('textbookBody',1);
+    sortYear(body,false); managedRenumber('textbookBody',1);
     textbookForm.reset(); resetEditKey('textbookForm'); document.querySelector('#addTextbook .modal-title').textContent='Thêm sách giáo trình';
     closeModal(textbookForm); managedUpdateSelection('textbook'); toast(editKey?'Đã cập nhật sách giáo trình.':'Đã thêm sách giáo trình.');
   });
@@ -1663,7 +1663,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addAward')).show();
     });
     if(editKey){managedRows('awardBody').find(r=>r.dataset.key===editKey)?.replaceWith(row);} else body.appendChild(row);
-    sortRowsByNumericColumn(body,5); managedRenumber('awardBody',1);
+    sortYear(body,false); managedRenumber('awardBody',1);
     awardForm.reset(); resetEditKey('awardForm'); document.querySelector('#addAward .modal-title').textContent='Thêm giải thưởng';
     closeModal(awardForm); managedUpdateSelection('award'); toast(editKey?'Đã cập nhật giải thưởng.':'Đã thêm giải thưởng.');
   });
