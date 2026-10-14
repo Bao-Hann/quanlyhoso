@@ -2662,4 +2662,118 @@ body[data-theme="tiktok"] .dropdown-menu{
 #exportPreview .ministry-document td{background:#fff;}
 
 #exportPreview .ministry-leader{background-image:radial-gradient(circle,#000 0.7px,transparent 0.85px);background-size:4px 2px;background-repeat:repeat-x;background-position:left bottom;}
+/* ===== 1. Khóa cố định từng khung chức năng (Frame Navigation) ===== */
+main > section,
+.app-panel-frame {
+  display: none !important;
+  width: 100%;
+  padding-bottom: 80px;
+}
+main > section.active,
+.app-panel-frame.active {
+  display: block !important;
+}
+
+/* ===== 2. CV Export 2-Column Layout (Ảnh 1) ===== */
+.cv-export-layout {
+  min-height: calc(100vh - 120px);
+}
+.cv-config-card {
+  background: var(--theme-surface, #fff);
+  border: 1px solid var(--theme-border, #dee2e6);
+  border-radius: 12px;
+}
+.cv-config-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.cv-extra-box {
+  background: rgba(13, 110, 253, 0.04);
+  border: 1px solid rgba(13, 110, 253, 0.18);
+  border-radius: 10px;
+}
+.cv-extra-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.cv-preview-card {
+  background: var(--theme-surface, #fff);
+  border: 1px solid var(--theme-border, #dee2e6);
+  border-radius: 12px;
+  min-height: 720px;
+}
+.cv-preview-viewport {
+  flex: 1;
+  background: #525659;
+  border-radius: 8px;
+  overflow: auto;
+  padding: 24px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  max-height: 82vh;
+}
+.cv-preview-scale-wrapper {
+  transition: transform 0.2s ease;
+  transform-origin: top center;
+}
+.cv-a4-paper-sheet {
+  background: #fff;
+  width: 794px;
+  min-height: 1123px;
+  padding: 54px 58px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  font-family: "Times New Roman", Times, serif;
+  color: #000;
+  box-sizing: border-box;
+}
+
+/* Keep ministry paper independent of application themes */
+#cvPreviewPaperSheet .ministry-document,
+#cvPreviewPaperSheet .ministry-document * {
+  font-family: "Times New Roman", Times, serif !important;
+  color: #000 !important;
+  letter-spacing: normal !important;
+}
+#cvPreviewPaperSheet .ministry-document {
+  width: 638px;
+  min-width: 638px;
+  background: #fff;
+}
+#cvPreviewPaperSheet .ministry-document p {
+  padding: 0;
+  text-indent: 0;
+}
+#cvPreviewPaperSheet .ministry-document td {
+  background: #fff;
+}
+#cvPreviewPaperSheet .ministry-leader {
+  background-image: radial-gradient(circle, #000 0.7px, transparent 0.85px);
+  background-size: 4px 2px;
+  background-repeat: repeat-x;
+  background-position: left bottom;
+}
+
+/* ===== 3. Crossref Article Link (Ảnh 2) ===== */
+.crossref-article-link {
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.crossref-article-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== 4. Auto-extract Dropzone ===== */
+.dropzone-area {
+  border-color: #0d6efd !important;
+  background-color: rgba(13, 110, 253, 0.02);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.dropzone-area:hover,
+.dropzone-area.dragover {
+  background-color: rgba(13, 110, 253, 0.08);
+  border-color: #0a58ca !important;
+}
 </style>
