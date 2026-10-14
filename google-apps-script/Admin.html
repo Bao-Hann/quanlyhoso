@@ -104,6 +104,7 @@ if(bootstrapSession&&bootstrapSession.token){try{sessionStorage.setItem('scienti
 let token=bootstrapSession&&bootstrapSession.token||'';
 if(!token){try{const old=JSON.parse(sessionStorage.getItem('scientist-local-session')||'null');token=old&&old.token||''}catch(_){}}
 const $=id=>document.getElementById(id);
+const fmtShortDate=d=>{const x=new Date(d);return Number.isNaN(x.getTime())?'':String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+String(x.getFullYear()).slice(-2)};
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const values={users:[],statistics:null,serverScores:null,selected:new Set(),activeChart:null,charts:{},requestId:0,loading:false};
@@ -221,7 +222,7 @@ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
 const a=document.createElement('a');a.href=url;a.download='de-xuat-hop-tac-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function exportPrint(){if(!allowedExport())return;const report=exportRows();
 $('printArea').innerHTML='<h1>DANH SÁCH ĐỀ XUẤT HỢP TÁC HỌC THUẬT</h1>'+
-'<p>Ngày lập: '+esc(new Date().toLocaleDateString('vi-VN'))+' · Tổng số chuyên gia: '+report.rows.length+'</p>'+
+'<p>Ngày lập: '+esc(fmtShortDate(new Date()))+' · Tổng số chuyên gia: '+report.rows.length+'</p>'+
 '<table><thead><tr>'+report.cols.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+
 report.rows.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+
 '</tbody></table><div class="report-footer">Danh sách đề xuất phục vụ liên hệ hợp tác. Cần kiểm tra hồ sơ, tiêu chuẩn cụ thể và sự đồng ý của giảng viên trước khi gửi đối tác.</div>';
@@ -231,7 +232,7 @@ $('reload').disabled=true;$('adminStatus').textContent='Đang tải hồ sơ và
 try{const pair=await Promise.all([call('getAdminDashboard',[token]),call('getAdminStage2Statistics',[token])]);
 const detailed=pair[0],stat=pair[1];values.users=(detailed.users||[]).map(u=>Object.assign({},u,{email:String(u.email||'').toLowerCase()}));
 values.statistics=stat;
-$('adminStatus').textContent='Admin: '+(detailed.admin?.name||detailed.admin?.email||'')+' · '+new Date().toLocaleString('vi-VN');
+$('adminStatus').textContent='Admin: '+(detailed.admin?.name||detailed.admin?.email||'')+' · '+fmtShortDate(new Date());
 if(detailed.storageError||stat.storageError||bootstrapStorageWarning)note('Cảnh báo kho dữ liệu: '+(detailed.storageError||stat.storageError||bootstrapStorageWarning),false);
 else $('messages').innerHTML='';
 renderKpis(stat);buildCharts(stat);await renderSearch();renderShortlist();
