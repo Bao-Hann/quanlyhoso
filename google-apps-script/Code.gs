@@ -78,7 +78,8 @@ function renderLogin_(message) {
 }
 
 function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  var content = HtmlService.createHtmlOutputFromFile(filename).getContent();
+  return content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
 
 function getWebAppUrl() {
