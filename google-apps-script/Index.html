@@ -399,20 +399,6 @@
                   </div>
                 </div>
 
-                <div class="border rounded-3 p-3 mb-4" id="academicExpertiseBlock">
-                  <h4 class="h5 mb-3">Lĩnh vực chuyên môn và giảng dạy</h4>
-                  <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label" for="personLecturerGrade">Ngạch giảng viên</label>
-                      <select id="personLecturerGrade" name="person_lecturer_grade" class="form-select general-field" disabled>
-                        <option value="">Chưa khai báo / không áp dụng</option><option value="TG">Trợ giảng</option>
-                        <option value="GV">Giảng viên</option><option value="GVC">Giảng viên chính</option>
-                        <option value="GVCC">Giảng viên cao cấp</option></select></div>
-                    <div class="col-md-6"><label class="form-label" for="personMajor">Chuyên ngành / lĩnh vực chính *</label>
-                      <input id="personMajor" name="person_major" maxlength="200" class="form-control general-field" required disabled></div>
-                    <div class="col-12"><label class="form-label" for="personTeachingSubjects">Môn học / học phần sở trường</label>
-                      <textarea id="personTeachingSubjects" name="person_teaching_subjects" rows="2" maxlength="1000" class="form-control general-field" placeholder="Ngăn cách bằng dấu phẩy" disabled></textarea></div>
-                  </div>
-                </div>
                 <div class="row mb-3">
                   <div class="input-group"><span class="input-group-text">Chức vụ (Hiện tại hoặc trước khi nghỉ
                       hưu):</span><input type="text" name="person_position"
@@ -624,33 +610,6 @@
             </ul>
             <div class="tab-content table-wrapper">
               <div class="tab-pane fade show active" id="degree">
-                <div class="border rounded-3 p-3 mb-4" id="academicProfileBlock">
-                  <div class="d-flex justify-content-between flex-wrap align-items-center gap-2 mb-3">
-                    <h4 class="h5 mb-0">Học hàm, học vị cao nhất</h4>
-                    <div class="d-flex gap-2">
-                      <button type="button" class="btn btn-outline-primary btn-sm" id="editAcademicBtn">Chỉnh sửa</button>
-                      <button type="button" class="btn btn-primary btn-sm" id="saveAcademicBtn" style="display:none">Lưu học hàm, học vị</button>
-                    </div>
-                  </div>
-                  <div class="mb-3"><strong id="academicTitlePreview" aria-live="polite">Danh xưng học thuật</strong></div>
-                  <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label" for="personAcademicDegree">Học vị cao nhất *</label>
-                      <select id="personAcademicDegree" name="person_academic_degree" class="form-select general-field academic-field" required disabled>
-                        <option value="">Chọn học vị</option><option value="CN">Cử nhân (CN)</option><option value="KS">Kỹ sư (KS)</option>
-                        <option value="BS">Bác sĩ (BS)</option><option value="ThS">Thạc sĩ (ThS)</option>
-                        <option value="TS">Tiến sĩ (TS)</option><option value="TSKH">Tiến sĩ khoa học (TSKH)</option>
-                      </select></div>
-                    <div class="col-md-6"><label class="form-label" for="personDegreeYear">Năm nhận bằng cao nhất *</label>
-                      <input id="personDegreeYear" name="person_degree_year" type="number" min="1900" max="2100" class="form-control general-field academic-field" required disabled></div>
-                    <div class="col-md-6"><label class="form-label" for="personAcademicRank">Học hàm / chức danh khoa học</label>
-                      <select id="personAcademicRank" name="person_academic_rank" class="form-select general-field academic-field" disabled>
-                        <option value="">Không có</option><option value="PGS">Phó Giáo sư (PGS)</option><option value="GS">Giáo sư (GS)</option>
-                      </select><small id="academicRankHelp" class="text-muted">Chỉ chọn PGS/GS nếu có bằng tiến sĩ.</small></div>
-                    <div class="col-md-6"><label class="form-label" for="personRankYear">Năm bổ nhiệm PGS/GS</label>
-                      <input id="personRankYear" name="person_rank_year" type="number" min="1900" max="2100" class="form-control general-field academic-field" disabled></div>
-                  </div>
-                  <p class="small text-muted mb-0 mt-3">Đây là học hàm, học vị hiện tại dùng để tìm kiếm và đề xuất giảng viên. Lịch sử các văn bằng và quyết định bổ nhiệm được khai báo trong bảng bên dưới.</p>
-                </div>
                 <table class="table table-hover" id="credentialTable">
                   <thead class="align-middle table-light">
                     <tr class="text-center">
