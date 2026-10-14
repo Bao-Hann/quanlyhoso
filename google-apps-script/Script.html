@@ -540,62 +540,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
 
-  // Chặng 1: xử lý chuẩn học hàm/học vị và xem trước danh xưng.
-  const formatAcademicTitle = (name, degree, rank) => {
-    const n = String(name || '').trim();
-    const d = ['CN','KS','BS','ThS','TS','TSKH'].includes(degree) ? degree : '';
-    const r = ['TS','TSKH'].includes(d) && ['PGS','GS'].includes(rank) ? rank : '';
-    return [r, d].filter(Boolean).join('.') + (r || d ? '. ' : '') + n;
-  };
-  window.formatAcademicTitle = formatAcademicTitle;
-  const academicDegree = document.getElementById('personAcademicDegree');
-  const academicRank = document.getElementById('personAcademicRank');
-  const academicRankYear = document.getElementById('personRankYear');
-  let academicEditing = false;
-  const updateAcademicFields = () => {
-    if (!academicDegree || !academicRank || !academicRankYear) return;
-    const eligible = ['TS','TSKH'].includes(academicDegree.value);
-    if (!eligible) { academicRank.value=''; academicRankYear.value=''; }
-    academicRank.disabled = !academicEditing || !eligible;
-    academicRankYear.disabled = !academicEditing || !eligible || !academicRank.value;
-    academicRankYear.required = academicEditing && eligible && Boolean(academicRank.value);
-    const title = document.getElementById('academicTitlePreview');
-    if (title) title.textContent = formatAcademicTitle(document.querySelector('[name="person_name"]')?.value, academicDegree.value, academicRank.value) || 'Chưa có danh xưng';
-  };
-  academicDegree?.addEventListener('change', updateAcademicFields);
-  academicRank?.addEventListener('change', () => {
-    if (!academicRank.value) academicRankYear.value = '';
-    updateAcademicFields();
-  });
-  document.querySelector('[name="person_name"]')?.addEventListener('input', updateAcademicFields);
-  const validateAcademicGeneral = data => {
-    const now = new Date(), currentYear = now.getFullYear();
-    if (!String(data.person_name || '').trim()) return 'Vui lòng nhập họ và tên.';
-    if (!['CN','KS','BS','ThS','TS','TSKH'].includes(data.person_academic_degree)) return 'Vui lòng chọn học vị cao nhất.';
-    if (!/^\d{4}$/.test(data.person_degree_year || '') || +data.person_degree_year > currentYear || +data.person_degree_year < 1900) return 'Năm nhận bằng không hợp lệ.';
-    if (!String(data.person_major || '').trim()) return 'Vui lòng nhập chuyên ngành/lĩnh vực chính.';
-    if (data.person_academic_rank && !['TS','TSKH'].includes(data.person_academic_degree)) return 'PGS/GS yêu cầu bằng tiến sĩ.';
-    if (data.person_academic_rank && !['PGS','GS'].includes(data.person_academic_rank)) return 'Học hàm không hợp lệ.';
-    if (data.person_academic_rank && (!/^\d{4}$/.test(data.person_rank_year || '') || +data.person_rank_year < +data.person_degree_year || +data.person_rank_year > currentYear)) return 'Năm bổ nhiệm phải từ năm nhận bằng tiến sĩ đến năm hiện tại.';
-    if (data.person_lecturer_grade && !['TG','GV','GVC','GVCC'].includes(data.person_lecturer_grade)) return 'Ngạch giảng viên không hợp lệ.';
-    if (!data.person_dob || !/^\d{4}-\d{2}-\d{2}$/.test(data.person_dob)) return 'Vui lòng nhập ngày sinh hợp lệ.';
-    const dob = new Date(data.person_dob+'T00:00:00');
-    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0,10)!==data.person_dob) return 'Ngày sinh không tồn tại.';
-    let age = currentYear - dob.getFullYear();
-    if (now.getMonth() < dob.getMonth() || (now.getMonth()===dob.getMonth() && now.getDate()<dob.getDate())) age--;
-    if (age < 22) return 'Người kê khai phải đủ 22 tuổi.';
-    return '';
-  };
-
   const editBtn = document.getElementById('editGeneralBtn');
   const saveBtn = document.getElementById('saveGeneralBtn');
   const fields = document.querySelectorAll('.general-field');
   const generalFields = document.querySelectorAll('#general .general-field');
-  const academicFields = document.querySelectorAll('#academicProfileBlock .academic-field');
-  const academicEditBtn = document.getElementById('editAcademicBtn');
-  const academicSaveBtn = document.getElementById('saveAcademicBtn');
-  const preferenceFields = document.querySelectorAll('.preference[name]');
-
   const enableGeneralEditing = () => {
     generalFields.forEach(el => el.disabled = false);
     if (editBtn) {
@@ -608,15 +556,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const enableAcademicEditing = () => {
-    academicEditing = true;
-    academicFields.forEach(el => el.disabled = false);
-    updateAcademicFields();
-    if (academicEditBtn) academicEditBtn.style.display = 'none';
-    if (academicSaveBtn) academicSaveBtn.style.display = 'inline-block';
-  };
-  academicEditBtn?.addEventListener('click', enableAcademicEditing);
-  academicSaveBtn?.addEventListener('click', () => generalForm?.requestSubmit());
   if (editBtn) editBtn.addEventListener('click', enableGeneralEditing);
   document.addEventListener('click', event => {
     if (event.target.closest('#editGeneralBtn')) enableGeneralEditing();
@@ -654,7 +593,6 @@ document.addEventListener('DOMContentLoaded', () => {
       el.checked = String((data || {})[el.name] || '0') === '1';
     });
     syncAccountIdentity();
-    updateAcademicFields();
   };
 
   const readPreferences = () => Object.fromEntries(
@@ -672,7 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
       google.script.run
         .withSuccessHandler(() => {
           preferenceFields.forEach(el => el.disabled = false);
-          toast('Đã lưu mong muốn của bạn.');
+          // Auto-save silently.
         })
         .withFailureHandler(err => {
           preferenceFields.forEach(el => el.disabled = false);
@@ -683,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const current = JSON.parse(localStorage.getItem(generalKey) || '{}');
         localStorage.setItem(generalKey, JSON.stringify({...current, ...payload}));
-        toast('Đã lưu mong muốn của bạn.');
+        // Auto-save silently.
       } catch (err) {
         toast('Không lưu được thông tin bổ sung.', 'danger');
       }
@@ -720,8 +658,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!generalForm.reportValidity()) return;
 
     const data = readGeneral();
-    const academicError = validateAcademicGeneral(data);
-    if (academicError) { toast(academicError, 'warning'); return; }
     if (data.person_dob && data.person_dob >= todayYmd) {
       toast('Ngày sinh phải trước ngày hiện tại.', 'warning'); return;
     }
@@ -738,10 +674,6 @@ document.addEventListener('DOMContentLoaded', () => {
       writeLocalGeneral(persisted);
       applyGeneral(persisted);
       fields.forEach(el => el.disabled = true);
-      academicEditing = false;
-      updateAcademicFields();
-      if (academicEditBtn) academicEditBtn.style.display = '';
-      if (academicSaveBtn) academicSaveBtn.style.display = 'none';
       editBtn.style.display = '';
       saveBtn.style.display = 'none';
       saveBtn.disabled = false;
@@ -1107,9 +1039,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fd = new FormData(credentialForm);
     const kind = fd.get('kind');
     const body = document.getElementById('credentialBody');
-    removeEmpty(body);
 
-    let level='', major='', displayYear='', rawYear='', detail='', sortYear=0;
+    let level='', major='', displayYear='', rawYear='', detail='', credentialSortYear=0;
     let studyLevelValue='', institution='', thesis='', unfinished=false;
 
     if (kind === 'title') {
@@ -1121,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       displayYear = rawYear;
-      sortYear = Number(rawYear || 0);
+      credentialSortYear = Number(rawYear || 0);
       detail = 'Học hàm';
     } else {
       level = fd.get('degree_level') || '';
@@ -1138,17 +1069,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       displayYear = unfinished ? 'Chưa tốt nghiệp' : rawYear;
-      sortYear = unfinished ? currentYear + 1 : Number(rawYear || 0);
+      credentialSortYear = unfinished ? currentYear + 1 : Number(rawYear || 0);
       detail = [thesis, institution].filter(Boolean).join(' — ');
     }
 
     const editKey = fd.get('credential_edit_key') || '';
     const data = {
       key: editKey || ('credential-' + Date.now() + '-' + Math.random().toString(36).slice(2,7)),
-      kind, level, major, rawYear, displayYear, detail, sortYear,
+      kind, level, major, rawYear, displayYear, detail, sortYear: credentialSortYear,
       studyLevel:studyLevelValue, institution, thesis, unfinished
     };
 
+    removeEmpty(body);
     const newRow = createCredentialRow(data);
     if (editKey) {
       const oldRow = getCredentialRows().find(row => row.dataset.key === editKey);
