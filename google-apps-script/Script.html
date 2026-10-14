@@ -1079,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .map(row => ({kind:row.dataset.kind,level:row.dataset.level,year:row.dataset.year,unfinished:row.dataset.unfinished}));
     candidate.push({kind,level,year:rawYear,unfinished:unfinished?'1':'0'});
     const doctorateYears = candidate.filter(row => row.kind==='degree' && row.unfinished!=='1' &&
-      /tiến sĩ|phd|ph\\.d|dba|tskh/i.test(row.level))
+      /tiến sĩ|phd|ph\.d|dba|tskh/i.test(row.level))
       .map(row => Number(row.year)).filter(y=>y>=1900);
     const ranks = candidate.filter(row=>row.kind==='title' && /giáo sư/i.test(row.level));
     if (kind==='degree' && !unfinished && (!level || !rawYear)) {
