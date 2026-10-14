@@ -1399,6 +1399,16 @@ document.addEventListener('DOMContentLoaded', () => {
     closeModal(workForm); managedUpdateSelection('work'); toast(editKey?'Đã cập nhật quá trình công tác.':'Đã thêm quá trình công tác.');
   });
 
+  const ensureProjectSelection = (select,value) => {
+    if(!select)return;
+    const v=String(value||'');
+    if(v && ![...select.options].some(option=>option.value===v)){
+      const option=document.createElement('option');
+      option.value=v;option.textContent=v+' (dữ liệu cũ)';
+      select.appendChild(option);
+    }
+    select.value=v;
+  };
   const projectForm = document.getElementById('projectForm');
   if (projectForm) projectForm.addEventListener('submit', e => {
     e.preventDefault();
@@ -1422,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', () => {
       '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary managed-edit-btn me-1"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-sm btn-outline-danger managed-delete-btn"><i class="bi bi-trash"></i></button></td>';
     managedWireRow('project',row,r=>{
       projectForm.elements.edit_key.value=r.dataset.key; projectForm.elements.title.value=r.dataset.title; projectForm.elements.start_year.value=r.dataset.startYear; projectForm.elements.end_year.value=r.dataset.endYear;
-      projectForm.elements.level.value=r.dataset.level; projectForm.elements.position.value=r.dataset.position; projectForm.elements.budget.value=r.dataset.budget;
+      ensureProjectSelection(projectForm.elements.level,r.dataset.level); ensureProjectSelection(projectForm.elements.position,r.dataset.position); projectForm.elements.budget.value=r.dataset.budget;
       document.querySelector('#addProject .modal-title').textContent='Chỉnh sửa đề tài';
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addProject')).show();
     });
@@ -2064,7 +2074,7 @@ restoredHandlers.set('work', r=>{
     });
 restoredHandlers.set('project', r=>{
       projectForm.elements.edit_key.value=r.dataset.key; projectForm.elements.title.value=r.dataset.title; projectForm.elements.start_year.value=r.dataset.startYear; projectForm.elements.end_year.value=r.dataset.endYear;
-      projectForm.elements.level.value=r.dataset.level; projectForm.elements.position.value=r.dataset.position; projectForm.elements.budget.value=r.dataset.budget; projectForm.elements.budget_unit.value=r.dataset.budgetUnit;
+      ensureProjectSelection(projectForm.elements.level,r.dataset.level); ensureProjectSelection(projectForm.elements.position,r.dataset.position); projectForm.elements.budget.value=r.dataset.budget;
       document.querySelector('#addProject .modal-title').textContent='Chỉnh sửa đề tài';
       bootstrap.Modal.getOrCreateInstance(document.getElementById('addProject')).show();
     });
