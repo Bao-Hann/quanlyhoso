@@ -600,35 +600,51 @@ document.addEventListener('DOMContentLoaded', () => {
     [...preferenceFields].map(el => [el.name, el.checked ? '1' : '0'])
   );
 
-  const savePreferenceState = () => {
+  // Optimistic toggle changes: no waiting for a Drive roundtrip before another click.
+  // Serialize network requests and coalesce rapid changes into the latest state.
+  let preferenceTimer = null;
+  let preferenceSaving = false;
+  let preferenceQueued = false;
+  let preferenceRevision = 0;
+  let preferenceSavedRevision = 0;
+  const persistPreferences = () => {
+    if (preferenceSaving) { preferenceQueued = true; return; }
     if (!ownsCurrentSession()) {
       toast('Tài khoản đã thay đổi. Hãy tải lại trang trước khi lưu.', 'danger');
       return;
     }
+    if (!window.google?.script?.run) return;
+    const revision = preferenceRevision;
     const payload = readPreferences();
-    if (window.google?.script?.run) {
-      preferenceFields.forEach(el => el.disabled = true);
-      google.script.run
-        .withSuccessHandler(() => {
-          preferenceFields.forEach(el => el.disabled = false);
-          // Auto-save silently.
-        })
-        .withFailureHandler(err => {
-          preferenceFields.forEach(el => el.disabled = false);
-          toast('Không lưu được thông tin bổ sung: ' + err.message, 'danger');
-        })
-        .savePreferences(payload, authToken);
-    } else {
-      try {
-        const current = JSON.parse(localStorage.getItem(generalKey) || '{}');
-        localStorage.setItem(generalKey, JSON.stringify({...current, ...payload}));
-        // Auto-save silently.
-      } catch (err) {
-        toast('Không lưu được thông tin bổ sung.', 'danger');
-      }
-    }
+    preferenceSaving = true;
+    google.script.run
+      .withSuccessHandler(() => {
+        preferenceSaving = false;
+        preferenceSavedRevision = revision;
+        if (preferenceQueued || preferenceRevision > revision) {
+          preferenceQueued = false;
+          clearTimeout(preferenceTimer);
+          preferenceTimer = setTimeout(persistPreferences, 200);
+        }
+      })
+      .withFailureHandler(err => {
+        preferenceSaving = false;
+        preferenceQueued = false;
+        toast('Không lưu được mong muốn hợp tác: ' + (err?.message || err), 'danger');
+        // Keep the chosen switches and browser copy; user can toggle to retry.
+      })
+      .savePreferences(payload, authToken);
   };
-
+  const savePreferenceState = () => {
+    preferenceRevision++;
+    const payload = readPreferences();
+    try {
+      const current = readLocalGeneral();
+      writeLocalGeneral({...current,...payload});
+    } catch (_) {}
+    clearTimeout(preferenceTimer);
+    preferenceTimer = setTimeout(persistPreferences, 350);
+  };
   preferenceFields.forEach(el => el.addEventListener('change', savePreferenceState));
   // Cho phép Save ngay; không chờ Drive/backend tải xong mới được lưu.
   let generalReady = true;
@@ -645,8 +661,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const remote = result.data || {};
       if (Object.keys(remote).length) {
-        applyGeneral(remote);
-        writeLocalGeneral(remote);
+        const merged = {...remote};
+        if (preferenceRevision > 0) Object.assign(merged, readPreferences());
+        applyGeneral(merged);
+        writeLocalGeneral(merged);
       }
       if (editBtn) editBtn.disabled = false;
     }).withFailureHandler(err => {
@@ -2012,17 +2030,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) { toast('Không xuất được Word: ' + err.message, 'danger'); }
     finally { button.disabled = false; }
   });
-
-  const savedArticleSearch = document.getElementById('savedArticleSearch');
-  if (savedArticleSearch) {
-    savedArticleSearch.addEventListener('input', () => {
-      const keyword = savedArticleSearch.value.trim().toLowerCase();
-      document.querySelectorAll('#articleBody tr:not(.empty-row)').forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(keyword) ? '' : 'none';
-      });
-    });
-  }
 
   const links = [...document.querySelectorAll('.sidebar a[href^="#"]')];
   const sections = links.filter(a => a.getAttribute('href').length > 1).map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
