@@ -409,6 +409,19 @@
                       hưu):</span><input type="text" name="person_work_unit"
                       class="form-control general-field smart-titlecase" disabled></div>
                 </div>
+
+                <div class="row mb-3 g-3">
+                  <div class="col-md-6">
+                    <div class="input-group"><span class="input-group-text">Khoa:</span>
+                      <input type="text" name="person_faculty" class="form-control general-field smart-titlecase" placeholder="Tên khoa trực thuộc" disabled>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="input-group"><span class="input-group-text">Bộ môn:</span>
+                      <input type="text" name="person_department" class="form-control general-field smart-titlecase" placeholder="Bộ môn / tổ chuyên môn" disabled>
+                    </div>
+                  </div>
+                </div>
                 <div class="row mb-3">
                   <div class="input-group"><span class="input-group-text">Chỗ ở riêng hoặc địa chỉ liên
                       lạc:</span><input type="text" name="person_address"
@@ -422,7 +435,7 @@
                       class="form-control general-field compact-phone" disabled>
                     <span class="input-group-text">NR:</span><input type="text" name="person_home_phone"
                       class="form-control general-field compact-phone" disabled>
-                    <span class="input-group-text">DĐ:</span><input type="text" name="person_mobile_phone"
+                    <span class="input-group-text">DĐ:</span><input type="text" name="person_mobile_phone" type="text" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" title="Số di động gồm 10 chữ số"
                       class="form-control general-field compact-phone" disabled>
                   </div>
                 </div>
@@ -440,7 +453,7 @@
 
                 <div class="row mb-3">
                   <div class="input-group">
-                    <span class="input-group-text">CCCD:</span><input type="text" name="person_citizen_id"
+                    <span class="input-group-text">CCCD:</span><input type="text" name="person_citizen_id" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" title="CCCD gồm 12 chữ số"
                       class="form-control general-field compact-id" disabled>
                     <span class="input-group-text">Ngày cấp:</span><input type="date" name="person_date_issue"
                       class="form-control general-field compact-date" disabled>
@@ -723,15 +736,14 @@
                     <th>Ngày bắt đầu</th>
                     <th>Ngày nghiệm thu</th>
                     <th>Đề tài cấp</th>
-                    <th>Chức vụ</th>
-                    <th>Kinh phí</th>
-                    <th>Đơn vị kinh phí</th>
+                    <th>Vai trò nghiên cứu</th>
+                    <th>Kinh phí (VND)</th>
                     <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody id="projectBody">
                   <tr class="empty-row">
-                    <td colspan="10" class="text-center text-muted">Chưa có dữ liệu</td>
+                    <td colspan="9" class="text-center text-muted">Chưa có dữ liệu</td>
                   </tr>
                 </tbody>
               </table>
@@ -1188,7 +1200,7 @@
                 </div>
                 <div class="col-md-6">
                   <div class="input-group mb-2"><span class="input-group-text">Năm tốt nghiệp:</span><input
-                      class="form-control" type="number" name="degree_year" id="degreeYear" min="1900"></div>
+                      class="form-control" type="number" name="degree_year" id="degreeYear" min="1900" max="2100" step="1" inputmode="numeric" placeholder="Nhập năm (VD: 2024)"></div>
                   <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="degreeNotGraduated"
                       name="degree_not_graduated"><label class="form-check-label" for="degreeNotGraduated">Chưa tốt
                       nghiệp</label></div>
@@ -1305,28 +1317,35 @@
             </div>
             <div class="row">
               <div class="col-md-6">
-                <div class="input-group mb-3"><span class="input-group-text">Đề tài cấp:</span><input
-                    class="form-control" name="level"></div>
+                <div class="input-group mb-3"><span class="input-group-text">Đề tài cấp:</span>
+                  <select class="form-select" name="level" required>
+                    <option value="">Chọn cấp đề tài</option>
+                    <option value="Cấp Nhà nước">Cấp Nhà nước / Quốc gia</option>
+                    <option value="Cấp Bộ">Cấp Bộ</option>
+                    <option value="Cấp ngành">Cấp ngành</option>
+                    <option value="Cấp tỉnh/thành phố">Cấp tỉnh / Thành phố</option>
+                    <option value="Cấp Sở">Cấp Sở</option>
+                    <option value="Cấp trường">Cấp trường</option>
+                    <option value="Cấp khoa">Cấp khoa</option>
+                    <option value="Cấp cơ sở">Cấp cơ sở</option>
+                    <option value="Khác">Khác</option>
+                  </select></div>
               </div>
               <div class="col-md-6">
-                <div class="input-group mb-3"><span class="input-group-text">Chức vụ:</span><input class="form-control"
-                    name="position"></div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-7">
-                <div class="input-group mb-3"><span class="input-group-text">Kinh phí:</span><input class="form-control"
-                    name="budget" inputmode="decimal"></div>
-              </div>
-              <div class="col-md-5">
-                <div class="input-group mb-3"><span class="input-group-text">Đơn vị kinh phí:</span><select
-                    class="form-select" name="budget_unit">
-                    <option value="triệu VND">triệu VND</option>
-                    <option value="VND">VND</option>
-                    <option value="USD">USD</option>
+                <div class="input-group mb-3"><span class="input-group-text">Vai trò:</span>
+                  <select class="form-select" name="position" required>
+                    <option value="">Chọn vai trò đảm nhiệm</option>
+                    <option value="Chủ nhiệm">Chủ nhiệm</option>
+                    <option value="Đồng chủ nhiệm">Đồng chủ nhiệm</option>
+                    <option value="Thành viên">Thành viên</option>
+                    <option value="Thành viên chính">Thành viên chính</option>
+                    <option value="Thư ký khoa học">Thư ký khoa học</option>
+                    <option value="Khác">Khác</option>
                   </select></div>
               </div>
             </div>
+            <div class="input-group mb-3"><span class="input-group-text">Kinh phí (VND):</span>
+              <input class="form-control" name="budget" inputmode="decimal" placeholder="Nhập số tiền (nếu có)"></div>
           </div>
           <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
         </form>
@@ -1583,7 +1602,7 @@
             </select>
             <input class="form-control mb-3" name="name" id="awardName" placeholder="Tên giải thưởng" required>
             <input class="form-control mb-3" name="organization" id="awardOrg" placeholder="Nơi cấp">
-            <input class="form-control mb-3" type="number" name="year" id="awardYear" placeholder="Năm cấp">
+            <input class="form-control mb-3" type="number" name="year" id="awardYear" min="1900" max="2100" step="1" inputmode="numeric" placeholder="Nhập năm (VD: 2024)">
             <textarea class="form-control" name="description" placeholder="Mô tả"></textarea>
           </div>
           <div class="modal-footer"><button class="btn btn-primary">Add</button></div>
