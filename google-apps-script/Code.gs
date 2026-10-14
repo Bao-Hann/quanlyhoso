@@ -489,6 +489,7 @@ function saveGeneral(data, token) {
     doc.meta.lastSeen = new Date().toISOString();
     doc.tables = doc.tables || {};
     storageResult = writeUserDoc_(doc) || storageResult;
+    stage2AutoSync_(doc);
   } finally {
     lock.releaseLock();
   }
@@ -666,6 +667,7 @@ function saveTables(data, token) {
     doc.meta = doc.meta || {};
     doc.meta.lastSeen = new Date().toISOString();
     writeUserDoc_(doc);
+    stage2AutoSync_(doc);
   } finally {
     lock.releaseLock();
   }
@@ -851,6 +853,220 @@ function getAdminDashboard(token) {
     },
     users:users
   };
+}
+
+
+// ===== STAGE 2 — ADMIN INDEX, ANALYTICS AND EXPERT MATCHING =====
+// Sheet is a denormalized index only; the per-user JSON document remains the source of truth.
+const STAGE2_SHEET_NAME_ = 'Quan ly ho so';
+const STAGE2_HEADERS_ = ['Email','Họ tên','Danh xưng','Học vị','Năm học vị','Học hàm','Năm học hàm','Đơn vị','Chuyên ngành','Môn giảng dạy','Ngạch giảng viên','Điện thoại','Thỉnh giảng','NCKH','Hội đồng','Hướng dẫn','Doanh nghiệp','Môn đã dạy','Đề tài','Công bố','Giáo trình','Giải thưởng','Cập nhật'];
+
+function stage2Spreadsheet_() {
+  const props=PropertiesService.getScriptProperties();
+  const id=String(props.getProperty('PROFILE_INDEX_SHEET_ID')||'').trim();
+  if(id) return SpreadsheetApp.openById(id);
+  const folder=dataFolder_();
+  const existing=folder.getFilesByName(STAGE2_SHEET_NAME_);
+  let book;
+  while(existing.hasNext()) {
+    const file=existing.next();
+    if(file.getMimeType()===MimeType.GOOGLE_SHEETS) {
+      book=SpreadsheetApp.openById(file.getId()); break;
+    }
+  }
+  if(!book) {
+    book=SpreadsheetApp.create(STAGE2_SHEET_NAME_);
+    // Keep the index alongside the existing JSON documents.
+    const file=DriveApp.getFileById(book.getId());
+    file.moveTo(folder);
+  }
+  props.setProperty('PROFILE_INDEX_SHEET_ID',book.getId());
+  return book;
+}
+
+function stage2Tab_() {
+  const book=stage2Spreadsheet_();
+  let sheet=book.getSheetByName(STAGE2_SHEET_NAME_);
+  if(!sheet) sheet=book.insertSheet(STAGE2_SHEET_NAME_);
+  const header=sheet.getRange(1,1,1,STAGE2_HEADERS_.length);
+  if(header.getValues()[0].join('\u001f')!==STAGE2_HEADERS_.join('\u001f')) header.setValues([STAGE2_HEADERS_]);
+  sheet.setFrozenRows(1);
+  return sheet;
+}
+
+function stage2DegreeCode_(value) {
+  const s=String(value||'').toLowerCase();
+  if(/tskh|tiến sĩ khoa học/.test(s))return 'TSKH';
+  if(/tiến sĩ|ph\.?d|dba|^ts$/.test(s))return 'TS';
+  if(/thạc sĩ|master|^ths$/.test(s))return 'ThS';
+  if(/bác sĩ|^bs$/.test(s))return 'BS';
+  if(/kỹ sư|^ks$/.test(s))return 'KS';
+  if(/cử nhân|bachelor|^cn$/.test(s))return 'CN';
+  return '';
+}
+function stage2RankCode_(value) {
+  const s=String(value||'').toLowerCase();
+  if(/phó giáo sư|^pgs$/.test(s))return 'PGS';
+  if(/giáo sư|^gs$/.test(s))return 'GS';
+  return '';
+}
+function stage2Profile_(doc) {
+  const g=doc.general||{}, t=doc.tables||{};
+  const c=adminTableRecords_(t,'credentialBody');
+  const derived=deriveAcademicFromCredentials_(c,g);
+  const degree=stage2DegreeCode_(derived.person_academic_degree||g.person_academic_degree);
+  const rank=stage2RankCode_(derived.person_academic_rank||g.person_academic_rank);
+  const person=String(g.person_name||doc.identity?.name||'').trim();
+  const major=String(g.person_major||c.filter(x=>x.kind==='degree').slice(-1)[0]?.major||'').trim();
+  const teaching=adminTableRecords_(t,'teachingBody');
+  const research=adminTableRecords_(t,'researchBody');
+  const subjects=String(g.person_teaching_subjects||teaching.map(x=>x.title||'').filter(Boolean).join(', '));
+  const flags={
+    teaching:String(g.person_accept_teaching||'')==='1',
+    research:String(g.person_accept_researching||'')==='1',
+    committee:String(g.person_accept_committee||'')==='1',
+    instructor:String(g.person_accept_instructor||'')==='1',
+    company:String(g.person_accept_company_projects||'')==='1'
+  };
+  return {
+    email:String(doc.identity?.email||'').trim().toLowerCase(),
+    name:person, title:formatAcademicTitle(person,degree,rank),
+    degree:degree, degreeYear:String(derived.person_degree_year||''),
+    rank:rank, rankYear:String(derived.person_rank_year||''),
+    institution:String(g.person_work_unit||''),major:major,subjects:subjects,
+    lecturerGrade:String(g.person_lecturer_grade||''),phone:String(g.person_mobile_phone||''),
+    flags:flags,teaching:teaching,research:research,
+    projects:adminTableRecords_(t,'projectBody'),
+    seminars:adminTableRecords_(t,'seminarBody'),
+    articles:adminTableRecords_(t,'articleBody'),
+    textbooks:adminTableRecords_(t,'textbookBody'),
+    awards:adminTableRecords_(t,'awardBody'),
+    updatedAt:String(doc.meta?.lastSeen||'')
+  };
+}
+function stage2Cell_(value) {
+  const s=String(value==null?'':value);
+  // Prevent Sheets from evaluating user-provided cell content as formulas.
+  return /^[\s]*[=+\-@]/.test(s) ? "'"+s : s;
+}
+function stage2Row_(doc) {
+  const p=stage2Profile_(doc),f=p.flags;
+  return [p.email,p.name,p.title,p.degree,p.degreeYear,p.rank,p.rankYear,
+    p.institution,p.major,p.subjects,p.lecturerGrade,p.phone,
+    f.teaching?'1':'0',f.research?'1':'0',f.committee?'1':'0',
+    f.instructor?'1':'0',f.company?'1':'0',
+    p.teaching.length,p.projects.length,p.seminars.length+p.articles.length,
+    p.textbooks.length,p.awards.length,p.updatedAt].map(stage2Cell_);
+}
+function stage2Upsert_(doc) {
+  const row=stage2Row_(doc), email=row[0];
+  if(!email) return;
+  const sheet=stage2Tab_();
+  const last=sheet.getLastRow();
+  let position=last+1;
+  if(last>=2) {
+    const emails=sheet.getRange(2,1,last-1,1).getValues();
+    const idx=emails.findIndex(r=>String(r[0]).toLowerCase()===email);
+    if(idx>=0) position=idx+2;
+  }
+  sheet.getRange(position,1,1,row.length).setValues([row]);
+}
+function syncAllProfilesToSheet(token) {
+  assertAdmin_(token);
+  const lock=LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const source=listAllUserDocs_();
+    if(source.storageError) throw new Error('Không đọc được đầy đủ dữ liệu Drive: '+source.storageError);
+    const byEmail={};
+    (source.docs||[]).forEach(doc=>{
+      const email=String(doc.identity?.email||'').trim().toLowerCase();
+      if(email)byEmail[email]=doc;
+    });
+    const rows=Object.keys(byEmail).sort().map(email=>stage2Row_(byEmail[email]));
+    const sheet=stage2Tab_();
+    const oldLast=sheet.getLastRow();
+    if(rows.length)sheet.getRange(2,1,rows.length,STAGE2_HEADERS_.length).setValues(rows);
+    if(oldLast>rows.length+1)sheet.getRange(rows.length+2,1,oldLast-rows.length-1,STAGE2_HEADERS_.length).clearContent();
+    return {ok:true,count:rows.length,spreadsheetUrl:sheet.getParent().getUrl(),updatedAt:new Date().toISOString()};
+  } finally {lock.releaseLock();}
+}
+function stage2AutoSync_(doc) {
+  try { stage2Upsert_(doc);return ''; }
+  catch(err) {console.warn('Sheet index sync deferred: '+String(err));return String(err.message||err);}
+}
+function stage2Contains_(text,q) {
+  const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  return norm(text).includes(norm(q));
+}
+function checkEligibilityAndScore(profile,request) {
+  request=request||{};
+  const p=profile && profile.flags ? profile : stage2Profile_(profile||{});
+  const type=String(request.type||'teaching');
+  const level=String(request.level||'undergraduate');
+  const thresholds={undergraduate:2,masters:3,doctoral:3,bachelor_thesis:2,
+    masters_thesis:3,doctoral_thesis:3,institutional:3,ministry:3,
+    undergraduate_supervision:2,masters_supervision:3,doctoral_supervision:3};
+  const ranks={CN:1,KS:1,BS:1,ThS:2,TS:3,TSKH:4};
+  const flagMap={teaching:'teaching',committee:'committee',instructor:'instructor',
+    research:'research',company:'company'};
+  if(!flagMap[type])return {eligible:false,score:0,reason:'Loại hợp tác không hợp lệ.'};
+  if(!p.flags[flagMap[type]])return {eligible:false,score:0,reason:'Chưa đăng ký nhận hợp tác.'};
+  const minimum=(type==='teaching'||type==='committee'||type==='instructor')
+    ? (thresholds[level]||3):0;
+  if((ranks[p.degree]||0)<minimum)return {eligible:false,score:0,reason:'Chưa đạt mức học vị tối thiểu.'};
+  const roleScore=p.projects.reduce((sum,x)=>{
+    const role=String(x.position||'');
+    return sum+(/chủ nhiệm/i.test(role)?10:/thành viên/i.test(role)?5:0);
+  },0);
+  const keyword=String(request.keyword||'').trim();
+  const haystack=[p.major,p.subjects,...p.teaching.map(x=>x.title),
+    ...p.research.map(x=>x.title),...p.projects.map(x=>x.title)].join(' ');
+  // Nonmatching terms are excluded from a keyword search.
+  if(keyword && !stage2Contains_(haystack,keyword))return {eligible:false,score:0,reason:'Không khớp chuyên môn.'};
+  const score=(p.rank==='GS'?40:p.rank==='PGS'?30:0)
+    +(['TS','TSKH'].includes(p.degree)?20:p.degree==='ThS'?10:0)
+    +p.teaching.length*5+roleScore+p.seminars.length*5+p.articles.length*5
+    +p.textbooks.length*5+(keyword?30:0);
+  return {eligible:true,score:score,reason:'Phù hợp tiêu chí.'};
+}
+function getAdminStage2Statistics(token) {
+  assertAdmin_(token);
+  const source=listAllUserDocs_();
+  const profiles=(source.docs||[]).map(stage2Profile_).filter(x=>x.email);
+  const count=(key)=>profiles.filter(p=>p.flags[key]).length;
+  const category=p=>p.rank==='GS'?'GS.TS':p.rank==='PGS'?'PGS.TS':
+    ['TS','TSKH'].includes(p.degree)?'TS':p.degree==='ThS'?'ThS':'CN/KS/BS/Khác';
+  const countBy=values=>values.reduce((a,v)=>(a[v||'Chưa khai báo']=(a[v||'Chưa khai báo']||0)+1,a),{});
+  return {ok:true,storageError:source.storageError||'',total:profiles.length,
+    kpi:{total:profiles.length,professors:profiles.filter(p=>p.rank).length,
+      doctors:profiles.filter(p=>['TS','TSKH'].includes(p.degree)).length,
+      teaching:count('teaching'),committee:count('committee'),company:count('company')},
+    academic:countBy(profiles.map(category)),
+    cooperation:{teaching:count('teaching'),research:count('research'),
+      committee:count('committee'),instructor:count('instructor'),company:count('company')},
+    majors:countBy(profiles.map(p=>p.major)),
+    institutions:countBy(profiles.map(p=>p.institution)),
+    capacity:{projects:profiles.reduce((a,p)=>a+p.projects.length,0),
+      publications:profiles.reduce((a,p)=>a+p.seminars.length+p.articles.length,0),
+      textbooks:profiles.reduce((a,p)=>a+p.textbooks.length,0),
+      awards:profiles.reduce((a,p)=>a+p.awards.length,0)}};
+}
+function searchAdminExperts(filters,token) {
+  assertAdmin_(token);
+  const f=filters||{}, source=listAllUserDocs_();
+  const people=(source.docs||[]).map(stage2Profile_).filter(p=>p.email);
+  return {ok:true,storageError:source.storageError||'',
+    results:people.filter(p=>!f.institution||stage2Contains_(p.institution,f.institution))
+      .map(p=>({profile:p,assessment:checkEligibilityAndScore(p,f)}))
+      .filter(x=>x.assessment.eligible)
+      .sort((a,b)=>b.assessment.score-a.assessment.score||a.profile.name.localeCompare(b.profile.name,'vi'))
+      .map(x=>({email:x.profile.email,name:x.profile.name,title:x.profile.title,
+        degree:x.profile.degree,rank:x.profile.rank,institution:x.profile.institution,
+        major:x.profile.major,subjects:x.profile.subjects,score:x.assessment.score,
+        counts:{teaching:x.profile.teaching.length,projects:x.profile.projects.length,
+          publications:x.profile.seminars.length+x.profile.articles.length,
+          textbooks:x.profile.textbooks.length},flags:x.profile.flags}))};
 }
 
 // ===== PUBLICATION SEARCH =====
