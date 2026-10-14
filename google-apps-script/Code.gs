@@ -400,32 +400,58 @@ function formatAcademicTitle(name, degree, rank) {
   return [r,d].filter(Boolean).join('.') + (r || d ? '. ' : '') + String(name || '').trim();
 }
 
+// Derive the highest completed qualification and appointment from the existing education rows.
+function deriveAcademicFromCredentials_(items, previous) {
+  const result = Object.assign({}, previous || {});
+  const rankDegree = {CN:1,KS:1,BS:1,ThS:2,TS:3,TSKH:4};
+  const degreeFrom = value => {
+    const v=String(value||'').toLowerCase();
+    if (/tiến sĩ khoa học|tskh/.test(v)) return 'TSKH';
+    if (/tiến sĩ|phd|ph\.d|dba/.test(v)) return 'TS';
+    if (/thạc sĩ|ths|master/.test(v)) return 'ThS';
+    if (/bác sĩ|^bs$/.test(v)) return 'BS';
+    if (/kỹ sư|^ks$/.test(v)) return 'KS';
+    if (/cử nhân|^cn$/.test(v)) return 'CN';
+    return '';
+  };
+  let top = null, appointment = null;
+  (items || []).forEach(item => {
+    const d = item && item.data ? item.data : (item || {});
+    const y = Number(d.year || d.rawYear || 0);
+    if (d.kind === 'degree' && String(d.unfinished||'0') !== '1') {
+      const code=degreeFrom(d.level);
+      if (code && y>=1900 && (!top || rankDegree[code]>rankDegree[top.code] || (rankDegree[code]===rankDegree[top.code] && y>top.year))) top={code,year:y,major:String(d.major||'').trim()};
+    }
+    if (d.kind === 'title') {
+      const label=String(d.level||'').toLowerCase();
+      const code=/giáo sư/.test(label) ? (/phó/.test(label)?'PGS':'GS') : '';
+      if(code && y>=1900 && (!appointment || (code==='GS'&&appointment.code!=='GS') || (code===appointment.code&&y>appointment.year))) appointment={code,year:y};
+    }
+  });
+  // Do not replace legacy academic data when the uploaded snapshot has no education records.
+  if (!items || !items.length) return result;
+  result.person_academic_degree=top ? top.code : '';
+  result.person_degree_year=top ? String(top.year) : '';
+  const eligible=top && ['TS','TSKH'].indexOf(top.code)>=0;
+  if (eligible && appointment && appointment.year>=top.year) {
+    result.person_academic_rank=appointment.code;
+    result.person_rank_year=String(appointment.year);
+  } else {
+    result.person_academic_rank='';
+    result.person_rank_year='';
+  }
+  return result;
+}
+
 function validateAcademicGeneral_(data) {
-  const currentYear = Number(Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'yyyy'));
-  const allowed = ['CN','KS','BS','ThS','TS','TSKH'];
-  const degree = String(data.person_academic_degree || '').trim();
-  const rank = String(data.person_academic_rank || '').trim();
-  const degreeYear = String(data.person_degree_year || '').trim();
-  const rankYear = String(data.person_rank_year || '').trim();
-  if (!String(data.person_name || '').trim()) throw new Error('Vui lòng nhập họ và tên.');
-  if (allowed.indexOf(degree) < 0) throw new Error('Vui lòng chọn học vị cao nhất hợp lệ.');
-  if (!/^\d{4}$/.test(degreeYear) || Number(degreeYear) < 1900 || Number(degreeYear) > currentYear)
-    throw new Error('Năm nhận bằng cao nhất không hợp lệ.');
-  if (!String(data.person_major || '').trim()) throw new Error('Vui lòng nhập chuyên ngành/lĩnh vực chính.');
-  if (rank && ['TS','TSKH'].indexOf(degree) < 0) throw new Error('PGS/GS yêu cầu học vị từ Tiến sĩ.');
-  if (rank && ['PGS','GS'].indexOf(rank) < 0) throw new Error('Học hàm không hợp lệ.');
-  if (rank && (!/^\d{4}$/.test(rankYear) || Number(rankYear) < Number(degreeYear) || Number(rankYear) > currentYear))
-    throw new Error('Năm bổ nhiệm PGS/GS phải từ năm nhận bằng tiến sĩ đến năm hiện tại.');
-  if (!rank && rankYear) throw new Error('Không được khai năm bổ nhiệm khi chưa có học hàm.');
-  if (data.person_lecturer_grade && ['TG','GV','GVC','GVCC'].indexOf(String(data.person_lecturer_grade)) < 0)
-    throw new Error('Ngạch giảng viên không hợp lệ.');
-  const dob = String(data.person_dob || '');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) throw new Error('Vui lòng khai đúng ngày sinh.');
-  const date = new Date(dob + 'T00:00:00Z');
-  if (isNaN(date.getTime()) || date.toISOString().slice(0,10) !== dob) throw new Error('Ngày sinh không hợp lệ.');
-  const nowText = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd');
-  const age = currentYear - Number(dob.slice(0,4)) - (nowText.slice(5) < dob.slice(5) ? 1 : 0);
-  if (age < 22) throw new Error('Người kê khai phải đủ 22 tuổi.');
+  const tz=Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh';
+  const nowText=Utilities.formatDate(new Date(),tz,'yyyy-MM-dd');
+  const dob=String(data.person_dob || '');
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dob)) throw new Error('Vui lòng khai đúng ngày sinh.');
+  const date=new Date(dob+'T00:00:00Z');
+  if(isNaN(date.getTime()) || date.toISOString().slice(0,10)!==dob) throw new Error('Ngày sinh không hợp lệ.');
+  const age=Number(nowText.slice(0,4))-Number(dob.slice(0,4))-(nowText.slice(5)<dob.slice(5)?1:0);
+  if(age<22)throw new Error('Người kê khai phải đủ 22 tuổi.');
 }
 
 function validateGeneralDates_(data) {
@@ -625,7 +651,7 @@ function saveTables(data, token) {
   try {
     const doc = readUserDocByEmail_(user.email) || emptyUserDoc_(user);
     doc.tables = clean;
-    doc.general = doc.general || {};
+    doc.general = deriveAcademicFromCredentials_(clean.credentialBody || [], doc.general || {});
     doc.meta = doc.meta || {};
     doc.meta.lastSeen = new Date().toISOString();
     writeUserDoc_(doc);
