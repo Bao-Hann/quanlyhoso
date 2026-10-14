@@ -470,6 +470,11 @@ function saveGeneral(data, token) {
   validateGeneralDates_(data);
   validateAcademicGeneral_(data);
 
+  // Require strictly numeric mobile phone (10 digits) and citizen ID (12 digits).
+  const mobile=String(data.person_mobile_phone||'').trim();
+  const citizen=String(data.person_citizen_id||'').trim();
+  if(mobile && !/^\d{10}$/.test(mobile)) throw new Error('Số di động phải gồm đúng 10 chữ số.');
+  if(citizen && !/^\d{12}$/.test(citizen)) throw new Error('CCCD phải gồm đúng 12 chữ số.');
   const clean = {};
   Object.keys(data).forEach(key => {
     if (/^person_[a-z_]+$/.test(key)) clean[key] = String(data[key] == null ? '' : data[key]);
@@ -577,7 +582,7 @@ function validateStage1Tables_(data) {
 }
 
 function sortYear(data) {
-  const sortable = {workBody:true,projectBody:false,seminarBody:false,textbookBody:false,awardBody:false};
+  const sortable = {credentialBody:false,workBody:false,projectBody:false,articleBody:false,seminarBody:false,textbookBody:false,awardBody:false};
   const rowData = item => item && item.data ? item.data : (item || {});
   Object.keys(sortable).forEach(key => {
     if (!Array.isArray(data[key])) return;
@@ -740,7 +745,7 @@ function getAdminDashboard(token) {
 
   const PROFILE_FIELDS = [
     'person_name','person_gender','person_dob','person_pob','person_hometown',
-    'person_ethnicity','person_position','person_work_unit','person_address',
+    'person_ethnicity','person_position','person_work_unit','person_faculty','person_department','person_address',
     'person_office_phone','person_home_phone','person_mobile_phone','person_fax',
     'person_email','person_citizen_id','person_date_issue','person_place_issue',
     'person_accept_teaching','person_accept_researching','person_accept_committee',
