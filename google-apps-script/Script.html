@@ -590,12 +590,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const editBtn = document.getElementById('editGeneralBtn');
   const saveBtn = document.getElementById('saveGeneralBtn');
   const fields = document.querySelectorAll('.general-field');
+  const generalFields = document.querySelectorAll('#general .general-field');
+  const academicFields = document.querySelectorAll('#academicProfileBlock .academic-field');
+  const academicEditBtn = document.getElementById('editAcademicBtn');
+  const academicSaveBtn = document.getElementById('saveAcademicBtn');
   const preferenceFields = document.querySelectorAll('.preference[name]');
 
   const enableGeneralEditing = () => {
-    fields.forEach(el => el.disabled = false);
-    academicEditing = true;
-    updateAcademicFields();
+    generalFields.forEach(el => el.disabled = false);
     if (editBtn) {
       editBtn.disabled = false;
       editBtn.style.display = 'none';
@@ -606,6 +608,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const enableAcademicEditing = () => {
+    academicEditing = true;
+    academicFields.forEach(el => el.disabled = false);
+    updateAcademicFields();
+    if (academicEditBtn) academicEditBtn.style.display = 'none';
+    if (academicSaveBtn) academicSaveBtn.style.display = 'inline-block';
+  };
+  academicEditBtn?.addEventListener('click', enableAcademicEditing);
+  academicSaveBtn?.addEventListener('click', () => generalForm?.requestSubmit());
   if (editBtn) editBtn.addEventListener('click', enableGeneralEditing);
   document.addEventListener('click', event => {
     if (event.target.closest('#editGeneralBtn')) enableGeneralEditing();
@@ -729,6 +740,8 @@ document.addEventListener('DOMContentLoaded', () => {
       fields.forEach(el => el.disabled = true);
       academicEditing = false;
       updateAcademicFields();
+      if (academicEditBtn) academicEditBtn.style.display = '';
+      if (academicSaveBtn) academicSaveBtn.style.display = 'none';
       editBtn.style.display = '';
       saveBtn.style.display = 'none';
       saveBtn.disabled = false;
