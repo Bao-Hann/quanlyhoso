@@ -544,6 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveBtn = document.getElementById('saveGeneralBtn');
   const fields = document.querySelectorAll('.general-field');
   const generalFields = document.querySelectorAll('#general .general-field');
+  const preferenceFields = document.querySelectorAll('.preference[name]');
   const enableGeneralEditing = () => {
     generalFields.forEach(el => el.disabled = false);
     if (editBtn) {
